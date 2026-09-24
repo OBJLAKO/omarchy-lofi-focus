@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""sky.lofi MPRIS bridge.
+
+One D-Bus media player identity controlling the main station plus the
+optional background mix. Reads status.json written by lofi-player and
+forwards transport events (Play/Pause/PlayPause/Next/Previous/Stop) back
+to it. Spawned and killed by the player script.
+"""
+import json
+import os
+import subprocess
+import sys
+
+import gi
+
+gi.require_version("Gio", "2.0")
+from gi.repository import Gio, GLib  # noqa: E402
+
+BUS_NAME = "org.mpris.MediaPlayer2.sky.lofi"
+OBJ_PATH = "/org/mpris/MediaPlayer2"
+PLAYER = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else "lofi-player"
+
+runtime_dir = os.path.join(
+    os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid()), "sky.lofi"
+)
+status_path = os.path.join(runtime_dir, "status.json")
+
+state = {}
+
+XML = """<node>
+  <interface name="org.mpris.MediaPlayer2">
+    <method name="Raise"/>
+    <method name="Quit"/>
+    <property name="CanQuit" type="b" access="read"/>
+    <property name="CanRaise" type="b" access="read"/>
+    <property name="HasTrackList" type="b" access="read"/>
+    <property name="Identity" type="s" access="read"/>
+    <property name="DesktopEntry" type="s" access="read"/>
+    <property name="SupportedUriSchemes" type="as" access="read"/>
+    <property name="SupportedMimeTypes" type="as" access="read"/>
+  </interface>
+  <interface name="org.mpris.MediaPlayer2.Player">
+    <method name="Next"/>
+    <method name="Previous"/>
+    <method name="Pause"/>
+    <method name="PlayPause"/>
+    <method name="Stop"/>
+    <method name="Play"/>
+    <method name="Seek"><arg direction="in" name="Offset" type="x"/></method>
+    <method name="SetPosition"><arg direction="in" name="TrackId" type="o"/><arg direction="in" name="Position" type="x"/></method>
+    <method name="OpenUri"><arg direction="in" name="Uri" type="s"/></method>
+    <property name="PlaybackStatus" type="s" access="read"/>
+    <property name="LoopStatus" type="s" access="read"/>
+    <property name="Rate" type="d" access="read"/>
+    <property name="Shuffle" type="b" access="read"/>
+    <property name="Metadata" type="a{sv}" access="read"/>
+    <property name="Volume" type="d" access="read"/>
+    <property name="Position" type="x" access="read"/>
+    <property name="MinimumRate" type="d" access="read"/>
+    <property name="MaximumRate" type="d" access="read"/>
+    <property name="CanGoNext" type="b" access="read"/>
+    <property name="CanGoPrevious" type="b" access="read"/>
+    <property name="CanPlay" type="b" access="read"/>
+    <property name="CanPause" type="b" access="read"/>
+    <property name="CanSeek" type="b" access="read"/>
+    <property name="CanControl" type="b" access="read"/>
+  </interface>
+</node>"""
+
+node = Gio.DBusNodeInfo.new_for_xml(XML)
+
+
+def run_action(*args):
+    subprocess.Popen(
+        [PLAYER, *args],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
+def load_status():
+    global state
+    try:
+        with open(status_path) as fh:
+            fresh = json.load(fh)
+    except Exception:
+        return False
+    if fresh == state:
+        return False
+    state = fresh
+    return True
+
+
+def title():
+    if not state.get("running"):
+        return "Lofi Radio"
+    parts = []
+    if state.get("name"):
+        parts.append(state["name"])
+    if state.get("mix") and state.get("bg_name"):
+        parts.append("+ " + state["bg_name"])
+    return " ".join(parts) if parts else "Lofi Radio"
+
+
+def artist():
+    if state.get("category_name"):
+        return state["category_name"]
+    return "Lofi Radio"
+
+
+def trackid():
+    return "/sky/lofi/%d" % (state.get("index") or 0)
+
+
+def prop_variant(connection, sender, object_path, interface_name, name):
+    if interface_name == "org.mpris.MediaPlayer2":
+        if name == "CanQuit":
+            return GLib.Variant("b", True)
+        if name == "CanRaise":
+            return GLib.Variant("b", False)
+        if name == "HasTrackList":
+            return GLib.Variant("b", False)
+        if name == "Identity":
+            return GLib.Variant("s", "Lofi Radio")
+        if name == "DesktopEntry":
+            return GLib.Variant("s", "sky.lofi")
+        if name == "SupportedUriSchemes":
+            return GLib.Variant("as", ["http", "https"])
+        if name == "SupportedMimeTypes":
+            return GLib.Variant("as", [])
+        return None
+
+    running = bool(state.get("running"))
+    paused = bool(state.get("paused"))
+    if name == "PlaybackStatus":
+        return GLib.Variant("s", "Stopped" if not running else ("Paused" if paused else "Playing"))
+    if name == "LoopStatus":
+        return GLib.Variant("s", "None")
+    if name == "Rate":
+        return GLib.Variant("d", 1.0)
+    if name == "Shuffle":
+        return GLib.Variant("b", False)
+    if name == "Metadata":
+        if not running:
+            return GLib.Variant("a{sv}", {})
+        return GLib.Variant(
+            "a{sv}",
+            {
+                "mpris:trackid": GLib.Variant("o", trackid()),
+                "mpris:length": GLib.Variant("x", 0),
+                "xesam:title": GLib.Variant("s", title()),
+                "xesam:artist": GLib.Variant("as", [artist()]),
+                "xesam:comment": GLib.Variant("as", [state.get("url") or "live stream"]),
+            },
+        )
+    if name == "Volume":
+        return GLib.Variant("d", float(state.get("main_volume", 80)) / 100.0)
+    if name == "Position":
+        return GLib.Variant("x", 0)
+    if name == "MinimumRate":
+        return GLib.Variant("d", 1.0)
+    if name == "MaximumRate":
+        return GLib.Variant("d", 1.0)
+    if name == "CanGoNext":
+        return GLib.Variant("b", running and (state.get("count") or 0) > 1)
+    if name == "CanGoPrevious":
+        return GLib.Variant("b", running and (state.get("count") or 0) > 1)
+    if name == "CanPlay" or name == "CanPause":
+        return GLib.Variant("b", running)
+    if name == "CanSeek":
+        return GLib.Variant("b", False)
+    if name == "CanControl":
+        return GLib.Variant("b", True)
+    return None
+
+
+def on_method_call(connection, sender, object_path, interface_name, method_name, parameters, invocation):
+    if interface_name == "org.mpris.MediaPlayer2":
+        if method_name == "Quit":
+            run_action("stop")
+    elif interface_name == "org.mpris.MediaPlayer2.Player":
+        if method_name == "Play":
+            run_action("play")
+        elif method_name == "Pause":
+            run_action("pause")
+        elif method_name == "PlayPause":
+            run_action("toggle")
+        elif method_name == "Next":
+            run_action("next")
+        elif method_name == "Previous":
+            run_action("prev")
+        elif method_name == "Stop":
+            run_action("stop")
+        # Seek/SetPosition/OpenUri are meaningless for live streams; ignore.
+    invocation.return_value(None)
+
+
+def on_bus_acquired(connection, name):
+    for info in (node.interfaces[0], node.interfaces[1]):
+        connection.register_object(OBJ_PATH, info, on_method_call, prop_variant, None)
+
+
+def on_name_lost(connection, name):
+    loop.quit()
+
+
+def poll():
+    if load_status():
+        changed = {}
+        for prop in ("PlaybackStatus", "Metadata", "Volume", "CanGoNext", "CanGoPrevious"):
+            value = prop_variant(None, None, OBJ_PATH, "org.mpris.MediaPlayer2.Player", prop)
+            if value is not None:
+                changed[prop] = value
+        bus.emit_signal(
+            None,
+            OBJ_PATH,
+            "org.freedesktop.DBus.Properties",
+            "PropertiesChanged",
+            GLib.Variant(
+                "(sa{sv}as)",
+                ["org.mpris.MediaPlayer2.Player", changed, []],
+            ),
+        )
+    return True
+
+
+loop = GLib.MainLoop()
+own_id = Gio.bus_own_name(
+    Gio.BusType.SESSION,
+    BUS_NAME,
+    Gio.BusNameOwnerFlags.NONE,
+    on_bus_acquired,
+    None,
+    on_name_lost,
+)
+bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+GLib.timeout_add_seconds(1, poll)
+load_status()
+try:
+    loop.run()
+finally:
+    Gio.bus_unown_name(own_id)

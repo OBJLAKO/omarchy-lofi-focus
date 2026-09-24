@@ -1,0 +1,461 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+# sky.lofi player: two mpv instances (main station + optional background mix)
+# controlled over IPC sockets, with a persisted settings.json for the last
+# station, volumes, and the background mix choice.
+#
+# Usage:
+#   lofi-player play [station-id]      resume, or start the saved/default station
+#   lofi-player start <station-id>     (re)start a station as the main stream
+#   lofi-player stop|pause|resume|toggle
+#   lofi-player next|prev              step within the current category
+#   lofi-player vol main|bg <0-100>
+#   lofi-player bg <station-id|off>    choose the background station
+#   lofi-player mix <on|off|toggle>    enable/disable the background mix
+#   lofi-player default <station-id>   set the left-click station
+#   lofi-player status
+
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/sky.lofi"
+sockets_dir="$runtime_dir/sockets"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+stations_file="$script_dir/stations.json"
+settings_dir="${XDG_STATE_HOME:-$HOME/.local/state}/sky.lofi"
+settings_file="$settings_dir/settings.json"
+
+main_sock="$sockets_dir/main.sock"
+bg_sock="$sockets_dir/bg.sock"
+main_pid_file="$runtime_dir/main.pid"
+bg_pid_file="$runtime_dir/bg.pid"
+mpris_pid_file="$runtime_dir/mpris.pid"
+current_file="$runtime_dir/current.json"
+paused_file="$runtime_dir/paused.flag"
+status_file="$runtime_dir/status.json"
+log_dir="$runtime_dir/logs"
+
+default_main_volume=80
+default_bg_volume=20
+
+mkdir -p "$sockets_dir" "$log_dir"
+chmod 700 "$runtime_dir" 2>/dev/null
+mkdir -p "$settings_dir"
+# Serialize settings, process lifecycle and atomic status writes.
+exec 9>"$runtime_dir/control.lock"
+flock -x 9
+if [[ ! -s $settings_file ]]; then
+  if [[ -s $script_dir/settings.json ]]; then
+    cp "$script_dir/settings.json" "$settings_file"
+  else
+    printf '%s\n' '{"defaultStation":"lofi-groove-salad","mainVolume":65,"bgVolume":20,"bgStation":"talk-bbc-world","mix":true}' > "$settings_file"
+  fi
+fi
+
+alive() {
+  local pid
+  [[ -s $1 ]] || return 1
+  read -r pid < "$1" || return 1
+  [[ $pid =~ ^[0-9]+$ && -r /proc/$pid/cmdline ]] || return 1
+  local cmdline
+  cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline")
+  [[ $cmdline == *"$sockets_dir/"* || $cmdline == *"lofi-mpris"* ]]
+}
+
+ipc() {
+  local sock=$1 payload=$2
+  python3 "$script_dir/lofi-ipc" "$sock" "$payload"
+}
+
+get_prop() {
+  local sock=$1 prop=$2 out
+  out=$(ipc "$sock" "{\"command\":[\"get_property\",\"$prop\"]}") || return 1
+  jq -r 'if .error=="success" then (.data|tostring) elif .data==null then "" else empty end' \
+    <<< "$out" 2>/dev/null
+}
+
+set_prop() {
+  local sock=$1 prop=$2 value=$3
+  ipc "$sock" "{\"command\":[\"set_property\",\"$prop\",$value]}" >/dev/null
+}
+
+int_or() {
+  case "$1" in
+    ''|*[!0-9]*) echo "$2" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+mpv_start() { # mpv_start <sock> <volume> <url> <pidfile> <logfile>
+  local sock=$1 volume=$2 url=$3 pidfile=$4 logfile=$5
+  nohup mpv --no-config --no-video --no-terminal --really-quiet \
+    --audio-display=no --load-scripts=no --volume="$volume" \
+    --input-ipc-server="$sock" \
+    --user-agent='sky.lofi/1.0 (mpv)' \
+    "$url" 9>&- </dev/null >>"$logfile" 2>&1 &
+  echo $! > "$pidfile"
+  for ((attempt=0; attempt<30; attempt++)); do
+    [[ -S $sock ]] && break
+    sleep 0.02
+  done
+}
+
+# ---- stations ---------------------------------------------------------
+station_json() { # <id> -> json object or empty
+  jq -c --arg id "$1" '[.categories[].stations[] | select(.id==$id)][0] // empty' "$stations_file" 2>/dev/null
+}
+
+station_field() { # <id> <field>
+  jq -r --arg id "$1" --arg f "$2" '[.categories[].stations[] | select(.id==$id)][0][$f] // ""' "$stations_file" 2>/dev/null
+}
+
+category_of_station() { # <id> -> category id
+  jq -r --arg id "$1" '.categories[] | select(any(.stations[]; .id==$id)) | .id' "$stations_file" 2>/dev/null
+}
+
+category_name() { # <category-id> -> display name
+  jq -r --arg id "$1" '.categories[] | select(.id==$id) | .name' "$stations_file" 2>/dev/null
+}
+
+category_stations() { # <category-id> -> stations array
+  jq -c --arg id "$1" '.categories[] | select(.id==$id) | .stations' "$stations_file" 2>/dev/null
+}
+
+# ---- settings ---------------------------------------------------------
+settings_get() {
+  [[ -s $settings_file ]] || { echo ""; return; }
+  jq -r --arg k "$1" 'if has($k) then (.[$k]) else "" end' "$settings_file" 2>/dev/null
+}
+
+settings_set() { # <key> <json-value>
+  local key=$1 val=$2 tmp
+  [[ -s $settings_file ]] || printf '{}\n' > "$settings_file"
+  tmp="$settings_file.tmp"
+  if jq --arg k "$key" --argjson v "$val" '.[$k] = $v' "$settings_file" > "$tmp" 2>/dev/null; then
+    mv "$tmp" "$settings_file"
+  else
+    rm -f "$tmp"
+  fi
+}
+
+default_station() {
+  local id
+  id=$(settings_get defaultStation)
+  [[ $(category_of_station "$id") == lofi ]] || id=""
+  [[ -n $id ]] || id=$(jq -r '._defaultStation // ""' "$stations_file" 2>/dev/null)
+  [[ -n $id ]] || id=$(jq -r '.categories[0].stations[0].id // ""' "$stations_file" 2>/dev/null)
+  echo "$id"
+}
+
+# ---- mpris ------------------------------------------------------------
+start_mpris() {
+  if alive "$mpris_pid_file"; then return; fi
+  nohup python3 "$script_dir/lofi-mpris" "$script_dir/lofi-player" \
+    9>&- </dev/null >>"$log_dir/mpris.log" 2>&1 &
+  echo $! > "$mpris_pid_file"
+}
+
+stop_mpris() {
+  if alive "$mpris_pid_file"; then
+    local pid
+    read -r pid < "$mpris_pid_file"
+    kill "$pid" 2>/dev/null
+  fi
+  rm -f "$mpris_pid_file"
+}
+
+# ---- status -----------------------------------------------------------
+write_status() {
+  local running=false paused=false
+  local station="" name="" category="" category_name_v="" url=""
+  local main_volume=$default_main_volume bg_volume=$default_bg_volume
+  local bg_station="" bg_name="" bg_running=false mix=false
+  local index=0 count=0 main_title="" bg_title=""
+
+  if alive "$main_pid_file"; then running=true; fi
+  [[ $running == true && -f $paused_file ]] && paused=true
+
+  if [[ -s $current_file ]]; then
+    station=$(jq -r '.station // ""' "$current_file" 2>/dev/null)
+    name=$(jq -r '.name // ""' "$current_file" 2>/dev/null)
+    category=$(jq -r '.category // ""' "$current_file" 2>/dev/null)
+    category_name_v=$(jq -r '.category_name // ""' "$current_file" 2>/dev/null)
+    url=$(jq -r '.url // ""' "$current_file" 2>/dev/null)
+    main_volume=$(int_or "$(jq -r '.main_volume // 80' "$current_file" 2>/dev/null)" $default_main_volume)
+    bg_volume=$(int_or "$(jq -r '.bg_volume // 40' "$current_file" 2>/dev/null)" $default_bg_volume)
+    if [[ -n $category ]]; then
+      count=$(jq -r --arg c "$category" '[.categories[] | select(.id==$c) | .stations | length][0] // 0' "$stations_file" 2>/dev/null)
+      index=$(jq -r --arg c "$category" --arg s "$station" '[.categories[] | select(.id==$c) | .stations | map(.id) | index($s)][0] // 0' "$stations_file" 2>/dev/null)
+    fi
+  fi
+
+  station=$(default_station)
+  name=$(station_field "$station" name)
+  main_volume=$(int_or "$(settings_get mainVolume)" $default_main_volume)
+  bg_volume=$(int_or "$(settings_get bgVolume)" $default_bg_volume)
+  bg_station=$(settings_get bgStation)
+  mix=$(settings_get mix)
+  [[ $mix == true ]] || mix=false
+  if [[ $mix == true && -n $bg_station ]]; then
+    bg_name=$(station_field "$bg_station" name)
+  fi
+  alive "$bg_pid_file" && bg_running=true
+
+  alive "$main_pid_file" && main_title=$(get_prop "$main_sock" media-title || true)
+  alive "$bg_pid_file" && bg_title=$(get_prop "$bg_sock" media-title || true)
+
+  count=$(int_or "$count" 0)
+  index=$(int_or "$index" 0)
+
+  local tmp="$status_file.tmp"
+  jq -n \
+    --argjson running "$running" --argjson paused "$paused" \
+    --arg station "$station" --arg name "$name" \
+    --arg category "$category" --arg category_name "$category_name_v" --arg url "$url" \
+    --argjson main_volume "$main_volume" --argjson bg_volume "$bg_volume" \
+    --arg bg_station "$bg_station" --arg bg_name "$bg_name" --argjson bg_running "$bg_running" \
+    --argjson mix "$mix" \
+    --argjson index "$index" --argjson count "$count" \
+    --arg main_title "${main_title:-}" --arg bg_title "${bg_title:-}" \
+    '{running:$running,paused:$paused,station:$station,name:$name,
+      category:$category,category_name:$category_name,url:$url,
+      main_volume:$main_volume,bg_volume:$bg_volume,
+      bg_station:$bg_station,bg_name:$bg_name,bg_running:$bg_running,mix:$mix,
+      index:$index,count:$count,main_title:$main_title,bg_title:$bg_title}' > "$tmp" 2>/dev/null \
+    && mv "$tmp" "$status_file"
+}
+
+# ---- stream lifecycle -------------------------------------------------
+stop_stream() { # <pidfile> <sock>
+  if alive "$1"; then
+    ipc "$2" '{"command":["quit"]}' >/dev/null 2>&1
+    local pid
+    read -r pid < "$1"
+    kill "$pid" 2>/dev/null
+  fi
+  rm -f "$1" "$2"
+}
+
+stop_streams() {
+  stop_stream "$main_pid_file" "$main_sock"
+  stop_stream "$bg_pid_file" "$bg_sock"
+}
+
+stop_all() {
+  stop_streams
+  stop_mpris
+  rm -f "$paused_file"
+  write_status
+}
+
+maybe_start_bg() {
+  local mix bgid bgj url bv
+  mix=$(settings_get mix)
+  [[ $mix == true ]] || return 0
+  bgid=$(settings_get bgStation)
+  [[ -n $bgid && $(category_of_station "$bgid") != lofi ]] || return 0
+  bgj=$(station_json "$bgid")
+  [[ -n $bgj ]] || return 0
+  url=$(jq -r '.url' <<< "$bgj")
+  if [[ $(jq -r '.kind // "stream"' <<< "$bgj") == podcast ]]; then
+    url=$(python3 "$script_dir/lofi-feed" "$url" "$runtime_dir/$(printf %s "$bgid" | sha256sum | cut -c1-16).m3u") || return 1
+  fi
+  bv=$(int_or "$(settings_get bgVolume)" $default_bg_volume)
+  stop_stream "$bg_pid_file" "$bg_sock"
+  mpv_start "$bg_sock" "$bv" "$url" "$bg_pid_file" "$log_dir/bg.log"
+}
+
+start_main() {
+  local id="${1:-}"
+  local sj
+  sj=$(station_json "$id")
+  if [[ -z $sj || $(category_of_station "$id") != lofi ]]; then
+    echo "unknown station: $id (edit stations.json)" >&2
+    exit 1
+  fi
+
+  local name url cat cname mv bv
+  name=$(jq -r '.name' <<< "$sj")
+  url=$(jq -r '.url' <<< "$sj")
+  cat=$(category_of_station "$id")
+  cname=$(category_name "$cat")
+
+  stop_stream "$main_pid_file" "$main_sock"
+  rm -f "$paused_file"
+
+  mv=$(int_or "$(settings_get mainVolume)" $default_main_volume)
+  bv=$(int_or "$(settings_get bgVolume)" $default_bg_volume)
+
+  jq -n --arg station "$id" --arg name "$name" \
+    --arg category "$cat" --arg category_name "$cname" --arg url "$url" \
+    --argjson main_volume "$mv" --argjson bg_volume "$bv" \
+    '{station:$station,name:$name,category:$category,category_name:$category_name,
+      url:$url,main_volume:$main_volume,bg_volume:$bg_volume}' > "$current_file"
+
+  mpv_start "$main_sock" "$mv" "$url" "$main_pid_file" "$log_dir/main.log"
+
+  # Remember the last played station so left click replays it.
+  settings_set defaultStation "$(jq -nc --arg v "$id" '$v')"
+
+  if ! alive "$bg_pid_file"; then maybe_start_bg; else set_prop "$bg_sock" pause false; fi
+  start_mpris
+
+  write_status
+}
+
+step_station() { # +1 / -1
+  local dir=$1 id cat stations count idx nextid
+  [[ -s $current_file ]] || { write_status; return 0; }
+  id=$(jq -r '.station' "$current_file")
+  cat=$(jq -r '.category // ""' "$current_file")
+  [[ -n $cat ]] || cat=$(category_of_station "$id")
+  stations=$(category_stations "$cat")
+  count=$(jq 'length' <<< "$stations" 2>/dev/null)
+  count=$(int_or "$count" 0)
+  (( count > 0 )) || { write_status; return 0; }
+  idx=$(jq -r --arg id "$id" '[.[] | .id] | index($id) // 0' <<< "$stations")
+  idx=$(int_or "$idx" 0)
+  idx=$(( (idx + dir + count) % count ))
+  nextid=$(jq -r --argjson i "$idx" '.[$i].id' <<< "$stations")
+  start_main "$nextid"
+}
+
+set_pause() { # <true|false>
+  local state=$1
+  if ! alive "$main_pid_file"; then
+    rm -f "$paused_file"
+    write_status
+    return
+  fi
+  for sock in "$main_sock" "$bg_sock"; do
+    [[ -S $sock ]] && set_prop "$sock" pause "$state"
+  done
+  if [[ $state == true ]]; then
+    touch "$paused_file"
+  else
+    rm -f "$paused_file"
+  fi
+  write_status
+}
+
+set_volume() { # <main|bg> <0-100>
+  local which=$1 value=$2
+  [[ $value =~ ^[0-9]{1,3}$ ]] || { echo "volume must be 0-100" >&2; exit 1; }
+  [[ $which == main || $which == bg ]] || exit 2
+  value=$((10#$value))
+  (( value > 100 )) && value=100
+
+  if [[ $which == bg ]]; then
+    [[ -S $bg_sock ]] && set_prop "$bg_sock" volume "$value"
+    settings_set bgVolume "$value"
+    if [[ -s $current_file ]]; then
+      jq --argjson v "$value" '.bg_volume=$v' "$current_file" > "$current_file.tmp" \
+        && mv "$current_file.tmp" "$current_file"
+    fi
+  else
+    [[ -S $main_sock ]] && set_prop "$main_sock" volume "$value"
+    settings_set mainVolume "$value"
+    if [[ -s $current_file ]]; then
+      jq --argjson v "$value" '.main_volume=$v' "$current_file" > "$current_file.tmp" \
+        && mv "$current_file.tmp" "$current_file"
+    fi
+  fi
+  write_status
+}
+
+set_mix() { # on|off|toggle
+  local state=$1
+  case "$state" in
+    on|true) settings_set mix true ;;
+    off|false) settings_set mix false ;;
+    toggle)
+      if [[ $(settings_get mix) == true ]]; then settings_set mix false
+      else settings_set mix true; fi ;;
+    *) echo "mix takes on|off|toggle" >&2; exit 2 ;;
+  esac
+
+  if [[ $(settings_get mix) == true ]] && alive "$main_pid_file"; then
+    maybe_start_bg
+    [[ -f $paused_file && -S $bg_sock ]] && set_prop "$bg_sock" pause true
+  else
+    stop_stream "$bg_pid_file" "$bg_sock"
+  fi
+  write_status
+}
+
+set_bg() { # <station-id|off>
+  local id=$1
+  if [[ $id == off || -z $id ]]; then
+    settings_set bgStation '""'
+    settings_set mix false
+    stop_stream "$bg_pid_file" "$bg_sock"
+  else
+    if [[ -z $(station_json "$id") || $(category_of_station "$id") == lofi ]]; then
+      echo "unknown station: $id (edit stations.json)" >&2
+      exit 1
+    fi
+    settings_set bgStation "$(jq -nc --arg v "$id" '$v')"
+    settings_set mix true
+    if alive "$main_pid_file"; then maybe_start_bg; fi
+  fi
+  [[ -f $paused_file && -S $bg_sock ]] && set_prop "$bg_sock" pause true
+  write_status
+}
+
+case "${1:-status}" in
+  play)
+    if [[ -n ${2:-} ]]; then
+      start_main "$2"
+    elif [[ -f $paused_file ]]; then
+      set_pause false
+    elif alive "$main_pid_file"; then
+      write_status
+    else
+      start_main "$(default_station)"
+    fi
+    ;;
+  start|station)
+    start_main "${2:?usage: lofi-player start <station-id>}"
+    ;;
+  stop)
+    stop_all
+    ;;
+  pause)
+    set_pause true
+    ;;
+  resume)
+    if alive "$main_pid_file"; then set_pause false; else start_main "$(default_station)"; fi
+    ;;
+  toggle)
+    if ! alive "$main_pid_file"; then start_main "$(default_station)"; elif [[ -f $paused_file ]]; then set_pause false; else set_pause true; fi
+    ;;
+  next|skip)
+    step_station 1
+    ;;
+  prev|previous)
+    step_station -1
+    ;;
+  vol|volume)
+    set_volume "${2:?main|bg}" "${3:?0-100}"
+    ;;
+  bg|background)
+    set_bg "${2:?station-id|off}"
+    ;;
+  mix)
+    set_mix "${2:-toggle}"
+    ;;
+  default)
+    if [[ -z $(station_json "${2:-}") || $(category_of_station "${2:-}") != lofi ]]; then
+      echo "unknown station: $2 (edit stations.json)" >&2
+      exit 1
+    fi
+    settings_set defaultStation "$(jq -nc --arg v "$2" '$v')"
+    write_status
+    ;;
+  status)
+    write_status
+    cat "$status_file" 2>/dev/null
+    ;;
+  *)
+    echo "usage: lofi-player {play [station-id]|start <id>|stop|pause|resume|toggle|next|prev|vol main|bg <0-100>|bg <id|off>|mix <on|off|toggle>|default <id>|status}" >&2
+    exit 2
+    ;;
+esac

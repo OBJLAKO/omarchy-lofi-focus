@@ -1,0 +1,184 @@
+{
+  "_help": "Add or edit stations here. Each station needs id, name, and a direct stream url playable by mpv (mp3/aac/ogg, or a YouTube link). Changes hot-reload into the panel.",
+  "_defaultStation": "lofi-groove-salad",
+  "categories": [
+    {
+      "id": "lofi",
+      "name": "Lofi & Chill",
+      "icon": "\uf001",
+      "stations": [
+        {
+          "id": "lofi-groove-salad",
+          "name": "Groove Salad",
+          "description": "SomaFM \u00b7 downtempo & ambient",
+          "url": "https://ice1.somafm.com/groovesalad-128-mp3"
+        },
+        {
+          "id": "lofi-lush",
+          "name": "Lush",
+          "description": "SomaFM \u00b7 dreamy vocals & beats",
+          "url": "https://ice1.somafm.com/lush-128-mp3"
+        },
+        {
+          "id": "lofi-beat-blender",
+          "name": "Beat Blender",
+          "description": "SomaFM \u00b7 late-night downtempo",
+          "url": "https://ice1.somafm.com/beatblender-128-mp3"
+        },
+        {
+          "id": "lofi-fluid",
+          "name": "Fluid",
+          "description": "SomaFM \u00b7 instrumental hip-hop",
+          "url": "https://ice1.somafm.com/fluid-128-mp3"
+        },
+        {
+          "id": "lofi-drone-zone",
+          "name": "Drone Zone",
+          "description": "SomaFM \u00b7 atmospheric textures",
+          "url": "https://ice1.somafm.com/dronezone-128-mp3"
+        },
+        {
+          "id": "lofi-space-station",
+          "name": "Space Station Soma",
+          "description": "SomaFM \u00b7 spaced-out ambient",
+          "url": "https://ice1.somafm.com/spacestation-128-mp3"
+        },
+        {
+          "id": "lofi-deep-space-one",
+          "name": "Deep Space One",
+          "description": "SomaFM \u00b7 deep ambient",
+          "url": "https://ice1.somafm.com/deepspaceone-128-mp3"
+        }
+      ]
+    },
+    {
+      "id": "podcasts",
+      "name": "Developer conversations",
+      "stations": [
+        {
+          "id": "voice-changelog",
+          "name": "The Changelog",
+          "description": "Software & open source \u00b7 latest interviews \u00b7 English",
+          "kind": "podcast",
+          "url": "https://changelog.com/podcast/feed"
+        }
+      ]
+    },
+    {
+      "id": "talk",
+      "name": "Talk & News",
+      "icon": "\uf130",
+      "stations": [
+        {
+          "id": "talk-bbc-world",
+          "name": "BBC World Service",
+          "description": "International news \u00b7 English",
+          "url": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"
+        },
+        {
+          "id": "talk-npr",
+          "name": "NPR",
+          "description": "US public radio \u00b7 news & talk",
+          "url": "https://npr-ice.streamguys1.com/live.mp3"
+        },
+        {
+          "id": "talk-wnyc",
+          "name": "WNYC 93.9 FM",
+          "description": "New York public radio",
+          "url": "https://fm939.wnyc.org/wnycfm"
+        },
+        {
+          "id": "talk-wgbh",
+          "name": "WGBH Boston",
+          "description": "Boston public radio",
+          "url": "https://wgbh-live.streamguys1.com/wgbh"
+        },
+        {
+          "id": "talk-lbc-uk",
+          "name": "LBC UK",
+          "description": "London talk radio",
+          "url": "https://media-ice.musicradio.com/LBCUKMP3"
+        },
+        {
+          "id": "talk-france-inter",
+          "name": "France Inter",
+          "description": "French talk radio",
+          "url": "https://icecast.radiofrance.fr/franceinter-midfi.mp3"
+        }
+      ]
+    },
+    {
+      "id": "atc",
+      "name": "Air Traffic (ATC)",
+      "icon": "\uf072",
+      "stations": [
+        {
+          "id": "atc-kjfk-twr",
+          "name": "KJFK Tower",
+          "description": "New York JFK \u00b7 tower",
+          "url": "http://d.liveatc.net/kjfk_twr"
+        },
+        {
+          "id": "atc-kjfk-gnd",
+          "name": "KJFK Ground",
+          "description": "New York JFK \u00b7 ground",
+          "url": "http://d.liveatc.net/kjfk_gnd"
+        },
+        {
+          "id": "atc-klax-twr",
+          "name": "KLAX Tower",
+          "description": "Los Angeles \u00b7 tower",
+          "url": "http://d.liveatc.net/klax_twr"
+        },
+        {
+          "id": "atc-klax-gnd",
+          "name": "KLAX Ground",
+          "description": "Los Angeles \u00b7 ground",
+          "url": "http://d.liveatc.net/klax_gnd"
+        },
+        {
+          "id": "atc-ksfo-twr",
+          "name": "KSFO Tower",
+          "description": "San Francisco \u00b7 tower",
+          "url": "http://d.liveatc.net/ksfo_twr"
+        },
+        {
+          "id": "atc-katl-twr",
+          "name": "KATL Tower",
+          "description": "Atlanta \u00b7 tower",
+          "url": "http://d.liveatc.net/katl_twr"
+        },
+        {
+          "id": "atc-kewr-twr",
+          "name": "KEWR Tower",
+          "description": "Newark \u00b7 tower",
+          "url": "http://d.liveatc.net/kewr_twr"
+        },
+        {
+          "id": "atc-klga-twr",
+          "name": "KLGA Tower",
+          "description": "New York LaGuardia \u00b7 tower",
+          "url": "http://d.liveatc.net/klga_twr"
+        },
+        {
+          "id": "atc-rjtt-twr",
+          "name": "RJTT Tokyo Tower",
+          "description": "Tokyo Haneda \u00b7 tower",
+          "url": "http://d.liveatc.net/rjtt_twr"
+        },
+        {
+          "id": "atc-rjtt-app",
+          "name": "RJTT Tokyo Approach",
+          "description": "Tokyo Haneda \u00b7 approach",
+          "url": "http://d.liveatc.net/rjtt_app"
+        },
+        {
+          "id": "atc-rjtt-gnd",
+          "name": "RJTT Tokyo Ground",
+          "description": "Tokyo Haneda \u00b7 ground",
+          "url": "http://d.liveatc.net/rjtt_gnd"
+        }
+      ]
+    }
+  ]
+}
