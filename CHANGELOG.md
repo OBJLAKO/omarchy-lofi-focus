@@ -1,5 +1,6 @@
 # Unreleased
 
+- Scroll the bar widget to adjust Master volume, preserving all channel balances.
 - Add I Love Chillhop and FluxFM Chillhop before the SomaFM stations.
 - Default new installations to I Love Chillhop; preserve existing choices.
 

@@ -30,7 +30,7 @@ omarchy plugin update sky.lofi
 - **Left click:** start your remembered selection, or pause/resume every channel.
 - **Right click:** choose music, voice and nature; adjust volume and VoxType ducking.
 - **Middle click:** next music station.
-- **Scroll:** adjust music volume.
+- **Scroll:** adjust Master volume for music, voice and nature together (5% per step).
 - **Media keys:** control playback through MPRIS.
 
 Switching music leaves the voice and nature sound playing. Settings live outside

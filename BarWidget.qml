@@ -9,7 +9,7 @@ import qs.Ui
 //                  paused -> resume)
 //   Right click  - open the listening / settings panel
 //   Middle click - next station in the current category
-//   Wheel        - trim the main volume
+//   Wheel        - adjust master volume for all channels
 BarWidget {
   id: root
   moduleName: "sky.lofi"
@@ -21,10 +21,10 @@ BarWidget {
   property string categoryName: ""
   property string bgName: ""
   property bool mixOn: false
-  property int mainVolume: 80
+  property int masterVolume: 100
   property int bgVolume: 40
   property bool statusReady: false
-  property int pendingMainVolume: -1
+  property int pendingMasterVolume: -1
   property var actionQueue: []
 
   readonly property string playerPath: Qt.resolvedUrl("lofi-player").toString().replace(/^file:\/\//, "")
@@ -74,7 +74,7 @@ BarWidget {
       root.categoryName = root.singleLineText(state.category_name || "", 60)
       root.bgName = root.singleLineText(state.bg_name || "", 120)
       root.mixOn = state.mix === true
-      root.mainVolume = Math.max(0, Math.min(100, Math.round(Number(state.main_volume === undefined ? 80 : state.main_volume)) || 0))
+      if (!volumeProcess.running && root.pendingMasterVolume < 0) root.masterVolume = Math.max(0, Math.min(100, Math.round(Number(state.master_volume === undefined ? 100 : state.master_volume)) || 0))
       root.bgVolume = Math.max(0, Math.min(100, Math.round(Number(state.bg_volume === undefined ? 40 : state.bg_volume)) || 0))
     } catch (error) {
       return
@@ -87,20 +87,21 @@ BarWidget {
     actionProcess.running = true
   }
 
-  function setMainVolume(value) {
-    root.mainVolume = Math.max(0, Math.min(100, Math.round(value)))
-    root.pendingMainVolume = root.mainVolume
+  function setMasterVolume(value) {
+    root.masterVolume = Math.max(0, Math.min(100, Math.round(value)))
+    root.pendingMasterVolume = root.masterVolume
     root.flushVolume()
   }
 
-  function changeMainVolume(delta) {
-    root.setMainVolume(root.mainVolume + (delta > 0 ? 5 : -5))
+  function changeMasterVolume(delta) {
+    if (delta === 0) return
+    root.setMasterVolume(root.masterVolume + (delta > 0 ? 5 : -5))
   }
 
   function flushVolume() {
-    if (volumeProcess.running || root.pendingMainVolume < 0) return
-    volumeProcess.command = [root.playerPath, "vol", "main", String(root.pendingMainVolume)]
-    root.pendingMainVolume = -1
+    if (volumeProcess.running || root.pendingMasterVolume < 0) return
+    volumeProcess.command = [root.playerPath, "vol", "master", String(root.pendingMasterVolume)]
+    root.pendingMasterVolume = -1
     volumeProcess.running = true
   }
 
@@ -234,7 +235,7 @@ BarWidget {
     }
 
     onWheelMoved: function(delta) {
-      root.changeMainVolume(delta)
+      root.changeMasterVolume(delta)
     }
   }
 }
