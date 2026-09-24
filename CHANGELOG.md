@@ -1,4 +1,4 @@
-# Unreleased
+# 1.0.3
 
 - Keep playback state, pause/resume and volume control working when the music stream exits but voice or nature audio remains.
 - Show a disconnected music stream with an explicit reconnect action.
