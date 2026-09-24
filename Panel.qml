@@ -157,11 +157,57 @@ Panel {
 
   Component {
     id: heroIcon
-    Text {
-      text: "\uf0f4"
-      color: root.isPlaying ? Color.urgent : root.contentForeground
-      font.family: root.contentFontFamily
-      font.pixelSize: Style.font.display
+    Item {
+      implicitWidth: Style.space(40)
+      implicitHeight: Style.space(40)
+      width: implicitWidth
+      height: implicitHeight
+
+      Canvas {
+        id: cupCanvas
+        anchors.fill: parent
+        property color ink: root.isPlaying ? Color.urgent : root.contentForeground
+        property real steamPhase: 0
+        onInkChanged: requestPaint()
+        onSteamPhaseChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        NumberAnimation on steamPhase {
+          from: 0
+          to: 1
+          duration: 2800
+          loops: Animation.Infinite
+          running: root.opened
+        }
+        onPaint: {
+          var c = getContext("2d")
+          c.reset()
+          c.scale(width / 40, height / 40)
+          c.strokeStyle = ink
+          c.lineWidth = 1.8
+          c.lineCap = "round"
+          c.lineJoin = "round"
+          // The cup stays still; only the three steam wisps rise and fade.
+          c.beginPath()
+          c.moveTo(7, 18); c.lineTo(28, 18); c.lineTo(28, 27)
+          c.quadraticCurveTo(28, 33, 22, 33); c.lineTo(13, 33)
+          c.quadraticCurveTo(7, 33, 7, 27); c.closePath(); c.stroke()
+          c.beginPath(); c.moveTo(28, 20); c.lineTo(31, 20)
+          c.bezierCurveTo(39, 20, 39, 29, 28, 28); c.stroke()
+          c.beginPath(); c.moveTo(5, 37); c.lineTo(33, 37); c.stroke()
+          for (var i = 0; i < 3; i++) {
+            var phase = (steamPhase + i / 3) % 1
+            var x = 12 + i * 6
+            var y = 16 - phase * 8
+            var sway = Math.sin(phase * Math.PI * 2) * 1.8
+            c.globalAlpha = Math.sin(phase * Math.PI) * 0.7
+            c.beginPath(); c.moveTo(x, y)
+            c.bezierCurveTo(x - 3 + sway, y - 2, x + 3 + sway, y - 4, x, y - 7)
+            c.stroke()
+          }
+          c.globalAlpha = 1
+        }
+      }
     }
   }
 
