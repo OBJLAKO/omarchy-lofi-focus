@@ -45,7 +45,7 @@ class Ducker:
             for id, layer in layers.items():
                 if not id.startswith('noise-') or not all(c.isalnum() or c == '-' for c in id):
                     continue
-                channels.append(('nature-' + id, float(layer.get('volume', 100)) * float(settings.get('natureVolume', 25)) / 100))
+                channels.append(('nature-' + id, float(layer.get('volume', 25)) if settings.get('natureMixVersion') == 2 else float(layer.get('volume', 100)) * float(settings.get('natureVolume', 25)) / 100))
         else:
             channels.append(('noise', settings.get('noiseVolume', 25)))
         for channel, base_volume in channels:

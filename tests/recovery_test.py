@@ -52,7 +52,6 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.action('play')
         self.action('nature', 'noise-rain', 'on')
         self.action('nature', 'noise-wind', 'on')
-        self.action('vol', 'nature', '40')
         self.action('vol', 'noise-rain', '50')
         self.action('vol', 'noise-wind', '80')
         self.action('vol', 'master', '50')
@@ -68,8 +67,8 @@ class RecoveryIntegrationTest(unittest.TestCase):
             self.assertFalse(self.prop(channel, 'pause'))
         self.wait_volume('main', 32.5)
         self.wait_volume('bg', 10)
-        self.wait_volume('nature-noise-rain', 10)
-        self.wait_volume('nature-noise-wind', 16)
+        self.wait_volume('nature-noise-rain', 25)
+        self.wait_volume('nature-noise-wind', 40)
 
     def test_pause_cancels_retry_even_without_other_channels(self):
         self.action('bg', 'off')
@@ -120,13 +119,12 @@ class RecoveryIntegrationTest(unittest.TestCase):
         (vox/'pid').write_text(str(os.getpid()))
         (vox/'state').write_text('idle')
         self.action('play')
-        self.action('vol', 'nature', '40')
         self.action('vol', 'noise-rain', '50')
         self.action('vol', 'noise-wind', '80')
         self.action('nature', 'noise-rain', 'on')
         self.action('nature', 'noise-wind', 'on')
         self.action('vol', 'master', '50')
-        levels = {'main': 32.5, 'bg': 10, 'nature-noise-rain': 10, 'nature-noise-wind': 16}
+        levels = {'main': 32.5, 'bg': 10, 'nature-noise-rain': 25, 'nature-noise-wind': 40}
         for channel, expected in levels.items():
             self.wait_volume(channel, expected)
         (vox/'state').write_text('recording')
@@ -138,7 +136,7 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.action('nature', 'noise-rain', 'off')
         self.action('vol', 'master', '50')
         (vox/'state').write_text('idle')
-        self.wait_volume('nature-noise-wind', 16)
+        self.wait_volume('nature-noise-wind', 40)
         self.action('stop')
         self.action('play')
         layers = {entry['id']: entry for entry in self.status()['nature_layers']}
@@ -147,7 +145,7 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.assertTrue(layers['noise-wind']['running'])
         self.assertEqual(layers['noise-rain']['volume'], 50)
         self.assertEqual(layers['noise-wind']['volume'], 80)
-        self.wait_volume('nature-noise-wind', 16)
+        self.wait_volume('nature-noise-wind', 40)
 
     def test_slow_podcast_fetch_does_not_block_pause_or_stop(self):
         catalog_path = self.plugin/'stations.json'
@@ -190,19 +188,76 @@ class RecoveryIntegrationTest(unittest.TestCase):
         path.write_text(json.dumps({'noiseStation': 'noise-rain', 'noiseVolume': 37,
                                     'mainVolume': 44, 'masterVolume': 60, 'mix': False}))
         state = self.status()
-        self.assertEqual(state['nature_volume'], 37)
         self.assertEqual(state['main_volume'], 44)
         layers = {entry['id']: entry for entry in state['nature_layers']}
         self.assertTrue(layers['noise-rain']['enabled'])
-        self.assertEqual(layers['noise-rain']['volume'], 100)
+        self.assertEqual(layers['noise-rain']['volume'], 37)
         self.action('play')
         self.wait_volume('nature-noise-rain', 22.2)
         self.action('nature', 'noise-rain', 'off')
         self.action('stop')
         self.action('play')
         self.assertFalse(self.status()['noise_running'])
-        # The legacy value remains in old settings; it must never re-enable rain.
-        self.assertEqual(json.loads(path.read_text())['noiseStation'], 'noise-rain')
+        # Opening again must never re-enable rain or multiply its volume twice.
+        saved = json.loads(path.read_text())
+        self.assertEqual(saved['natureMixVersion'], 2)
+        self.assertEqual(saved['natureLayers']['noise-rain']['volume'], 37)
+        self.assertFalse(saved['natureLayers']['noise-rain']['enabled'])
+
+
+    def test_layered_settings_migrate_without_changing_active_or_saved_loudness(self):
+        path = self.base/'state/sky.lofi/settings.json'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({
+            'natureVolume': 47, 'masterVolume': 60, 'mix': False,
+            'natureLayers': {
+                'noise-rain': {'enabled': True, 'volume': 100},
+                'noise-wind': {'enabled': False, 'volume': 70},
+                'noise-birds': {'enabled': True, 'volume': 0},
+            },
+        }))
+        self.action('play')
+        layers = {entry['id']: entry for entry in self.status()['nature_layers']}
+        self.assertEqual(layers['noise-rain']['volume'], 47)
+        self.assertAlmostEqual(layers['noise-wind']['volume'], 32.9)
+        self.assertFalse(layers['noise-wind']['enabled'])
+        self.assertEqual(layers['noise-birds']['volume'], 0)
+        self.wait_volume('nature-noise-rain', 28.2)
+        self.wait_volume('nature-noise-birds', 0)
+        self.action('nature', 'noise-wind', 'on')
+        self.wait_volume('nature-noise-wind', 19.74)
+        # Repeated reads/restarts cannot bake the removed group multiplier in again.
+        self.status()
+        self.action('stop')
+        self.action('play')
+        self.wait_volume('nature-noise-rain', 28.2)
+        self.wait_volume('nature-noise-wind', 19.74)
+        saved = json.loads(path.read_text())
+        self.assertEqual(saved['natureMixVersion'], 2)
+        self.assertAlmostEqual(saved['natureLayers']['noise-wind']['volume'], 32.9)
+        # A direct slider reaches the requested level without the old 47% ceiling.
+        self.action('vol', 'noise-rain', '90')
+        self.wait_volume('nature-noise-rain', 54)
+        self.wait_volume('nature-noise-wind', 19.74)
+        self.action('nature', 'noise-storm', 'on')
+        self.wait_volume('nature-noise-storm', 15)
+
+    def test_legacy_nature_volume_command_sets_only_enabled_layers_directly(self):
+        self.action('vol', 'noise-birds', '72')
+        self.action('nature', 'noise-rain', 'on')
+        self.action('nature', 'noise-wind', 'on')
+        self.action('play')
+        self.action('vol', 'nature', '30')
+        self.wait_volume('nature-noise-rain', 30)
+        self.wait_volume('nature-noise-wind', 30)
+        layers = {entry['id']: entry for entry in self.status()['nature_layers']}
+        self.assertEqual(layers['noise-birds']['volume'], 72)
+        self.assertFalse(layers['noise-birds']['enabled'])
+        self.action('vol', 'noise-rain', '80')
+        self.wait_volume('nature-noise-rain', 80)
+        self.wait_volume('nature-noise-wind', 30)
+        self.action('nature', 'noise-birds', 'on')
+        self.wait_volume('nature-noise-birds', 72)
 
 
 class RecoveryScheduleTest(unittest.TestCase):
@@ -320,13 +375,14 @@ class RecoveryScheduleTest(unittest.TestCase):
         self.assertEqual(self.player.spawn.call_args.args[1], 'https://example.invalid/updated-stream')
 
     def test_explicit_empty_layers_do_not_migrate_legacy_selection_again(self):
+        self.player.settings.pop('natureMixVersion', None)
         self.player.settings.update(noiseStation='noise-rain', noiseVolume=80,
                                     natureLayers={}, natureVolume=31)
         self.player.save()
         self.player.release()
         self.player.acquire()
         self.assertEqual(self.player.settings['natureLayers'], {})
-        self.assertEqual(self.player.settings['natureVolume'], 31)
+        self.assertEqual(self.player.settings['natureMixVersion'], 2)
 
 
 if __name__ == '__main__':

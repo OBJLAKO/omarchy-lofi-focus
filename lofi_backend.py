@@ -105,6 +105,12 @@ class Player:
             self.settings['natureVolume'] = self.settings.get('noiseVolume', 25)
             self.settings['natureLayers'] = {old: {'enabled': True, 'volume': 100}} if old in self.nature else {}
         self.settings.setdefault('natureVolume', 25)
+        if self.settings.get('natureMixVersion') != 2:
+            gain = level(self.settings['natureVolume'], 25) / 100
+            for layer in self.settings['natureLayers'].values():
+                layer['volume'] = round(level(layer.get('volume', 100)) * gain, 6)
+            self.settings['natureMixVersion'] = 2
+            self.settings['natureVolume'] = 100  # Legacy CLI field; audio uses direct layer levels.
         self.session = read_json(self.runtime/'session.json', {})
         if not self.session:
             active = any(self.alive(c) for c in self.channels(include_legacy=True))
@@ -216,7 +222,7 @@ class Player:
         entry = self.settings['natureLayers'].get(id, {})
         if not entry.get('enabled'):
             return
-        volume = level(entry.get('volume', 100)) * level(self.settings['natureVolume'], 25) / 100
+        volume = level(entry.get('volume', 25))
         self.spawn('nature-' + id, ROOT/self.stations[id]['url'], self.effective(volume),
                    loop=True, paused=self.session['mode'] == 'paused')
 
@@ -339,7 +345,7 @@ class Player:
         for sound in self.nature:
             config = self.settings['natureLayers'].get(sound, {})
             layers.append(dict(id=sound, name=self.stations[sound]['name'],
-                               enabled=bool(config.get('enabled')), volume=level(config.get('volume', 100)),
+                               enabled=bool(config.get('enabled')), volume=level(config.get('volume', 25)),
                                running=self.alive('nature-' + sound)))
         selected = [s['id'] for s in layers if s['enabled']]
         state = dict(running=mode != 'stopped', paused=mode == 'paused', main_running=main_alive,
@@ -381,7 +387,12 @@ class Player:
                 raise ValueError('Volume must be 0-100')
             keys = {'main': 'mainVolume', 'bg': 'bgVolume', 'master': 'masterVolume',
                     'nature': 'natureVolume', 'noise': 'natureVolume'}
-            if channel in keys:
+            if channel in ('nature', 'noise'):
+                # Legacy CLI shortcut: set each selected sound to this direct level.
+                for layer in self.settings['natureLayers'].values():
+                    if layer.get('enabled'):
+                        layer['volume'] = value
+            elif channel in keys:
                 self.settings[keys[channel]] = value
             else:
                 self.require_station(channel, 'ambience')
@@ -412,7 +423,7 @@ class Player:
             self.require_station(id, 'ambience')
             if choice not in ('on', 'off', 'toggle'):
                 raise ValueError('nature takes on/off/toggle')
-            layer = self.settings['natureLayers'].setdefault(id, {'volume': 100, 'enabled': False})
+            layer = self.settings['natureLayers'].setdefault(id, {'volume': 25, 'enabled': False})
             layer['enabled'] = not layer['enabled'] if choice == 'toggle' else choice == 'on'
             if layer['enabled'] and self.session['mode'] != 'stopped':
                 if not self.alive('nature-' + id):
@@ -425,7 +436,7 @@ class Player:
             if id != 'off':
                 self.require_station(id, 'ambience')
             for sound in self.nature:
-                self.settings['natureLayers'].setdefault(sound, {'volume': 100})['enabled'] = sound == id
+                self.settings['natureLayers'].setdefault(sound, {'volume': 25})['enabled'] = sound == id
                 self.stop_channel('nature-' + sound)
             if id != 'off' and self.session['mode'] != 'stopped':
                 self.start_nature(id)

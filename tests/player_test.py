@@ -112,6 +112,8 @@ class PlayerTest(unittest.TestCase):
         self.assertAlmostEqual(self.prop('main', 'volume'), 32.5)
         self.assertAlmostEqual(self.prop('bg', 'volume'), 10)
         self.assertAlmostEqual(self.prop('noise', 'volume'), 15)
+        layers = {entry['id']: entry for entry in self.status()['nature_layers']}
+        self.assertEqual(layers['noise-rain']['volume'], 30)
         noise = self.pid('noise')
         self.action('start', 'lofi-fluid')
         self.assertEqual(self.pid('noise'), noise)
