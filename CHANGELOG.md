@@ -1,4 +1,4 @@
-# Unreleased
+# 1.0.1
 
 - Scroll the bar widget to adjust Master volume, preserving all channel balances.
 - Remove I Love Chillhop and FluxFM Chillhop after reported advertising interruptions.
