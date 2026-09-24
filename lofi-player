@@ -63,6 +63,21 @@ alive() {
   [[ $cmdline == *"$sockets_dir/"* || $cmdline == *"lofi-mpris"* || $cmdline == *"lofi_duck.py --watch"* ]]
 }
 
+any_stream_alive() {
+  alive "$main_pid_file" || alive "$bg_pid_file" || alive "$noise_pid_file"
+}
+
+all_streams_paused() {
+  local channel found=false
+  for channel in main bg noise; do
+    if alive "$runtime_dir/$channel.pid"; then
+      found=true
+      [[ $(get_prop "$sockets_dir/$channel.sock" pause) == true ]] || return 1
+    fi
+  done
+  [[ $found == true ]]
+}
+
 ipc() {
   local sock=$1 payload=$2
   python3 "$script_dir/lofi-ipc" "$sock" "$payload"
@@ -90,11 +105,12 @@ int_or() {
 mpv_start() { # mpv_start <sock> <volume> <url> <pidfile> <logfile>
   local sock=$1 volume=$2 url=$3 pidfile=$4 logfile=$5
   volume=$(python3 "$script_dir/lofi_duck.py" "$volume")
-  nohup mpv --no-config --no-video --no-terminal --really-quiet \
+  [[ ! -f $logfile ]] || mv -f "$logfile" "$logfile.previous"
+  nohup mpv --no-config --no-video --no-terminal --log-file="$logfile" \
     --audio-display=no --load-scripts=no --volume="$volume" \
     --input-ipc-server="$sock" \
     --user-agent='sky.lofi/1.0 (mpv)' \
-    ${6:+--loop-file=inf} "$url" 9>&- </dev/null >>"$logfile" 2>&1 &
+    ${6:+--loop-file=inf} "$url" 9>&- </dev/null >/dev/null 2>&1 &
   echo $! > "$pidfile"
   for ((attempt=0; attempt<30; attempt++)); do
     [[ -S $sock ]] && break
@@ -188,8 +204,8 @@ start_noise() {
 
 # ---- status -----------------------------------------------------------
 write_status() {
-  if alive "$main_pid_file"; then start_volume_worker; start_mpris; fi
-  local running=false paused=false
+  if any_stream_alive; then start_volume_worker; start_mpris; fi
+  local running=false paused=false main_running=false
   local noise_station noise_volume noise_running=false
   noise_station=$(settings_get noiseStation)
   noise_volume=$(int_or "$(settings_get noiseVolume)" 25)
@@ -203,8 +219,9 @@ write_status() {
   local bg_station="" bg_name="" bg_running=false mix=false
   local index=0 count=0 main_title="" bg_title=""
 
-  if alive "$main_pid_file"; then running=true; fi
-  [[ $running == true && -f $paused_file ]] && paused=true
+  alive "$main_pid_file" && main_running=true
+  any_stream_alive && running=true
+  all_streams_paused && paused=true
 
   if [[ -s $current_file ]]; then
     station=$(jq -r '.station // ""' "$current_file" 2>/dev/null)
@@ -241,7 +258,7 @@ write_status() {
   local tmp="$status_file.tmp"
   jq -n \
     --arg noise_station "$noise_station" --argjson noise_volume "$noise_volume" --argjson noise_running "$noise_running" \
-    --argjson master_volume "$master_volume" --argjson ducking "$ducking" --argjson running "$running" --argjson paused "$paused" \
+    --argjson main_running "$main_running" --argjson master_volume "$master_volume" --argjson ducking "$ducking" --argjson running "$running" --argjson paused "$paused" \
     --arg station "$station" --arg name "$name" \
     --arg category "$category" --arg category_name "$category_name_v" --arg url "$url" \
     --argjson main_volume "$main_volume" --argjson bg_volume "$bg_volume" \
@@ -249,7 +266,7 @@ write_status() {
     --argjson mix "$mix" \
     --argjson index "$index" --argjson count "$count" \
     --arg main_title "${main_title:-}" --arg bg_title "${bg_title:-}" \
-    '{noise_station:$noise_station,noise_volume:$noise_volume,noise_running:$noise_running,master_volume:$master_volume,ducking:$ducking,running:$running,paused:$paused,station:$station,name:$name,
+    '{main_running:$main_running,noise_station:$noise_station,noise_volume:$noise_volume,noise_running:$noise_running,master_volume:$master_volume,ducking:$ducking,running:$running,paused:$paused,station:$station,name:$name,
       category:$category,category_name:$category_name,url:$url,
       main_volume:$main_volume,bg_volume:$bg_volume,
       bg_station:$bg_station,bg_name:$bg_name,bg_running:$bg_running,mix:$mix,
@@ -359,7 +376,7 @@ step_station() { # +1 / -1
 
 set_pause() { # <true|false>
   local state=$1
-  if ! alive "$main_pid_file"; then
+  if ! any_stream_alive; then
     rm -f "$paused_file"
     write_status
     return
@@ -425,7 +442,7 @@ set_mix() { # on|off|toggle
     *) echo "mix takes on|off|toggle" >&2; exit 2 ;;
   esac
 
-  if [[ $(settings_get mix) == true ]] && alive "$main_pid_file"; then
+  if [[ $(settings_get mix) == true ]] && any_stream_alive; then
     maybe_start_bg
     [[ -f $paused_file && -S $bg_sock ]] && set_prop "$bg_sock" pause true
   else
@@ -447,7 +464,7 @@ set_bg() { # <station-id|off>
     fi
     settings_set bgStation "$(jq -nc --arg v "$id" '$v')"
     settings_set mix true
-    if alive "$main_pid_file"; then maybe_start_bg; fi
+    if any_stream_alive; then maybe_start_bg; fi
   fi
   [[ -f $paused_file && -S $bg_sock ]] && set_prop "$bg_sock" pause true
   write_status
@@ -457,10 +474,8 @@ case "${1:-status}" in
   play)
     if [[ -n ${2:-} ]]; then
       start_main "$2"
-    elif [[ -f $paused_file ]]; then
+    elif any_stream_alive; then
       set_pause false
-    elif alive "$main_pid_file"; then
-      write_status
     else
       start_main "$(default_station)"
     fi
@@ -475,10 +490,10 @@ case "${1:-status}" in
     set_pause true
     ;;
   resume)
-    if alive "$main_pid_file"; then set_pause false; else start_main "$(default_station)"; fi
+    if any_stream_alive; then set_pause false; else start_main "$(default_station)"; fi
     ;;
   toggle)
-    if ! alive "$main_pid_file"; then start_main "$(default_station)"; elif [[ -f $paused_file ]]; then set_pause false; else set_pause true; fi
+    if ! any_stream_alive; then start_main "$(default_station)"; elif all_streams_paused; then set_pause false; else set_pause true; fi
     ;;
   next|skip)
     step_station 1
@@ -508,7 +523,7 @@ case "${1:-status}" in
     if [[ $id != off && $(category_of_station "$id") != ambience ]]; then exit 2; fi
     settings_set noiseStation "$(jq -nc --arg v "$id" '$v')"
     if [[ $id == off ]]; then stop_stream "$noise_pid_file" "$noise_sock"
-    elif alive "$main_pid_file"; then start_noise; fi
+    elif any_stream_alive; then start_noise; fi
     write_status
     ;;
   ducking)
@@ -522,7 +537,7 @@ case "${1:-status}" in
     ;;
   bridge-restart)
     stop_mpris
-    if alive "$main_pid_file"; then start_mpris; fi
+    if any_stream_alive; then start_mpris; fi
     ;;
   status)
     write_status

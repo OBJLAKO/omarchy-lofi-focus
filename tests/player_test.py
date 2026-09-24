@@ -138,6 +138,49 @@ class PlayerTest(unittest.TestCase):
         finally:
             owner.terminate(); owner.wait(timeout=3)
 
+    def test_music_disconnect_keeps_background_controllable(self):
+        self.action('play')
+        self.action('noise', 'noise-rain')
+        os.kill(int(self.pid('main')), 15)
+        deadline = time.monotonic() + 3
+        while self.status()['main_running'] and time.monotonic() < deadline:
+            time.sleep(0.05)
+        st = self.status()
+        self.assertFalse(st['main_running'])
+        self.assertTrue(st['running'])
+        self.assertFalse(st['paused'])
+        self.action('toggle')
+        self.assertTrue(self.status()['paused'])
+        for channel in ('bg', 'noise'):
+            self.assertTrue(self.prop(channel, 'pause'))
+        self.action('toggle')
+        for channel in ('bg', 'noise'):
+            self.assertFalse(self.prop(channel, 'pause'))
+        self.action('vol', 'master', '0')
+        for channel in ('bg', 'noise'):
+            self.assertEqual(self.prop(channel, 'volume'), 0)
+        self.action('pause'); self.action('play')
+        self.assertFalse(self.status()['paused'])
+        self.action('start', 'lofi-lilo')
+        self.assertTrue(self.status()['main_running'])
+        self.action('stop')
+        self.assertFalse(self.status()['running'])
+
+    def test_nature_alone_can_pause_and_resume(self):
+        self.action('play')
+        self.action('noise', 'noise-rain')
+        self.action('bg', 'off')
+        os.kill(int(self.pid('main')), 15)
+        time.sleep(0.1)
+        self.assertTrue(self.status()['running'])
+        self.action('pause')
+        self.assertTrue(self.prop('noise', 'pause'))
+        self.assertTrue(self.status()['paused'])
+        self.action('resume')
+        self.assertFalse(self.prop('noise', 'pause'))
+        self.action('stop')
+        self.assertFalse(self.status()['running'])
+
     def test_concurrent_updates(self):
         jobs=[subprocess.Popen([str(self.plugin/'lofi-player'),'vol',channel,value],env=self.env,stdout=subprocess.DEVNULL) for channel,value in [('main','43'),('bg','17')]]
         for job in jobs: self.assertEqual(job.wait(timeout=20),0)

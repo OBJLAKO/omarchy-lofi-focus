@@ -1,3 +1,9 @@
+# Unreleased
+
+- Keep playback state, pause/resume and volume control working when the music stream exits but voice or nature audio remains.
+- Show a disconnected music stream with an explicit reconnect action.
+- Preserve mpv diagnostic logs for the current and previous stream attempt.
+
 # 1.0.2
 
 - Animate gentle steam above the cup while the settings panel is open.

@@ -17,6 +17,7 @@ Panel {
 
   // ---- Player state, mirrored from status.json
   property bool playerRunning: false
+  property bool musicRunning: false
   property bool playerPaused: false
   property string playerStationId: ""
   property string playerName: ""
@@ -83,6 +84,7 @@ Panel {
       var state = JSON.parse(raw)
       if (typeof state.running !== "boolean" || typeof state.paused !== "boolean") return
       root.playerRunning = state.running === true
+      root.musicRunning = state.main_running === undefined ? root.playerRunning : state.main_running === true
       root.playerPaused = state.paused === true
       root.playerStationId = String(state.station || "")
       root.playerName = String(state.name || "").replace(/[\r\n\t]+/g, " ").slice(0, 120)
@@ -256,7 +258,7 @@ Panel {
             if (root.stationCount > 1) parts.push((root.stationIndex + 1) + "/" + root.stationCount)
             return parts.join("  ·  ")
           }
-          detail: root.isPlaying ? "LIVE" : ""
+          detail: root.playerRunning && !root.musicRunning ? "Music disconnected · background still available" : (root.isPlaying ? "LIVE" : "")
         }
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
@@ -269,7 +271,7 @@ Panel {
             iconText: root.playerRunning && !root.playerPaused ? "\uf04c" : "\uf04b"
             text: root.playerRunning ? (root.playerPaused ? "Resume" : "Pause") : "Play"
             foreground: root.contentForeground
-            onClicked: root.runAction([root.playerRunning ? "toggle" : "play"])
+            onClicked: root.runAction(["toggle"])
           }
 
           Button {
@@ -294,6 +296,13 @@ Panel {
             foreground: root.contentForeground
             onClicked: root.runAction(["stop"])
           }
+        }
+
+        Button {
+          visible: root.playerRunning && !root.musicRunning
+          text: "Reconnect music"
+          foreground: root.contentForeground
+          onClicked: root.runAction(["start", root.playerStationId])
         }
 
         // ---- Volume
