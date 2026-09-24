@@ -1,3 +1,13 @@
+# 1.3.0 — local acceptance build
+
+- Fix Master and VoxType failing when an older process owns the MPRIS name:
+  a separately supervised volume worker and immediate master updates no longer
+  depend on the media bridge. Verify mpv command acknowledgments.
+- Add an independent Nature channel with five bundled, attributed audio loops.
+- Add four chill stations and a centered vector coffee icon.
+- Regression tests cover a conflicting MPRIS owner, dead volume worker,
+  three-channel scaling, pause, resume, and preserved ambience selection.
+
 # 1.2.0 — local acceptance build
 
 - Add ongoing Linux and developer podcasts from official publisher feeds.

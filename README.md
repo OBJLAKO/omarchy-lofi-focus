@@ -3,7 +3,7 @@
 One chill station. An optional background voice. One click to return to work.
 A native Omarchy shell widget, using the current theme, fonts and panel controls.
 
-- **Left click:** start your last station and voice; pause/resume both.
+- **Left click:** start your last station and voice; pause/resume all channels.
 - **Right click:** choose music, choose a voice, adjust Master volume or their individual balance.
 - **Middle click:** next music station. **Scroll:** music volume.
 - Switching music leaves the voice playing. Music cannot be selected as a voice.
@@ -36,8 +36,7 @@ playlists and logs use `$XDG_RUNTIME_DIR/sky.lofi/`.
 or station does not trigger a shell reload.
 
 Music belongs to the `lofi` category in `stations.json`; other categories are
-voices. Podcast entries use `kind: "podcast"` and an HTTPS RSS URL. No audio is
-bundled or rehosted. Sources: [SomaFM](https://somafm.com/listen/),
+voices. Podcast entries use `kind: "podcast"` and an HTTPS RSS URL. Radio and podcast audio are not bundled or rehosted. Nature loops ship locally; see SOUNDS-LICENSES.md. Sources: [SomaFM](https://somafm.com/listen/),
 [The Changelog](https://changelog.com/podcast), and the broadcasters named in
 the station catalog. Catalog edits are code changes and reload the plugin.
 
@@ -54,7 +53,7 @@ remembered choices and unchanged plugin source files.
 
 CLI: `./lofi-player play|pause|resume|toggle|stop|next|prev|status`,
 `./lofi-player start <music-id>`, `./lofi-player bg <voice-id|off>`,
-`./lofi-player vol main|bg <0-100>`. Media keys control both channels through MPRIS.
+`./lofi-player vol main|bg <0-100>`. Media keys control all channels through MPRIS.
 
 Derived from [omarchy-lofiatc](https://github.com/dmltallen/omarchy-lofiatc)
 by dmltallen and the local sky.lofi extension. MIT license; upstream attribution
@@ -66,14 +65,25 @@ Release/public marketplace submission is pending local user acceptance.
 
 **Master** scales Music and Voice together without changing their balance.
 The **Quiet while dictating · VoxType** switch is enabled by default: while
-VoxType records, both streams play at 20% of their chosen effective volume.
+VoxType records, all three streams play at 20% of their chosen effective volume.
 Normal volume returns when recording ends (including during transcription).
 Changing volume or station during dictation respects the same scaling.
 
 No F9 binding edits, hooks, extra packages or system audio changes are needed.
-The existing MPRIS helper reads VoxType's state every 100 ms. With no running
+A dedicated volume worker reads VoxType's state every 100 ms, independently of MPRIS/D-Bus. Master changes also apply synchronously. With no running
 VoxType, or a missing/disabled state file, volume is unaffected. Standard
 `state_file = "auto"` and custom state paths in VoxType's default config are
 supported. A daemon launched with a separate config is not auto-discovered.
 
 CLI: `./lofi-player vol master 50`, `./lofi-player ducking on|off`.
+
+## Nature sounds
+
+Choose one **Nature sound** alongside music and voice: rain, wind, thunderstorm,
+fireplace or ocean waves. **Nature** sets its level; **Master** and VoxType
+apply to every channel. Noise selection survives Stop/Play. Files ship in
+`assets/` (~7 MB total), so there are no API keys, downloads after installation
+or additional dependencies. `./lofi-player noise noise-rain|noise-wind|noise-storm|noise-fireplace|noise-waves|off`.
+Audio credits and separate licenses: [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md).
+
+Additional music: Groove Salad Classic, DEF CON Radio, Secret Agent, Synphaera.

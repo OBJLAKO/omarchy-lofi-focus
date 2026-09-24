@@ -48,6 +48,30 @@
           "name": "Deep Space One",
           "description": "SomaFM \u00b7 deep ambient",
           "url": "https://ice1.somafm.com/deepspaceone-128-mp3"
+        },
+        {
+          "id": "lofi-groovesaladclassic",
+          "name": "Groove Salad Classic",
+          "description": "SomaFM \u00b7 Classic downtempo & ambient",
+          "url": "https://ice1.somafm.com/gsclassic-128-mp3"
+        },
+        {
+          "id": "lofi-defcon",
+          "name": "DEF CON Radio",
+          "description": "SomaFM \u00b7 Hacker chill-room beats",
+          "url": "https://ice1.somafm.com/defcon-128-mp3"
+        },
+        {
+          "id": "lofi-secretagent",
+          "name": "Secret Agent",
+          "description": "SomaFM \u00b7 Downtempo & lounge",
+          "url": "https://ice1.somafm.com/secretagent-128-mp3"
+        },
+        {
+          "id": "lofi-synphaera",
+          "name": "Synphaera",
+          "description": "SomaFM \u00b7 Ambient & electronic space music",
+          "url": "https://ice1.somafm.com/synphaera-128-mp3"
         }
       ]
     },
@@ -205,6 +229,42 @@
           "name": "RJTT Tokyo Ground",
           "description": "Tokyo Haneda \u00b7 ground",
           "url": "http://d.liveatc.net/rjtt_gnd"
+        }
+      ]
+    },
+    {
+      "id": "ambience",
+      "name": "Nature sounds",
+      "stations": [
+        {
+          "id": "noise-rain",
+          "name": "Rain",
+          "description": "Local seamless loop \u00b7 no network needed",
+          "url": "assets/rain.ogg"
+        },
+        {
+          "id": "noise-wind",
+          "name": "Wind",
+          "description": "Local seamless loop \u00b7 no network needed",
+          "url": "assets/wind.ogg"
+        },
+        {
+          "id": "noise-storm",
+          "name": "Thunderstorm",
+          "description": "Local seamless loop \u00b7 no network needed",
+          "url": "assets/storm.ogg"
+        },
+        {
+          "id": "noise-fireplace",
+          "name": "Fireplace",
+          "description": "Local seamless loop \u00b7 no network needed",
+          "url": "assets/fireplace.ogg"
+        },
+        {
+          "id": "noise-waves",
+          "name": "Ocean waves",
+          "description": "Local seamless loop \u00b7 no network needed",
+          "url": "assets/waves.ogg"
         }
       ]
     }

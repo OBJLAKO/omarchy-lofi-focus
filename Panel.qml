@@ -26,6 +26,8 @@ Panel {
   property string bgName: ""
   property bool mixOn: false
   property bool ducking: true
+  property string noiseStation: "off"
+  property int noiseVolume: 25
   property int masterVolume: 100
   property int mainVolume: 80
   property int bgVolume: 40
@@ -50,10 +52,19 @@ Panel {
     return out
   }
 
+  readonly property var noiseOptions: {
+    var out = [{ value: "off", label: "Off — no ambience" }]
+    for (var c of categories) {
+      if (c.id !== "ambience") continue
+      for (var st of c.stations) out.push({ value: st.id, label: st.name, description: st.description })
+    }
+    return out
+  }
+
   readonly property var backgroundOptions: {
     var out = [{ value: "off", label: "Off — no background", description: "Play the main station alone" }]
     for (var i = 0; i < categories.length; i++) {
-      if (categories[i].id === "lofi") continue
+      if (categories[i].id === "lofi" || categories[i].id === "ambience") continue
       var st = categories[i].stations || []
       for (var j = 0; j < st.length; j++) {
         out.push({
@@ -79,6 +90,8 @@ Panel {
       root.bgStation = String(state.bg_station || "")
       root.bgName = String(state.bg_name || "")
       root.mixOn = state.mix === true
+      root.noiseStation = state.noise_station || "off"
+      root.noiseVolume = state.noise_volume === undefined ? 25 : state.noise_volume
       root.ducking = state.ducking !== false
       root.masterVolume = state.master_volume === undefined ? 100 : state.master_volume
       root.mainVolume = Math.max(0, Math.min(100, Math.round(Number(state.main_volume === undefined ? 80 : state.main_volume)) || 0))
@@ -106,6 +119,7 @@ Panel {
   function setVolume(channel, value) {
     if (channel === "master") root.masterVolume = value
     else if (channel === "main") root.mainVolume = value
+    else if (channel === "noise") root.noiseVolume = value
     else root.bgVolume = value
     root.runAction(["vol", channel, String(value)])
   }
@@ -156,7 +170,7 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: musicPicker.popupOpen || voicePicker.popupOpen
+      blocked: musicPicker.popupOpen || voicePicker.popupOpen || noisePicker.popupOpen
       onCloseRequested: root.close()
     }
 
@@ -344,6 +358,41 @@ Panel {
               anchors.verticalCenter: parent.verticalCenter
             }
           }
+          Row {
+            width: parent.width
+            spacing: Style.space(8)
+
+            Text {
+              text: "Nature"
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.bodySmall
+              color: root.contentMuted
+              width: Style.space(52)
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            PanelSlider {
+              width: parent.width - parent.spacing - Style.space(52) - Style.space(34)
+              bar: root.bar
+              minimum: 0
+              maximum: 100
+              step: 5
+              integer: true
+              value: root.noiseVolume
+              onReleased: function(value) { root.setVolume("noise", value) }
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+              text: root.noiseVolume + "%"
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              color: root.contentForeground
+              width: Style.space(34)
+              anchors.verticalCenter: parent.verticalCenter
+            }
+          }
+
         }
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
@@ -374,6 +423,16 @@ Panel {
           foreground: root.contentForeground
           placeholderText: "Choose a voice…"
           onChanged: function(value) { root.runAction(["bg", value]) }
+        }
+
+        SearchableDropdown {
+          id: noisePicker
+          width: parent.width
+          label: "Nature sounds"
+          options: root.noiseOptions
+          value: root.noiseStation
+          foreground: root.contentForeground
+          onChanged: function(value) { root.runAction(["noise", value]) }
         }
 
         Row {

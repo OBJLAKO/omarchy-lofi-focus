@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# sky.lofi player: two mpv instances (main station + optional background mix)
+# sky.lofi player: three mpv instances (music, optional voice and optional ambience)
 # controlled over IPC sockets, with a persisted settings.json for the last
 # station, volumes, and the background mix choice.
 #
@@ -25,6 +25,9 @@ settings_file="$settings_dir/settings.json"
 
 main_sock="$sockets_dir/main.sock"
 bg_sock="$sockets_dir/bg.sock"
+noise_sock="$sockets_dir/noise.sock"
+noise_pid_file="$runtime_dir/noise.pid"
+volume_pid_file="$runtime_dir/volume.pid"
 main_pid_file="$runtime_dir/main.pid"
 bg_pid_file="$runtime_dir/bg.pid"
 mpris_pid_file="$runtime_dir/mpris.pid"
@@ -57,7 +60,7 @@ alive() {
   [[ $pid =~ ^[0-9]+$ && -r /proc/$pid/cmdline ]] || return 1
   local cmdline
   cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline")
-  [[ $cmdline == *"$sockets_dir/"* || $cmdline == *"lofi-mpris"* ]]
+  [[ $cmdline == *"$sockets_dir/"* || $cmdline == *"lofi-mpris"* || $cmdline == *"lofi_duck.py --watch"* ]]
 }
 
 ipc() {
@@ -91,7 +94,7 @@ mpv_start() { # mpv_start <sock> <volume> <url> <pidfile> <logfile>
     --audio-display=no --load-scripts=no --volume="$volume" \
     --input-ipc-server="$sock" \
     --user-agent='sky.lofi/1.0 (mpv)' \
-    "$url" 9>&- </dev/null >>"$logfile" 2>&1 &
+    ${6:+--loop-file=inf} "$url" 9>&- </dev/null >>"$logfile" 2>&1 &
   echo $! > "$pidfile"
   for ((attempt=0; attempt<30; attempt++)); do
     [[ -S $sock ]] && break
@@ -163,9 +166,34 @@ stop_mpris() {
   rm -f "$mpris_pid_file"
 }
 
+start_volume_worker() {
+  if alive "$volume_pid_file"; then return; fi
+  nohup python3 "$script_dir/lofi_duck.py" --watch 9>&- </dev/null >>"$log_dir/volume.log" 2>&1 &
+  echo $! > "$volume_pid_file"
+}
+
+start_noise() {
+  local id url volume
+  id=$(settings_get noiseStation)
+  [[ -n $id && $id != off ]] || return 0
+  [[ $(category_of_station "$id") == ambience ]] || return 1
+  url="$script_dir/$(station_field "$id" url)"
+  [[ -f $url ]] || return 1
+  volume=$(int_or "$(settings_get noiseVolume)" 25)
+  stop_stream "$noise_pid_file" "$noise_sock"
+  mpv_start "$noise_sock" "$volume" "$url" "$noise_pid_file" "$log_dir/noise.log" loop
+  [[ -f $paused_file ]] && set_prop "$noise_sock" pause true
+  return 0
+}
+
 # ---- status -----------------------------------------------------------
 write_status() {
+  if alive "$main_pid_file"; then start_volume_worker; start_mpris; fi
   local running=false paused=false
+  local noise_station noise_volume noise_running=false
+  noise_station=$(settings_get noiseStation)
+  noise_volume=$(int_or "$(settings_get noiseVolume)" 25)
+  alive "$noise_pid_file" && noise_running=true
   local master_volume
   master_volume=$(int_or "$(settings_get masterVolume)" 100)
   local ducking=true
@@ -212,6 +240,7 @@ write_status() {
 
   local tmp="$status_file.tmp"
   jq -n \
+    --arg noise_station "$noise_station" --argjson noise_volume "$noise_volume" --argjson noise_running "$noise_running" \
     --argjson master_volume "$master_volume" --argjson ducking "$ducking" --argjson running "$running" --argjson paused "$paused" \
     --arg station "$station" --arg name "$name" \
     --arg category "$category" --arg category_name "$category_name_v" --arg url "$url" \
@@ -220,7 +249,7 @@ write_status() {
     --argjson mix "$mix" \
     --argjson index "$index" --argjson count "$count" \
     --arg main_title "${main_title:-}" --arg bg_title "${bg_title:-}" \
-    '{master_volume:$master_volume,ducking:$ducking,running:$running,paused:$paused,station:$station,name:$name,
+    '{noise_station:$noise_station,noise_volume:$noise_volume,noise_running:$noise_running,master_volume:$master_volume,ducking:$ducking,running:$running,paused:$paused,station:$station,name:$name,
       category:$category,category_name:$category_name,url:$url,
       main_volume:$main_volume,bg_volume:$bg_volume,
       bg_station:$bg_station,bg_name:$bg_name,bg_running:$bg_running,mix:$mix,
@@ -242,11 +271,14 @@ stop_stream() { # <pidfile> <sock>
 stop_streams() {
   stop_stream "$main_pid_file" "$main_sock"
   stop_stream "$bg_pid_file" "$bg_sock"
+  stop_stream "$noise_pid_file" "$noise_sock"
 }
 
 stop_all() {
   stop_streams
   stop_mpris
+  if alive "$volume_pid_file"; then kill "$(cat "$volume_pid_file")" 2>/dev/null; fi
+  rm -f "$volume_pid_file"
   rm -f "$paused_file"
   write_status
 }
@@ -301,7 +333,9 @@ start_main() {
   settings_set defaultStation "$(jq -nc --arg v "$id" '$v')"
 
   if ! alive "$bg_pid_file"; then maybe_start_bg; else set_prop "$bg_sock" pause false; fi
+  if ! alive "$noise_pid_file"; then start_noise; else set_prop "$noise_sock" pause false; fi
   start_mpris
+  start_volume_worker
 
   write_status
 }
@@ -330,7 +364,7 @@ set_pause() { # <true|false>
     write_status
     return
   fi
-  for sock in "$main_sock" "$bg_sock"; do
+  for sock in "$main_sock" "$bg_sock" "$noise_sock"; do
     [[ -S $sock ]] && set_prop "$sock" pause "$state"
   done
   if [[ $state == true ]]; then
@@ -344,12 +378,19 @@ set_pause() { # <true|false>
 set_volume() { # <main|bg> <0-100>
   local which=$1 value=$2
   [[ $value =~ ^[0-9]{1,3}$ ]] || { echo "volume must be 0-100" >&2; exit 1; }
-  [[ $which == main || $which == bg || $which == master ]] || exit 2
+  [[ $which == main || $which == bg || $which == master || $which == noise ]] || exit 2
   value=$((10#$value))
   (( value > 100 )) && value=100
 
   if [[ $which == master ]]; then
     settings_set masterVolume "$value"
+    python3 "$script_dir/lofi_duck.py" apply
+    write_status
+    return
+  fi
+  if [[ $which == noise ]]; then
+    settings_set noiseVolume "$value"
+    python3 "$script_dir/lofi_duck.py" apply
     write_status
     return
   fi
@@ -400,7 +441,7 @@ set_bg() { # <station-id|off>
     settings_set mix false
     stop_stream "$bg_pid_file" "$bg_sock"
   else
-    if [[ -z $(station_json "$id") || $(category_of_station "$id") == lofi ]]; then
+    if [[ -z $(station_json "$id") || $(category_of_station "$id") =~ ^(lofi|ambience)$ ]]; then
       echo "unknown station: $id (edit stations.json)" >&2
       exit 1
     fi
@@ -462,12 +503,21 @@ case "${1:-status}" in
     settings_set defaultStation "$(jq -nc --arg v "$2" '$v')"
     write_status
     ;;
+  noise)
+    id="${2:-off}"
+    if [[ $id != off && $(category_of_station "$id") != ambience ]]; then exit 2; fi
+    settings_set noiseStation "$(jq -nc --arg v "$id" '$v')"
+    if [[ $id == off ]]; then stop_stream "$noise_pid_file" "$noise_sock"
+    elif alive "$main_pid_file"; then start_noise; fi
+    write_status
+    ;;
   ducking)
     case "${2:-}" in
       on) settings_set ducking true ;;
       off) settings_set ducking false ;;
       *) exit 2 ;;
     esac
+    python3 "$script_dir/lofi_duck.py" apply
     write_status
     ;;
   bridge-restart)

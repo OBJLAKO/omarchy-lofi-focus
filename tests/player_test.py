@@ -26,6 +26,7 @@ class PlayerTest(unittest.TestCase):
             f.writeframes(b'\x00\x00' * 8000)
         catalog = json.loads((self.plugin / 'stations.json').read_text())
         for cat in catalog['categories']:
+            if cat['id'] == 'ambience': continue
             for st in cat['stations']:
                 st['url'] = str(wav); st.pop('kind', None)
         (self.plugin / 'stations.json').write_text(json.dumps(catalog))
@@ -94,6 +95,48 @@ class PlayerTest(unittest.TestCase):
         self.action('vol', 'master', '0'); wait_volume('main', 0); wait_volume('bg', 0)
         self.action('vol', 'master', '100'); wait_volume('main', 40)
         self.action('pause'); self.action('resume'); wait_volume('main', 40)
+
+    def test_ambience_and_missing_media_bridge(self):
+        self.action('play')
+        bridge = int(self.pid('mpris'))
+        os.kill(bridge, 15)
+        self.action('noise', 'noise-rain')
+        self.action('vol', 'noise', '30')
+        self.action('vol', 'master', '50')
+        self.assertAlmostEqual(self.prop('main', 'volume'), 32.5)
+        self.assertAlmostEqual(self.prop('bg', 'volume'), 10)
+        self.assertAlmostEqual(self.prop('noise', 'volume'), 15)
+        noise = self.pid('noise')
+        self.action('start', 'lofi-fluid')
+        self.assertEqual(self.pid('noise'), noise)
+        self.action('pause'); self.assertTrue(self.prop('noise', 'pause'))
+        self.action('resume'); self.assertFalse(self.prop('noise', 'pause'))
+        self.assertNotEqual(self.action('bg', 'noise-rain', check=False).returncode, 0)
+        self.action('noise', 'off'); self.assertFalse(self.status()['noise_running'])
+        self.action('noise', 'noise-wind'); self.action('stop'); self.action('play')
+        self.assertTrue(self.status()['noise_running'])
+        self.assertEqual(self.status()['noise_station'], 'noise-wind')
+        # Killing the volume worker must not break the next master adjustment.
+        worker = int(self.pid('volume')); os.kill(worker, 15); time.sleep(0.1)
+        self.action('vol', 'master', '0')
+        self.assertEqual(self.prop('main', 'volume'), 0)
+        self.assertEqual(self.prop('noise', 'volume'), 0)
+        self.assertNotEqual(self.pid('volume'), str(worker) + '\n')
+
+    def test_existing_mpris_owner_does_not_disable_volume(self):
+        owner = subprocess.Popen(['python3', str(self.plugin/'lofi-mpris'), '/bin/true'], env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            time.sleep(0.4)
+            self.action('play')
+            self.action('vol', 'master', '25')
+            self.assertAlmostEqual(self.prop('main', 'volume'), 16.25)
+            vox = self.base/'runtime/voxtype'; vox.mkdir()
+            (vox/'pid').write_text(str(os.getpid()))
+            (vox/'state').write_text('recording')
+            time.sleep(0.4)
+            self.assertAlmostEqual(self.prop('main', 'volume'), 3.25)
+        finally:
+            owner.terminate(); owner.wait(timeout=3)
 
     def test_concurrent_updates(self):
         jobs=[subprocess.Popen([str(self.plugin/'lofi-player'),'vol',channel,value],env=self.env,stdout=subprocess.DEVNULL) for channel,value in [('main','43'),('bg','17')]]

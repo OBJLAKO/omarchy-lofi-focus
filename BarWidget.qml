@@ -190,7 +190,26 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: "\uf0f4"
+    text: ""
+    hasVisualContent: true
+    labelVisible: false
+    fixedWidth: root.vertical ? root.barSize : Style.space(30)
+    Canvas {
+      anchors.centerIn: parent
+      width: Style.space(18)
+      height: Style.space(18)
+      property color ink: button.active ? button.activeColor : button.foreground
+      onInkChanged: requestPaint()
+      onPaint: {
+        var c = getContext("2d")
+        c.reset(); c.scale(width / 24, height / 24)
+        c.strokeStyle = ink; c.lineWidth = 1.7; c.lineCap = "round"; c.lineJoin = "round"
+        c.beginPath(); c.moveTo(4,8); c.lineTo(16,8); c.lineTo(16,14)
+        c.quadraticCurveTo(16,18,12,18); c.lineTo(8,18); c.quadraticCurveTo(4,18,4,14); c.closePath(); c.stroke()
+        c.beginPath(); c.moveTo(16,9); c.lineTo(18,9); c.bezierCurveTo(23,9,23,15,16,15); c.stroke()
+        c.beginPath(); c.moveTo(3,21); c.lineTo(21,21); c.moveTo(8,5); c.lineTo(8,3); c.moveTo(13,5); c.lineTo(13,3); c.stroke()
+      }
+    }
     active: root.playerRunning && !root.playerPaused
     dimmed: root.playerRunning && root.playerPaused
     tooltipText: root.playerRunning

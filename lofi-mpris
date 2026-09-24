@@ -12,7 +12,6 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-from lofi_duck import Ducker
 
 import gi
 
@@ -205,7 +204,10 @@ def on_bus_acquired(connection, name):
 
 
 def on_name_lost(connection, name):
-    loop.quit()
+    # A previous bridge may be releasing the name during an update. Gio queues
+    # ownership and will acquire it later; don't exit on this transient state.
+    if connection is None:
+        loop.quit()
 
 
 def poll():
@@ -239,9 +241,6 @@ own_id = Gio.bus_own_name(
 )
 bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
 GLib.timeout_add_seconds(1, poll)
-ducker = Ducker()
-GLib.timeout_add(100, ducker.poll)
-ducker.poll()
 load_status()
 try:
     loop.run()
