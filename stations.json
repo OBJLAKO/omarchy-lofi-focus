@@ -61,6 +61,34 @@
           "description": "Software & open source \u00b7 latest interviews \u00b7 English",
           "kind": "podcast",
           "url": "https://changelog.com/podcast/feed"
+        },
+        {
+          "id": "voice-linux-unplugged",
+          "name": "LINUX Unplugged",
+          "description": "Linux & open source \u00b7 English",
+          "kind": "podcast",
+          "url": "https://linuxunplugged.com/rss"
+        },
+        {
+          "id": "voice-changelog-friends",
+          "name": "Changelog & Friends",
+          "description": "Developer conversations \u00b7 English",
+          "kind": "podcast",
+          "url": "https://changelog.com/friends/feed"
+        },
+        {
+          "id": "voice-talk-python",
+          "name": "Talk Python To Me",
+          "description": "Python & software development \u00b7 English",
+          "kind": "podcast",
+          "url": "https://talkpython.fm/episodes/rss"
+        },
+        {
+          "id": "voice-linux-matters",
+          "name": "Linux Matters",
+          "description": "Linux, open source & developer tools \u00b7 English",
+          "kind": "podcast",
+          "url": "https://linuxmatters.sh/episode/index.xml"
         }
       ]
     },

@@ -1,3 +1,12 @@
+# 1.2.0 — local acceptance build
+
+- Add ongoing Linux and developer podcasts from official publisher feeds.
+- Add Master volume while preserving the Music/Voice balance.
+- Automatically reduce both channels to 20% during VoxType recording, with
+  an immediately accessible opt-out in the panel. No hotkey/config edits.
+- Test recording/transcribing transitions, absent state, new volume during
+  recording, station changes, opt-out and master mute/restore with real mpv.
+
 # 1.1.0 — local acceptance build
 
 - Keep mutable settings outside the plugin watcher; serialize concurrent changes.

@@ -25,6 +25,8 @@ Panel {
   property string bgStation: ""
   property string bgName: ""
   property bool mixOn: false
+  property bool ducking: true
+  property int masterVolume: 100
   property int mainVolume: 80
   property int bgVolume: 40
   property int stationIndex: 0
@@ -77,6 +79,8 @@ Panel {
       root.bgStation = String(state.bg_station || "")
       root.bgName = String(state.bg_name || "")
       root.mixOn = state.mix === true
+      root.ducking = state.ducking !== false
+      root.masterVolume = state.master_volume === undefined ? 100 : state.master_volume
       root.mainVolume = Math.max(0, Math.min(100, Math.round(Number(state.main_volume === undefined ? 80 : state.main_volume)) || 0))
       root.bgVolume = Math.max(0, Math.min(100, Math.round(Number(state.bg_volume === undefined ? 40 : state.bg_volume)) || 0))
       root.stationIndex = Math.max(0, Math.round(Number(state.index === undefined ? 0 : state.index)) || 0)
@@ -100,7 +104,8 @@ Panel {
   }
 
   function setVolume(channel, value) {
-    if (channel === "main") root.mainVolume = value
+    if (channel === "master") root.masterVolume = value
+    else if (channel === "main") root.mainVolume = value
     else root.bgVolume = value
     root.runAction(["vol", channel, String(value)])
   }
@@ -238,16 +243,51 @@ Panel {
             spacing: Style.space(8)
 
             Text {
-              text: "Music"
+              text: "Master"
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.bodySmall
               color: root.contentMuted
-              width: Style.space(40)
+              width: Style.space(52)
               anchors.verticalCenter: parent.verticalCenter
             }
 
             PanelSlider {
-              width: parent.width - parent.spacing - Style.space(40) - Style.space(34)
+              width: parent.width - parent.spacing - Style.space(52) - Style.space(34)
+              bar: root.bar
+              minimum: 0
+              maximum: 100
+              step: 5
+              integer: true
+              value: root.masterVolume
+              onReleased: function(value) { root.setVolume("master", value) }
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+              text: root.masterVolume + "%"
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              color: root.contentForeground
+              width: Style.space(34)
+              anchors.verticalCenter: parent.verticalCenter
+            }
+          }
+
+          Row {
+            width: parent.width
+            spacing: Style.space(8)
+
+            Text {
+              text: "Music"
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.bodySmall
+              color: root.contentMuted
+              width: Style.space(52)
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            PanelSlider {
+              width: parent.width - parent.spacing - Style.space(52) - Style.space(34)
               bar: root.bar
               minimum: 0
               maximum: 100
@@ -277,12 +317,12 @@ Panel {
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.bodySmall
               color: root.contentMuted
-              width: Style.space(40)
+              width: Style.space(52)
               anchors.verticalCenter: parent.verticalCenter
             }
 
             PanelSlider {
-              width: parent.width - parent.spacing - Style.space(40) - Style.space(34)
+              width: parent.width - parent.spacing - Style.space(52) - Style.space(34)
               bar: root.bar
               minimum: 0
               maximum: 100
@@ -334,6 +374,24 @@ Panel {
           foreground: root.contentForeground
           placeholderText: "Choose a voice…"
           onChanged: function(value) { root.runAction(["bg", value]) }
+        }
+
+        Row {
+          width: parent.width
+          spacing: Style.space(10)
+          ToggleSwitch {
+            checked: root.ducking
+            foreground: root.contentForeground
+            anchors.verticalCenter: parent.verticalCenter
+            onToggled: root.runAction(["ducking", root.ducking ? "off" : "on"])
+          }
+          Text {
+            text: "Quiet while dictating · VoxType"
+            color: root.contentForeground
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.bodySmall
+            anchors.verticalCenter: parent.verticalCenter
+          }
         }
 
         // ---- Footer

@@ -4,12 +4,13 @@ One chill station. An optional background voice. One click to return to work.
 A native Omarchy shell widget, using the current theme, fonts and panel controls.
 
 - **Left click:** start your last station and voice; pause/resume both.
-- **Right click:** choose music, choose a voice, adjust their volumes independently.
+- **Right click:** choose music, choose a voice, adjust Master volume or their individual balance.
 - **Middle click:** next music station. **Scroll:** music volume.
 - Switching music leaves the voice playing. Music cannot be selected as a voice.
 
 Includes SomaFM chill/ambient stations, talk radio, ATC and **The Changelog**
-software development interviews. Podcast audio comes from the publisher's RSS
+software development interviews, Changelog & Friends, LINUX Unplugged,
+Talk Python To Me and Linux Matters. Only ongoing shows are included. Podcast audio comes from the publisher's RSS
 feed; up to 12 recent episodes play consecutively. The feed is cached for six
 hours. A new voice session starts at the latest episode; playback position is
 not saved. Live streams depend on broadcaster availability and region.
@@ -60,3 +61,19 @@ by dmltallen and the local sky.lofi extension. MIT license; upstream attribution
 is preserved in LICENSE.
 
 Release/public marketplace submission is pending local user acceptance.
+
+## VoxType and master volume
+
+**Master** scales Music and Voice together without changing their balance.
+The **Quiet while dictating · VoxType** switch is enabled by default: while
+VoxType records, both streams play at 20% of their chosen effective volume.
+Normal volume returns when recording ends (including during transcription).
+Changing volume or station during dictation respects the same scaling.
+
+No F9 binding edits, hooks, extra packages or system audio changes are needed.
+The existing MPRIS helper reads VoxType's state every 100 ms. With no running
+VoxType, or a missing/disabled state file, volume is unaffected. Standard
+`state_file = "auto"` and custom state paths in VoxType's default config are
+supported. A daemon launched with a separate config is not auto-discovered.
+
+CLI: `./lofi-player vol master 50`, `./lofi-player ducking on|off`.

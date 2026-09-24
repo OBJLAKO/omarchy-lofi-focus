@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 import wave
 
@@ -30,7 +31,7 @@ class PlayerTest(unittest.TestCase):
         (self.plugin / 'stations.json').write_text(json.dumps(catalog))
         runtime = self.base / 'runtime'; runtime.mkdir()
         self.env = dict(os.environ, XDG_RUNTIME_DIR=str(runtime), XDG_STATE_HOME=str(self.base/'state'), PATH=str(self.bin)+':'+os.environ['PATH'])
-        self.before = {p.name: p.read_bytes() for p in self.plugin.iterdir() if p.is_file()}
+        self.before = {str(p.relative_to(self.plugin)): p.read_bytes() for p in self.plugin.rglob("*") if p.is_file()}
 
     def action(self, *args, check=True):
         return subprocess.run([str(self.plugin/'lofi-player'), *args], env=self.env, capture_output=True, text=True, timeout=20, check=check)
@@ -63,8 +64,36 @@ class PlayerTest(unittest.TestCase):
         self.action('stop'); self.action('play')
         st=self.status(); self.assertEqual(st['station'],'lofi-fluid'); self.assertEqual(st['main_volume'],37)
         self.action('bg','off'); self.assertFalse(self.status()['bg_running'])
-        after={p.name:p.read_bytes() for p in self.plugin.iterdir() if p.is_file()}
+        after={str(p.relative_to(self.plugin)):p.read_bytes() for p in self.plugin.rglob("*") if p.is_file()}
         self.assertEqual(self.before,after,'Playback must never modify watched plugin files')
+
+    def test_voxtype_ducking(self):
+        vox = self.base/'runtime/voxtype'; vox.mkdir()
+        (vox/'pid').write_text(str(os.getpid()))
+        state = vox/'state'; state.write_text('idle')
+        self.action('play')
+        def wait_volume(channel, expected):
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                if abs(self.prop(channel, 'volume') - expected) < 0.1: return
+                time.sleep(0.05)
+            self.assertAlmostEqual(self.prop(channel, 'volume'), expected, places=1)
+        state.write_text('recording')
+        wait_volume('main', 13); wait_volume('bg', 4)
+        self.assertEqual(self.status()['main_volume'], 65)
+        self.action('vol', 'main', '40'); wait_volume('main', 8)
+        self.action('start', 'lofi-fluid'); wait_volume('main', 8)
+        self.action('ducking', 'off'); wait_volume('main', 40)
+        self.action('ducking', 'on'); wait_volume('main', 8)
+        state.write_text('transcribing'); wait_volume('main', 40)
+        state.write_text('recording'); wait_volume('main', 8)
+        self.action('vol', 'master', '50'); wait_volume('main', 4); wait_volume('bg', 2)
+        state.unlink(); wait_volume('main', 20); wait_volume('bg', 10)
+        self.assertEqual(self.status()['main_volume'], 40)
+        self.assertEqual(self.status()['bg_volume'], 20)
+        self.action('vol', 'master', '0'); wait_volume('main', 0); wait_volume('bg', 0)
+        self.action('vol', 'master', '100'); wait_volume('main', 40)
+        self.action('pause'); self.action('resume'); wait_volume('main', 40)
 
     def test_concurrent_updates(self):
         jobs=[subprocess.Popen([str(self.plugin/'lofi-player'),'vol',channel,value],env=self.env,stdout=subprocess.DEVNULL) for channel,value in [('main','43'),('bg','17')]]
