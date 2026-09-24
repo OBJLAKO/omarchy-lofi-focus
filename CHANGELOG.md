@@ -1,4 +1,4 @@
-# Unreleased
+# 1.0.2
 
 - Animate gentle steam above the cup while the settings panel is open.
 - Keep the bar and panel synchronized from player status responses, including after missed file notifications.
