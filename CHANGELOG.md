@@ -1,3 +1,8 @@
+# Unreleased
+
+- Add I Love Chillhop and FluxFM Chillhop before the SomaFM stations.
+- Default new installations to I Love Chillhop; preserve existing choices.
+
 # 1.0.0
 
 First public release.

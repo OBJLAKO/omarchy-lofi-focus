@@ -1,12 +1,24 @@
 {
   "_help": "Add or edit stations here. Each station needs id, name, and a direct stream url playable by mpv (mp3/aac/ogg, or a YouTube link). Changes hot-reload into the panel.",
-  "_defaultStation": "lofi-groove-salad",
+  "_defaultStation": "lofi-ilove-chillhop",
   "categories": [
     {
       "id": "lofi",
       "name": "Lofi & Chill",
       "icon": "\uf001",
       "stations": [
+        {
+          "id": "lofi-ilove-chillhop",
+          "name": "I Love Chillhop",
+          "description": "Lo-fi hip-hop & chill beats \u00b7 I Love Music",
+          "url": "https://play.ilovemusic.de/ilm_ilovechillhop/"
+        },
+        {
+          "id": "lofi-flux-chillhop",
+          "name": "FluxFM Chillhop",
+          "description": "Chillhop & lo-fi beats \u00b7 FluxFM",
+          "url": "https://channels.fluxfm.de/chillhop/externalembedflxhp/stream.mp3"
+        },
         {
           "id": "lofi-groove-salad",
           "name": "Groove Salad",
