@@ -101,16 +101,88 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.action('play')
         os.kill(int(self.pid('main')), signal.SIGTERM)
         self.wait_retry()
-        self.action('start', 'lofi-fluid')
+        self.action('start', 'lofi-kalizo')
         self.wait_for(lambda: self.status()['main_state'] == 'playing')
         current = self.pid('main')
         deadline = time.monotonic() + 3.2
         while time.monotonic() < deadline:
             state = self.status()
-            self.assertEqual(state['station'], 'lofi-fluid')
+            self.assertEqual(state['station'], 'lofi-kalizo')
             self.assertEqual(self.pid('main'), current)
             time.sleep(.1)
         self.assertEqual(self.status()['retry_attempt'], 0)
+
+    def remove_music_station(self, id):
+        path = self.plugin/'stations.json'
+        catalog = json.loads(path.read_text())
+        music = next(category for category in catalog['categories'] if category['id'] == 'lofi')
+        music['stations'] = [station for station in music['stations'] if station['id'] != id]
+        replacement = path.with_suffix('.new')
+        replacement.write_text(json.dumps(catalog))
+        replacement.replace(path)
+
+    def test_removed_playing_station_replaces_audio_without_restarting_other_layers(self):
+        self.action('start', 'lofi-kalizo')
+        self.action('nature', 'noise-rain', 'on')
+        self.action('nature', 'noise-wind', 'on')
+        self.action('vol', 'main', '44')
+        self.action('vol', 'master', '50')
+        self.action('vol', 'noise-rain', '72')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        previous = {channel: self.pid(channel)
+                    for channel in ('main', 'bg', 'nature-noise-rain', 'nature-noise-wind')}
+        self.remove_music_station('lofi-kalizo')
+        self.wait_for(lambda: self.status()['station'] == 'lofi-lilo'
+                      and self.status()['main_state'] == 'playing')
+        self.assertNotEqual(self.pid('main'), previous['main'])
+        self.assertFalse(self.status()['paused'])
+        self.assertEqual(self.status()['retry_attempt'], 0)
+        self.wait_volume('main', 22)
+        self.wait_volume('nature-noise-rain', 36)
+        for channel in ('bg', 'nature-noise-rain', 'nature-noise-wind'):
+            self.assertEqual(self.pid(channel), previous[channel])
+            self.assertFalse(self.prop(channel, 'pause'))
+        settings = json.loads((self.base/'state/sky.lofi/settings.json').read_text())
+        self.assertEqual(settings['defaultStation'], 'lofi-lilo')
+
+    def test_removed_paused_station_waits_for_resume_and_keeps_valid_default(self):
+        self.action('start', 'lofi-kalizo')
+        self.action('nature', 'noise-rain', 'on')
+        self.action('default', 'lofi-purrple-cat')
+        self.action('pause')
+        previous = {channel: self.pid(channel) for channel in ('main', 'bg', 'nature-noise-rain')}
+        self.remove_music_station('lofi-kalizo')
+        state = self.status()
+        self.assertTrue(state['paused'])
+        self.assertEqual(state['station'], 'lofi-purrple-cat')
+        self.assertEqual(state['retry_in'], 0)
+        self.assert_no_music_for()
+        for channel in ('bg', 'nature-noise-rain'):
+            self.assertEqual(self.pid(channel), previous[channel])
+            self.assertTrue(self.prop(channel, 'pause'))
+        self.action('resume')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        self.assertEqual(self.status()['station'], 'lofi-purrple-cat')
+        self.assertNotEqual(self.pid('main'), previous['main'])
+        for channel in ('bg', 'nature-noise-rain'):
+            self.assertEqual(self.pid(channel), previous[channel])
+            self.assertFalse(self.prop(channel, 'pause'))
+
+    def test_removed_stopped_station_does_not_start_audio(self):
+        self.action('start', 'lofi-kalizo')
+        self.action('nature', 'noise-rain', 'on')
+        self.action('stop')
+        self.remove_music_station('lofi-kalizo')
+        self.assert_no_music_for()
+        state = self.status()
+        self.assertEqual(state['station'], 'lofi-lilo')
+        self.assertEqual(state['main_state'], 'stopped')
+        self.assertFalse(state['running'])
+        self.assertFalse(state['bg_running'])
+        self.assertFalse(state['noise_running'])
+        self.action('play')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        self.assertEqual(self.status()['station'], 'lofi-lilo')
 
     def test_layers_keep_individual_balance_under_master_and_voxtype(self):
         self.env['XDG_CONFIG_HOME'] = str(self.base/'config')

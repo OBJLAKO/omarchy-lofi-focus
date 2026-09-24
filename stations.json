@@ -14,70 +14,22 @@
           "url": "https://azurecloud.pvtwebs.com/listen/lilo/radio.mp3"
         },
         {
-          "id": "lofi-groove-salad",
-          "name": "Groove Salad",
-          "description": "SomaFM \u00b7 downtempo & ambient",
-          "url": "https://ice1.somafm.com/groovesalad-128-mp3"
+          "id": "lofi-kalizo",
+          "name": "Kalizo Lo-fi",
+          "description": "Mellow lo-fi & soft jazz \u00b7 formerly Chillofi",
+          "url": "https://streams.dez.ovh/listen/chillofi/radio.mp3"
         },
         {
-          "id": "lofi-lush",
-          "name": "Lush",
-          "description": "SomaFM \u00b7 dreamy vocals & beats",
-          "url": "https://ice1.somafm.com/lush-128-mp3"
+          "id": "lofi-purrple-cat",
+          "name": "Purrple Cat",
+          "description": "Dreamy instrumental lo-fi \u00b7 artist-run radio",
+          "url": "https://streaming.live365.com/a30440"
         },
         {
-          "id": "lofi-beat-blender",
-          "name": "Beat Blender",
-          "description": "SomaFM \u00b7 late-night downtempo",
-          "url": "https://ice1.somafm.com/beatblender-128-mp3"
-        },
-        {
-          "id": "lofi-fluid",
-          "name": "Fluid",
-          "description": "SomaFM \u00b7 instrumental hip-hop",
-          "url": "https://ice1.somafm.com/fluid-128-mp3"
-        },
-        {
-          "id": "lofi-drone-zone",
-          "name": "Drone Zone",
-          "description": "SomaFM \u00b7 atmospheric textures",
-          "url": "https://ice1.somafm.com/dronezone-128-mp3"
-        },
-        {
-          "id": "lofi-space-station",
-          "name": "Space Station Soma",
-          "description": "SomaFM \u00b7 spaced-out ambient",
-          "url": "https://ice1.somafm.com/spacestation-128-mp3"
-        },
-        {
-          "id": "lofi-deep-space-one",
-          "name": "Deep Space One",
-          "description": "SomaFM \u00b7 deep ambient",
-          "url": "https://ice1.somafm.com/deepspaceone-128-mp3"
-        },
-        {
-          "id": "lofi-groovesaladclassic",
-          "name": "Groove Salad Classic",
-          "description": "SomaFM \u00b7 Classic downtempo & ambient",
-          "url": "https://ice1.somafm.com/gsclassic-128-mp3"
-        },
-        {
-          "id": "lofi-defcon",
-          "name": "DEF CON Radio",
-          "description": "SomaFM \u00b7 Hacker chill-room beats",
-          "url": "https://ice1.somafm.com/defcon-128-mp3"
-        },
-        {
-          "id": "lofi-secretagent",
-          "name": "Secret Agent",
-          "description": "SomaFM \u00b7 Downtempo & lounge",
-          "url": "https://ice1.somafm.com/secretagent-128-mp3"
-        },
-        {
-          "id": "lofi-synphaera",
-          "name": "Synphaera",
-          "description": "SomaFM \u00b7 Ambient & electronic space music",
-          "url": "https://ice1.somafm.com/synphaera-128-mp3"
+          "id": "lofi-cafe-chilling",
+          "name": "Lofi Cafe \u00b7 Chilling",
+          "description": "Slow lo-fi beats & soft jazz instrumentals",
+          "url": "https://radio.loficafe.net/listen/chilling/radio.mp3"
         }
       ]
     },

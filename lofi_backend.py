@@ -110,7 +110,8 @@ class Player:
         for key, value in dict(defaultStation='lofi-lilo', mainVolume=65, bgVolume=20,
                                bgStation='talk-bbc-world', mix=True, masterVolume=100, ducking=True).items():
             self.settings.setdefault(key, value)
-        if self.settings['defaultStation'] not in self.music:
+        previous_default = self.settings['defaultStation']
+        if previous_default not in self.music:
             self.settings['defaultStation'] = self.music[0]
         # Preserve the old single ambience selection and its effective volume.
         if 'natureLayers' not in self.settings:
@@ -129,10 +130,17 @@ class Player:
             active = any(self.alive(c) for c in self.channels(include_legacy=True))
             paused = (self.runtime/'paused.flag').exists()
             self.session = {'mode': 'paused' if active and paused else ('playing' if active else 'stopped'),
-                            'station': self.settings['defaultStation'], 'attempts': 0,
+                            'station': previous_default, 'attempts': 0,
                             'started': time.monotonic(), 'retry_due': 0}
         if self.session.get('station') not in self.music:
-            self.session['station'] = self.settings['defaultStation']
+            # A catalog update can retire the station while its mpv is still
+            # alive. Replace that audio as well as its label, keeping session
+            # intent and the independent voice/nature processes unchanged.
+            self.stop_channel('main')
+            self.session.update(station=self.settings['defaultStation'], attempts=0,
+                                retry_due=0, playing_since=0, last_position=None)
+            if self.session['mode'] == 'playing':
+                self.start_music()
         self.save()
         return True
 
