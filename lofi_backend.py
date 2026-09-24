@@ -1,0 +1,519 @@
+"""Serialized playback control and recovery using Omarchy's existing Python/mpv.
+
+Settings describe the mix; session.json records playback intent. A single worker
+handles ducking and recovery, independently of the panel and MPRIS bus ownership.
+"""
+import fcntl
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+from lofi_duck import Ducker
+
+ROOT = Path(__file__).resolve().parent
+RETRY_DELAYS = (2, 5, 10, 20, 30)
+CONNECT_TIMEOUT = 15
+STABLE_SECONDS = 30
+
+
+def read_json(path, fallback):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return fallback
+
+
+def write_json(path, value):
+    text = json.dumps(value, indent=2) + '\n'
+    try:
+        if path.read_text() == text:
+            return
+    except OSError:
+        pass
+    temporary = path.with_suffix(path.suffix + '.tmp')
+    temporary.write_text(text)
+    temporary.replace(path)
+
+
+def level(value, default=0):
+    try:
+        number = float(value)
+        return max(0, min(100, number)) if math.isfinite(number) else default
+    except (TypeError, ValueError):
+        return default
+
+
+def ipc(path, command):
+    try:
+        with socket.socket(socket.AF_UNIX) as client:
+            client.settimeout(.15)
+            client.connect(str(path))
+            client.sendall((json.dumps({'command': command, 'request_id': 1}) + '\n').encode())
+            with client.makefile() as stream:
+                for line in stream:
+                    reply = json.loads(line)
+                    if reply.get('request_id') == 1:
+                        return reply.get('data') if reply.get('error') == 'success' else None
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+class Player:
+    def __init__(self):
+        self.runtime = Path(os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')) / 'sky.lofi'
+        self.settings_dir = Path(os.environ.get('XDG_STATE_HOME', str(Path.home()/'.local/state'))) / 'sky.lofi'
+        self.runtime.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.settings_dir.mkdir(parents=True, exist_ok=True)
+        for name in ('sockets', 'logs'):
+            (self.runtime/name).mkdir(exist_ok=True)
+        self.reload_catalog()
+        self.settings = {}
+        self.session = {}
+        self.lock = (self.runtime/'control.lock').open('w')
+        self.ducker = Ducker()
+
+    def reload_catalog(self):
+        catalog = read_json(ROOT/'stations.json', {})
+        self.stations = {s['id']: dict(s, category=c['id'], category_name=c['name'])
+                         for c in catalog.get('categories', []) for s in c['stations']}
+        self.music = [s for s in self.stations if self.stations[s]['category'] == 'lofi']
+        self.nature = [s for s in self.stations if self.stations[s]['category'] == 'ambience']
+
+    def acquire(self, blocking=True):
+        try:
+            fcntl.flock(self.lock, fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB))
+        except BlockingIOError:
+            return False
+        self.reload_catalog()
+        self.settings = read_json(self.settings_dir/'settings.json', read_json(ROOT/'settings.json', {}))
+        for key, value in dict(defaultStation='lofi-lilo', mainVolume=65, bgVolume=20,
+                               bgStation='talk-bbc-world', mix=True, masterVolume=100, ducking=True).items():
+            self.settings.setdefault(key, value)
+        if self.settings['defaultStation'] not in self.music:
+            self.settings['defaultStation'] = self.music[0]
+        # Preserve the old single ambience selection and its effective volume.
+        if 'natureLayers' not in self.settings:
+            old = self.settings.get('noiseStation', 'off')
+            self.settings['natureVolume'] = self.settings.get('noiseVolume', 25)
+            self.settings['natureLayers'] = {old: {'enabled': True, 'volume': 100}} if old in self.nature else {}
+        self.settings.setdefault('natureVolume', 25)
+        self.session = read_json(self.runtime/'session.json', {})
+        if not self.session:
+            active = any(self.alive(c) for c in self.channels(include_legacy=True))
+            paused = (self.runtime/'paused.flag').exists()
+            self.session = {'mode': 'paused' if active and paused else ('playing' if active else 'stopped'),
+                            'station': self.settings['defaultStation'], 'attempts': 0,
+                            'started': time.monotonic(), 'retry_due': 0}
+        if self.session.get('station') not in self.music:
+            self.session['station'] = self.settings['defaultStation']
+        self.save()
+        return True
+
+    def release(self):
+        fcntl.flock(self.lock, fcntl.LOCK_UN)
+
+    def save(self):
+        write_json(self.settings_dir/'settings.json', self.settings)
+        write_json(self.runtime/'session.json', self.session)
+
+    def sock(self, channel):
+        return self.runtime/'sockets'/f'{channel}.sock'
+
+    def channels(self, include_legacy=False):
+        return ['main', 'bg'] + ['nature-' + s for s in self.nature] + (['noise'] if include_legacy else [])
+
+    def alive(self, channel):
+        try:
+            pid = int((self.runtime/f'{channel}.pid').read_text())
+            argv = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
+            if channel in ('volume', 'mpris', 'feed'):
+                name = {'volume': b'--watch', 'mpris': b'lofi-mpris', 'feed': b'--resolve-feed'}[channel]
+                return any(name in arg for arg in argv)
+            return ('--input-ipc-server=' + str(self.sock(channel))).encode() in argv
+        except (OSError, ValueError):
+            return False
+
+    def stop_channel(self, channel):
+        if self.alive(channel):
+            pid = int((self.runtime/f'{channel}.pid').read_text())
+            # SIGTERM also interrupts a pending network connection immediately.
+            try:
+                os.killpg(pid, signal.SIGTERM) if channel == 'feed' else os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            for _ in range(25):
+                if not self.alive(channel):
+                    break
+                time.sleep(.01)
+            if self.alive(channel):
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        (self.runtime/f'{channel}.pid').unlink(missing_ok=True)
+        self.sock(channel).unlink(missing_ok=True)
+
+    def spawn(self, channel, url, volume, loop=False, paused=False):
+        self.stop_channel(channel)
+        log = self.runtime/'logs'/f'{channel}.log'
+        if log.exists():
+            log.replace(log.with_suffix('.log.previous'))
+        # Warnings/errors and lifecycle messages, not every IPC request.
+        args = ['mpv', '--no-config', '--no-video', '--terminal=yes', '--input-terminal=no', '--load-scripts=no',
+                '--ytdl=no', '--audio-display=no', '--msg-level=all=warn,cplayer=info',
+                '--msg-color=no', '--term-status-msg=', '--network-timeout=12',
+                f'--volume={volume}', f'--input-ipc-server={self.sock(channel)}',
+                '--user-agent=sky.lofi/1.0 (mpv)']
+        if loop:
+            args.append('--loop-file=inf')
+        if paused:
+            args.append('--pause')
+        with log.open('wb') as output:
+            child = subprocess.Popen(args + [str(url)], stdin=subprocess.DEVNULL,
+                                     stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        (self.runtime/f'{channel}.pid').write_text(str(child.pid) + '\n')
+        for _ in range(30):
+            if self.sock(channel).exists() or child.poll() is not None:
+                break
+            time.sleep(.01)
+
+    def effective(self, base):
+        return level(base) * level(self.settings['masterVolume'], 100) / 100 * (
+            .2 if self.settings.get('ducking', True) and self.ducker.recording() else 1)
+
+    def start_music(self, reset=True):
+        station = self.stations[self.session['station']]
+        self.spawn('main', station['url'], self.effective(self.settings['mainVolume']))
+        self.session.update(started=time.monotonic(), retry_due=0, playing_since=0, last_position=None, progress_at=time.monotonic())
+        if reset:
+            self.session['attempts'] = 0
+
+    def start_bg(self):
+        station = self.stations.get(self.settings.get('bgStation'))
+        if not self.settings.get('mix') or not station or station['category'] in ('lofi', 'ambience'):
+            return
+        url = station['url']
+        if station.get('kind') == 'podcast':
+            # Fetch outside control.lock; an unavailable publisher must never
+            # prevent the user from pausing or stopping the listening session.
+            self.stop_channel('feed')
+            token = str(time.time_ns())
+            self.session['feed_token'] = token
+            self.spawn_service('feed', [sys.executable, str(ROOT/'lofi-player'),
+                                       '--resolve-feed', station['id'], token])
+            return
+        self.spawn('bg', url, self.effective(self.settings['bgVolume']), paused=self.session['mode'] == 'paused')
+
+    def start_nature(self, id):
+        entry = self.settings['natureLayers'].get(id, {})
+        if not entry.get('enabled'):
+            return
+        volume = level(entry.get('volume', 100)) * level(self.settings['natureVolume'], 25) / 100
+        self.spawn('nature-' + id, ROOT/self.stations[id]['url'], self.effective(volume),
+                   loop=True, paused=self.session['mode'] == 'paused')
+
+    def ensure_services(self):
+        if self.session['mode'] == 'stopped':
+            return
+        # Retire the old duck-only worker during an in-place upgrade.
+        if self.alive('volume'):
+            pid = int((self.runtime/'volume.pid').read_text())
+            if b'lofi_duck.py' in Path(f'/proc/{pid}/cmdline').read_bytes():
+                self.stop_channel('volume')
+        if not self.alive('volume'):
+            self.spawn_service('volume', [sys.executable, str(ROOT/'lofi-player'), '--watch'])
+        if not self.alive('mpris'):
+            self.spawn_service('mpris', [sys.executable, str(ROOT/'lofi-mpris'), str(ROOT/'lofi-player')])
+
+    def spawn_service(self, channel, args):
+        with (self.runtime/'logs'/f'{channel}.log').open('ab') as log:
+            child = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+        (self.runtime/f'{channel}.pid').write_text(str(child.pid) + '\n')
+
+    def begin(self, station=None):
+        previous = self.session['mode']
+        self.session['mode'] = 'playing'
+        self.session['progress_at'] = time.monotonic()
+        if station is not None:
+            self.require_station(station, 'lofi')
+            self.settings['defaultStation'] = station
+            self.session['station'] = station
+        if station or previous == 'stopped' or not self.alive('main'):
+            self.start_music()
+        if not self.alive('bg') and not self.alive('feed'):
+            self.start_bg()
+        for id in self.nature:
+            if not self.alive('nature-' + id):
+                self.start_nature(id)
+        for channel in self.channels():
+            if self.alive(channel):
+                ipc(self.sock(channel), ['set_property', 'pause', False])
+        (self.runtime/'paused.flag').unlink(missing_ok=True)
+
+    def pause(self):
+        if self.session['mode'] == 'stopped':
+            return
+        self.session.update(mode='paused', retry_due=0)
+        for channel in self.channels(include_legacy=True):
+            if self.alive(channel):
+                ipc(self.sock(channel), ['set_property', 'pause', True])
+        (self.runtime/'paused.flag').touch()
+
+    def stop(self):
+        self.session.update(mode='stopped', retry_due=0, attempts=0, playing_since=0, feed_token='')
+        for channel in self.channels(include_legacy=True) + ['feed', 'volume', 'mpris']:
+            self.stop_channel(channel)
+        (self.runtime/'paused.flag').unlink(missing_ok=True)
+
+    def require_station(self, id, category):
+        if id not in self.stations or self.stations[id]['category'] != category:
+            raise ValueError(f'Unknown {category} station: {id}')
+
+    def maintain(self):
+        now = time.monotonic()
+        # Migrate the single old nature process without resetting music/voice.
+        if self.alive('noise'):
+            self.stop_channel('noise')
+            if self.session['mode'] != 'stopped':
+                for id in self.nature:
+                    self.start_nature(id)
+        if self.session['mode'] != 'playing':
+            return
+        alive = self.alive('main')
+        position = ipc(self.sock('main'), ['get_property', 'time-pos']) if alive else None
+        if isinstance(position, (int, float)):
+            # Detect stalls even if mpv remains alive with an exhausted buffer.
+            if position != self.session.get('last_position'):
+                self.session.update(last_position=position, progress_at=now)
+            if not self.session.get('playing_since'):
+                self.session['playing_since'] = now
+            if now - self.session.get('progress_at', now) < CONNECT_TIMEOUT:
+                if now - self.session['playing_since'] >= STABLE_SECONDS:
+                    self.session['attempts'] = 0
+                self.session['retry_due'] = 0
+                return
+        elif alive and now - self.session.get('started', now) < CONNECT_TIMEOUT:
+            return
+        if alive:
+            self.stop_channel('main')
+        attempts = self.session.get('attempts', 0)
+        if attempts >= len(RETRY_DELAYS):
+            self.session['retry_due'] = 0
+            return
+        if not self.session.get('retry_due'):
+            self.session['retry_due'] = now + RETRY_DELAYS[attempts]
+        elif now >= self.session['retry_due']:
+            self.session['attempts'] = attempts + 1
+            self.start_music(reset=False)
+
+    def status(self):
+        main_alive = self.alive('main')
+        mode = self.session['mode']
+        position = ipc(self.sock('main'), ['get_property', 'time-pos']) if main_alive else None
+        ready = isinstance(position, (int, float))
+        retry_in = max(0, math.ceil(self.session.get('retry_due', 0) - time.monotonic()))
+        if mode == 'stopped':
+            main_state = 'stopped'
+        elif mode == 'paused':
+            main_state = 'paused'
+        elif ready:
+            main_state = 'playing'
+        elif main_alive:
+            main_state = 'connecting' if not self.session.get('attempts') else 'reconnecting'
+        elif self.session.get('attempts', 0) >= len(RETRY_DELAYS):
+            main_state = 'failed'
+        else:
+            main_state = 'reconnecting'
+        id = self.session.get('station', self.settings['defaultStation'])
+        station = self.stations.get(id, self.stations[self.music[0]])
+        bg = self.stations.get(self.settings.get('bgStation'), {})
+        layers = []
+        for sound in self.nature:
+            config = self.settings['natureLayers'].get(sound, {})
+            layers.append(dict(id=sound, name=self.stations[sound]['name'],
+                               enabled=bool(config.get('enabled')), volume=level(config.get('volume', 100)),
+                               running=self.alive('nature-' + sound)))
+        selected = [s['id'] for s in layers if s['enabled']]
+        state = dict(running=mode != 'stopped', paused=mode == 'paused', main_running=main_alive,
+                     main_state=main_state, retry_in=retry_in, retry_attempt=self.session.get('attempts', 0),
+                     station=id, name=station['name'], category=station['category'],
+                     category_name=station['category_name'], url=station['url'],
+                     main_volume=self.settings['mainVolume'], bg_volume=self.settings['bgVolume'],
+                     master_volume=self.settings['masterVolume'], ducking=self.settings['ducking'],
+                     bg_station=bg.get('id', ''), bg_name=bg.get('name', ''), bg_running=self.alive('bg'),
+                     mix=self.settings.get('mix', False), nature_layers=layers,
+                     nature_volume=self.settings['natureVolume'], noise_volume=self.settings['natureVolume'],
+                     noise_station=selected[0] if selected else 'off', noise_running=any(s['running'] for s in layers),
+                     index=self.music.index(id) if id in self.music else 0, count=len(self.music),
+                     main_title=ipc(self.sock('main'), ['get_property', 'media-title']) if ready else '',
+                     bg_title=ipc(self.sock('bg'), ['get_property', 'media-title']) if self.alive('bg') else '')
+        write_json(self.runtime/'status.json', state)
+        return state
+
+    def action(self, command, args):
+        if command in ('start', 'station'):
+            self.require_station(args[0], 'lofi')
+            self.begin(args[0])
+        elif command in ('play', 'resume'):
+            self.begin(args[0] if args else None)
+        elif command == 'toggle':
+            self.pause() if self.session['mode'] == 'playing' else self.begin()
+        elif command == 'pause':
+            self.pause()
+        elif command == 'stop':
+            self.stop()
+        elif command in ('next', 'skip', 'prev', 'previous'):
+            current = self.session.get('station', self.settings['defaultStation'])
+            index = self.music.index(current) if current in self.music else 0
+            self.begin(self.music[(index + (1 if command in ('next', 'skip') else -1)) % len(self.music)])
+        elif command in ('vol', 'volume'):
+            channel, value = args
+            value = int(value)
+            if not 0 <= value <= 100:
+                raise ValueError('Volume must be 0-100')
+            keys = {'main': 'mainVolume', 'bg': 'bgVolume', 'master': 'masterVolume',
+                    'nature': 'natureVolume', 'noise': 'natureVolume'}
+            if channel in keys:
+                self.settings[keys[channel]] = value
+            else:
+                self.require_station(channel, 'ambience')
+                self.settings['natureLayers'].setdefault(channel, {'enabled': False})['volume'] = value
+        elif command in ('bg', 'background'):
+            id = args[0]
+            if id != 'off' and (id not in self.stations or self.stations[id]['category'] in ('lofi', 'ambience')):
+                raise ValueError('Unknown voice station')
+            self.settings.update(bgStation='' if id == 'off' else id, mix=id != 'off')
+            self.session['feed_token'] = ''
+            self.stop_channel('feed')
+            self.stop_channel('bg')
+            if self.session['mode'] != 'stopped':
+                self.start_bg()
+        elif command == 'mix':
+            value = args[0] if args else 'toggle'
+            if value not in ('on', 'off', 'true', 'false', 'toggle'):
+                raise ValueError('mix takes on/off/toggle')
+            self.settings['mix'] = not self.settings.get('mix') if value == 'toggle' else value in ('on', 'true')
+            if self.settings['mix'] and self.session['mode'] != 'stopped':
+                self.start_bg()
+            else:
+                self.session['feed_token'] = ''
+                self.stop_channel('feed')
+                self.stop_channel('bg')
+        elif command == 'nature':
+            id, choice = args
+            self.require_station(id, 'ambience')
+            if choice not in ('on', 'off', 'toggle'):
+                raise ValueError('nature takes on/off/toggle')
+            layer = self.settings['natureLayers'].setdefault(id, {'volume': 100, 'enabled': False})
+            layer['enabled'] = not layer['enabled'] if choice == 'toggle' else choice == 'on'
+            if layer['enabled'] and self.session['mode'] != 'stopped':
+                if not self.alive('nature-' + id):
+                    self.start_nature(id)
+            else:
+                self.stop_channel('nature-' + id)
+        elif command == 'noise':
+            # Compatibility for saved scripts: replace the entire nature selection.
+            id = args[0]
+            if id != 'off':
+                self.require_station(id, 'ambience')
+            for sound in self.nature:
+                self.settings['natureLayers'].setdefault(sound, {'volume': 100})['enabled'] = sound == id
+                self.stop_channel('nature-' + sound)
+            if id != 'off' and self.session['mode'] != 'stopped':
+                self.start_nature(id)
+        elif command == 'ducking':
+            if args[0] not in ('on', 'off'):
+                raise ValueError('ducking takes on/off')
+            self.settings['ducking'] = args[0] == 'on'
+        elif command == 'default':
+            self.require_station(args[0], 'lofi')
+            self.settings['defaultStation'] = args[0]
+            if self.session['mode'] == 'stopped':
+                self.session['station'] = args[0]
+        elif command == 'bridge-restart':
+            self.stop_channel('mpris')
+        elif command != 'status':
+            raise ValueError('Unknown command')
+        self.save()
+        self.ducker.poll()
+        self.ensure_services()
+        return self.status()
+
+
+def watch(player):
+    with (player.runtime/'volume-worker.lock').open('w') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        deadline = 0
+        while True:
+            player.ducker.poll()
+            if time.monotonic() >= deadline and player.acquire(blocking=False):
+                try:
+                    if player.session['mode'] == 'stopped':
+                        return
+                    player.maintain()
+                    player.save()
+                    player.status()
+                finally:
+                    player.release()
+                deadline = time.monotonic() + 1
+                # Reap mpv children from previous attempts in this worker.
+                try:
+                    while os.waitpid(-1, os.WNOHANG)[0]:
+                        pass
+                except ChildProcessError:
+                    pass
+            time.sleep(.1)
+
+
+def resolve_feed(player, id, token):
+    station = player.stations[id]
+    cache = player.runtime/(hashlib.sha256(id.encode()).hexdigest()[:16] + '.m3u')
+    with cache.with_suffix('.lock').open('w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        result = subprocess.run([sys.executable, str(ROOT/'lofi-feed'), station['url'], str(cache)],
+                                capture_output=True, text=True, timeout=12)
+    if result.returncode:
+        return
+    player.acquire()
+    try:
+        if (player.session['mode'] != 'stopped' and player.settings.get('mix')
+                and player.settings.get('bgStation') == id and player.session.get('feed_token') == token):
+            player.spawn('bg', cache, player.effective(player.settings['bgVolume']),
+                         paused=player.session['mode'] == 'paused')
+            player.session['feed_token'] = ''
+            player.save()
+            player.status()
+    finally:
+        player.release()
+
+
+def main():
+    player = Player()
+    try:
+        if sys.argv[1:2] == ['--resolve-feed']:
+            resolve_feed(player, *sys.argv[2:])
+        elif sys.argv[1:] == ['--watch']:
+            watch(player)
+        else:
+            player.acquire()
+            try:
+                command = sys.argv[1] if len(sys.argv) > 1 else 'status'
+                state = player.action(command, sys.argv[2:])
+                if command == 'status':
+                    print(json.dumps(state))
+            finally:
+                player.release()
+    except (ValueError, IndexError, OSError, subprocess.TimeoutExpired) as error:
+        print(f'Lofi Focus: {error}', file=sys.stderr)
+        sys.exit(1)

@@ -38,9 +38,15 @@ class PlayerTest(unittest.TestCase):
         return subprocess.run([str(self.plugin/'lofi-player'), *args], env=self.env, capture_output=True, text=True, timeout=20, check=check)
 
     def status(self): return json.loads(self.action('status').stdout)
-    def pid(self, channel): return (self.base/'runtime/sky.lofi'/f'{channel}.pid').read_text()
+    def channel(self, channel):
+        if channel == 'noise':
+            settings = json.loads((self.base/'state/sky.lofi/settings.json').read_text())
+            return 'nature-' + next(k for k,v in settings['natureLayers'].items() if v['enabled'])
+        return channel
+
+    def pid(self, channel): return (self.base/'runtime/sky.lofi'/f'{self.channel(channel)}.pid').read_text()
     def prop(self, channel, name):
-        out = subprocess.check_output([str(self.plugin/'lofi-ipc'),str(self.base/'runtime/sky.lofi/sockets'/f'{channel}.sock'),json.dumps({'command':['get_property',name]})],text=True)
+        out = subprocess.check_output([str(self.plugin/'lofi-ipc'),str(self.base/'runtime/sky.lofi/sockets'/f'{self.channel(channel)}.sock'),json.dumps({'command':['get_property',name]})],text=True)
         return json.loads(out)['data']
 
     def tearDown(self):

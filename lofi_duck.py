@@ -33,16 +33,27 @@ class Ducker:
 
     def poll(self):
         try:
-            settings = json.loads(self.settings.read_text())
+            with self.settings.open() as source:
+                settings = json.load(source)
+                settings_revision = os.fstat(source.fileno()).st_mtime_ns
         except (OSError, ValueError):
             return True
         factor = (0.2 if settings.get('ducking', True) and self.recording() else 1) * max(0, min(100, float(settings.get('masterVolume', 100)))) / 100
-        for channel, key, default in [('main', 'mainVolume', 80), ('bg', 'bgVolume', 20), ('noise', 'noiseVolume', 25)]:
+        channels = [('main', settings.get('mainVolume', 80)), ('bg', settings.get('bgVolume', 20))]
+        layers = settings.get('natureLayers')
+        if isinstance(layers, dict):
+            for id, layer in layers.items():
+                if not id.startswith('noise-') or not all(c.isalnum() or c == '-' for c in id):
+                    continue
+                channels.append(('nature-' + id, float(layer.get('volume', 100)) * float(settings.get('natureVolume', 25)) / 100))
+        else:
+            channels.append(('noise', settings.get('noiseVolume', 25)))
+        for channel, base_volume in channels:
             path = self.runtime/f'sky.lofi/sockets/{channel}.sock'
             try:
                 stat = path.stat()
-                volume = max(0, min(100, float(settings.get(key, default)))) * factor
-                value = (stat.st_ino, stat.st_mtime_ns, volume)
+                volume = max(0, min(100, float(base_volume))) * factor
+                value = (stat.st_ino, stat.st_mtime_ns, settings_revision, volume)
                 if self.last.get(channel) == value:
                     continue
                 with socket.socket(socket.AF_UNIX) as client:
