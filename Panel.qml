@@ -292,7 +292,7 @@ Panel {
               font.pixelSize: Style.font.bodySmall
               anchors.verticalCenter: parent.verticalCenter
             }
-            SearchableDropdown {
+            FocusDropdown {
               id: musicPicker
               width: parent.width - Style.space(52) - parent.spacing
               showLabel: false
@@ -352,7 +352,7 @@ Panel {
               font.pixelSize: Style.font.bodySmall
               anchors.verticalCenter: parent.verticalCenter
             }
-            SearchableDropdown {
+            FocusDropdown {
               id: voicePicker
               width: parent.width - Style.space(52) - parent.spacing
               showLabel: false
@@ -409,7 +409,7 @@ Panel {
           }
         }
 
-        SearchableDropdown {
+        FocusDropdown {
           id: naturePicker
           width: parent.width
           visible: root.availableSounds.length > 0
