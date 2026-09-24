@@ -1,11 +1,11 @@
 # Unreleased
 
 - Retry interrupted or stalled music with bounded backoff; pause, stop and station changes cancel pending recovery.
-- Combine nature layers with a shared Nature volume and optional individual levels.
+- Combine nature layers with directly adjustable individual levels, shown beside each selected sound.
 - Add offline tent rain, forest stream, morning birds and night crickets with source credits.
-- Animate the enabled nature sounds only while the panel scene is visible and playing.
+- Use a compact panel with an Add sound picker and collapsed settings; remove nature animations and the separate scene.
 - Consolidate playback, recovery and ducking supervision; move podcast fetches outside the control lock.
-- Migrate existing nature selections and levels automatically; coalesce queued slider changes.
+- Migrate existing nature selections and effective levels automatically; remove the hidden group gain and coalesce queued slider changes.
 
 # 1.0.3
 

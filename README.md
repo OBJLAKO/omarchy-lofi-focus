@@ -6,7 +6,7 @@ Chill radio, background voices and nature sounds for Omarchy. One click to settl
 
 A native Omarchy shell widget that follows your theme, fonts and panel controls.
 Choose one music station, an optional voice and any combination of nature sounds.
-Master changes the whole mix; Music, Voice and Nature set the balance.
+Master changes the whole mix; music, voice and each nature sound have their own level.
 
 ## Install
 
@@ -52,13 +52,12 @@ are cached for six hours. A new voice session starts at the latest episode;
 playback position is not saved. Streams depend on broadcaster availability and region.
 
 **Nature:** rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a forest
-stream, morning birds and night crickets. Tap sound tiles to combine layers.
-Use Nature for the overall level, or expand **Adjust individual levels** to
-balance selected sounds. Your selection and levels are remembered.
+stream, morning birds and night crickets. Use **+ Add sound** to combine layers. Only selected sounds appear in the panel,
+each with a visible volume slider and a remove button. These are direct levels,
+with no hidden Nature group multiplier. Your selection and levels are remembered.
 
 All nine loops ship locally (~14 MB total), with no further downloads.
-Small nature animations follow the sounds inside the open panel and stop when
-hidden or paused. See [audio credits and licenses](SOUNDS-LICENSES.md).
+See [audio credits and licenses](SOUNDS-LICENSES.md).
 
 ## Radio recovery
 
@@ -75,7 +74,7 @@ depends on the station and network.
 
 ## Quiet while dictating
 
-The **Quiet while dictating · VoxType** switch is enabled by default. While VoxType
+The **Quiet while dictating · VoxType** switch in **Settings** is enabled by default. While VoxType
 records, every channel drops to 20% of its chosen effective volume. Normal volume
 returns when recording ends, including during transcription.
 
@@ -83,7 +82,7 @@ No hotkey edits, hooks or system audio changes are needed. The plugin reads
 VoxType's state every 100 ms in the shared playback worker. With no running VoxType or no enabled state file,
 volume is unaffected. Standard `state_file = "auto"` and custom state paths in
 VoxType's default config are supported. A daemon using a separate config is not
-auto-discovered. The switch is always accessible in the panel.
+auto-discovered. The switch is accessible under Settings.
 
 ## Remove
 
@@ -123,7 +122,7 @@ CLI examples:
 ./lofi-player nature noise-tent-rain on
 ./lofi-player nature noise-wind on
 ./lofi-player vol noise-wind 40
-./lofi-player vol nature 35
+./lofi-player vol noise-tent-rain 35
 ./lofi-player stop
 ```
 

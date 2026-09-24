@@ -28,8 +28,7 @@ Panel {
   property bool mixOn: false
   property bool ducking: true
   property var natureLayers: []
-  property int natureVolume: 25
-  property bool showNatureLevels: false
+  property bool settingsExpanded: false
   property string mainState: "stopped"
   property int retryIn: 0
   property int masterVolume: 100
@@ -42,10 +41,6 @@ Panel {
   readonly property bool musicConnecting: mainState === "connecting" || mainState === "reconnecting"
   readonly property bool sessionActive: playerRunning || musicConnecting
   readonly property int enabledNatureCount: natureLayers.filter(function(layer) { return layer.enabled }).length
-  readonly property string audibleNature: natureLayers.filter(function(layer) {
-    return layer.enabled && layer.running && layer.volume > 0
-  }).map(function(layer) { return layer.id }).join(",")
-
   // ---- Stations
   property var categories: []
 
@@ -71,8 +66,12 @@ Panel {
     return out
   }
 
+  readonly property var availableSounds: noiseOptions.filter(function(sound) {
+    return !root.natureLayer(sound.value).enabled
+  })
+
   readonly property var backgroundOptions: {
-    var out = [{ value: "off", label: "Off — no background", description: "Play the main station alone" }]
+    var out = [{ value: "off", label: "Off", description: "No background voice" }]
     for (var i = 0; i < categories.length; i++) {
       if (categories[i].id === "lofi" || categories[i].id === "ambience") continue
       var st = categories[i].stations || []
@@ -103,7 +102,6 @@ Panel {
       root.bgName = String(state.bg_name || "")
       root.mixOn = state.mix === true
       root.natureLayers = Array.isArray(state.nature_layers) ? state.nature_layers : []
-      root.natureVolume = clampVolume(state.nature_volume === undefined ? state.noise_volume : state.nature_volume, 25)
       root.mainState = String(state.main_state || (root.musicRunning ? (root.playerPaused ? "paused" : "playing") : "stopped"))
       root.retryIn = Math.max(0, Math.round(Number(state.retry_in) || 0))
       root.ducking = state.ducking !== false
@@ -134,8 +132,14 @@ Panel {
   function setVolume(channel, value) {
     if (channel === "master") root.masterVolume = value
     else if (channel === "main") root.mainVolume = value
-    else if (channel === "nature") root.natureVolume = value
     else if (channel === "bg") root.bgVolume = value
+    else {
+      var updated = root.natureLayers.slice()
+      for (var i = 0; i < updated.length; i++) {
+        if (updated[i].id === channel) updated[i] = Object.assign({}, updated[i], { volume: value })
+      }
+      root.natureLayers = updated
+    }
     root.runAction(["vol", channel, String(value)])
   }
 
@@ -145,7 +149,7 @@ Panel {
 
   function natureLayer(id) {
     for (var layer of natureLayers) if (layer.id === id) return layer
-    return { enabled: false, running: false, volume: 70 }
+    return { enabled: false, running: false, volume: 25 }
   }
 
   // ---- Data files
@@ -164,67 +168,12 @@ Panel {
   }
 
   onOpenedChanged: {
+    if (!opened) settingsExpanded = false
     if (opened) {
       stationsFile.reload()
       if (hostWidget) {
         if (hostWidget.statusJson) root.applyStatus(hostWidget.statusJson)
         hostWidget.refreshStatus()
-      }
-    }
-  }
-
-  Component {
-    id: heroIcon
-    Item {
-      implicitWidth: Style.space(40)
-      implicitHeight: Style.space(40)
-      width: implicitWidth
-      height: implicitHeight
-
-      Canvas {
-        id: cupCanvas
-        anchors.fill: parent
-        property color ink: root.isPlaying ? Color.urgent : root.contentForeground
-        property real steamPhase: 0
-        onInkChanged: requestPaint()
-        onSteamPhaseChanged: requestPaint()
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
-        NumberAnimation on steamPhase {
-          from: 0
-          to: 1
-          duration: 2800
-          loops: Animation.Infinite
-          running: root.opened && root.isPlaying
-        }
-        onPaint: {
-          var c = getContext("2d")
-          c.reset()
-          c.scale(width / 40, height / 40)
-          c.strokeStyle = ink
-          c.lineWidth = 1.8
-          c.lineCap = "round"
-          c.lineJoin = "round"
-          // The cup stays still; only the three steam wisps rise and fade.
-          c.beginPath()
-          c.moveTo(7, 18); c.lineTo(28, 18); c.lineTo(28, 27)
-          c.quadraticCurveTo(28, 33, 22, 33); c.lineTo(13, 33)
-          c.quadraticCurveTo(7, 33, 7, 27); c.closePath(); c.stroke()
-          c.beginPath(); c.moveTo(28, 20); c.lineTo(31, 20)
-          c.bezierCurveTo(39, 20, 39, 29, 28, 28); c.stroke()
-          c.beginPath(); c.moveTo(5, 37); c.lineTo(33, 37); c.stroke()
-          for (var i = 0; i < 3; i++) {
-            var phase = (steamPhase + i / 3) % 1
-            var x = 12 + i * 6
-            var y = 16 - phase * 8
-            var sway = Math.sin(phase * Math.PI * 2) * 1.8
-            c.globalAlpha = Math.sin(phase * Math.PI) * 0.7
-            c.beginPath(); c.moveTo(x, y)
-            c.bezierCurveTo(x - 3 + sway, y - 2, x + 3 + sway, y - 4, x, y - 7)
-            c.stroke()
-          }
-          c.globalAlpha = 1
-        }
       }
     }
   }
@@ -237,18 +186,17 @@ Panel {
     open: root.opened
     centerOnBar: true
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(420))
-    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight)
+    contentWidth: panel.fittedContentWidth(Style.space(360))
+    contentHeight: panel.fittedContentHeight(Math.min(contentColumn.implicitHeight, Style.space(520)))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: musicPicker.popupOpen || voicePicker.popupOpen
+      blocked: musicPicker.popupOpen || voicePicker.popupOpen || naturePicker.popupOpen
       onCloseRequested: root.close()
     }
 
     Flickable {
-      id: panelScroll
       anchors.fill: parent
       contentWidth: width
       contentHeight: contentColumn.implicitHeight
@@ -259,408 +207,249 @@ Panel {
       Column {
         id: contentColumn
         width: parent.width
-        spacing: Style.space(12)
+        spacing: Style.space(10)
 
-        // ---- Hero: what is playing right now
-        PanelHero {
-          width: parent.width
-          iconComponent: heroIcon
-          foreground: root.contentForeground
-          fontFamily: root.contentFontFamily
-          title: root.playerName || "Lofi Radio"
-          meta: {
-            var parts = []
-            if (root.playerCategoryName) parts.push(root.playerCategoryName)
-            parts.push(root.playerPaused ? "Paused" : (root.musicConnecting ? "Connecting music" : (root.playerRunning ? "Playing" : "Stopped")))
-            if (root.stationCount > 1) parts.push((root.stationIndex + 1) + "/" + root.stationCount)
-            return parts.join("  ·  ")
-          }
-          detail: root.musicRunning && root.isPlaying ? "LIVE" : ""
-        }
-
-        PanelSeparator { width: parent.width; foreground: root.contentForeground }
-
-        // ---- Transport
         Row {
-          spacing: Style.space(6)
-
+          width: parent.width
+          spacing: Style.space(8)
+          Canvas {
+            width: Style.space(26)
+            height: Style.space(26)
+            anchors.verticalCenter: parent.verticalCenter
+            property color ink: root.isPlaying ? Color.urgent : root.contentForeground
+            onInkChanged: requestPaint()
+            onPaint: {
+              var c = getContext("2d")
+              c.reset(); c.scale(width / 24, height / 24)
+              c.strokeStyle = ink; c.lineWidth = 1.6; c.lineCap = "round"; c.lineJoin = "round"
+              c.beginPath(); c.moveTo(4,8); c.lineTo(16,8); c.lineTo(16,14)
+              c.quadraticCurveTo(16,18,12,18); c.lineTo(8,18); c.quadraticCurveTo(4,18,4,14); c.closePath(); c.stroke()
+              c.beginPath(); c.moveTo(16,9); c.lineTo(18,9); c.bezierCurveTo(23,9,23,15,16,15); c.stroke()
+              c.beginPath(); c.moveTo(3,21); c.lineTo(21,21); c.moveTo(8,5); c.lineTo(8,3); c.moveTo(13,5); c.lineTo(13,3); c.stroke()
+            }
+          }
+          Column {
+            width: parent.width - Style.space(26) - playButton.width - stopButton.width - parent.spacing * 3
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(2)
+            Text {
+              text: "Lofi Focus"
+              color: root.contentForeground
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+            }
+            Text {
+              text: root.playerPaused ? "Paused" : (root.musicConnecting ? "Connecting…" : (root.playerRunning ? "Playing" : "Ready"))
+              color: root.contentMuted
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+            }
+          }
           Button {
-            iconText: root.sessionActive && !root.playerPaused ? "\uf04c" : "\uf04b"
+            id: playButton
             text: root.playerPaused ? "Resume" : (root.sessionActive ? "Pause" : "Play")
+            iconText: root.sessionActive && !root.playerPaused ? "\uf04c" : "\uf04b"
             foreground: root.contentForeground
+            focusable: true
+            anchors.verticalCenter: parent.verticalCenter
             onClicked: root.runAction(["toggle"])
           }
-
           Button {
-            iconText: "\uf048"
-            text: "Prev"
-            opacity: root.stationCount > 1 ? 1 : 0.4
-            foreground: root.contentForeground
-            onClicked: if (root.stationCount > 1) root.runAction(["prev"])
-          }
-
-          Button {
-            iconText: "\uf051"
-            text: "Next"
-            opacity: root.stationCount > 1 ? 1 : 0.4
-            foreground: root.contentForeground
-            onClicked: if (root.stationCount > 1) root.runAction(["next"])
-          }
-
-          Button {
+            id: stopButton
             iconText: "\uf04d"
-            text: "Stop"
+            tooltipText: "Stop all sounds"
             foreground: root.contentForeground
+            focusable: true
+            anchors.verticalCenter: parent.verticalCenter
             onClicked: root.runAction(["stop"])
           }
         }
 
-        Text {
-          visible: root.musicConnecting || root.mainState === "failed"
+        MixerLevel {
           width: parent.width
-          text: root.mainState === "failed" ? "Radio unavailable. Try another station or retry below."
-            : root.mainState === "connecting" ? "Connecting to the radio…"
-            : root.retryIn > 0 ? "Radio interrupted · retrying in " + root.retryIn + "s"
-            : "Reconnecting to the radio…"
-          textFormat: Text.PlainText
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
-          color: root.contentMuted
-          wrapMode: Text.WordWrap
-        }
-
-        Button {
-          visible: root.mainState === "failed"
-          text: "Retry music"
-          foreground: root.contentForeground
-          onClicked: root.runAction(["start", root.playerStationId])
-        }
-
-        // ---- Volume
-        PanelSectionHeader {
-          text: "Volume"
+          label: "Master"
+          value: root.masterVolume
+          bar: root.bar
           foreground: root.contentForeground
           fontFamily: root.contentFontFamily
+          onEdited: function(value) { root.setVolume("master", value) }
         }
+
+        PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
         Column {
           width: parent.width
-          spacing: Style.space(8)
-
+          spacing: Style.space(3)
           Row {
             width: parent.width
-            spacing: Style.space(8)
-
+            spacing: Style.space(6)
             Text {
-              text: "Master"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              color: root.contentMuted
               width: Style.space(52)
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            PanelSlider {
-              width: parent.width - parent.spacing * 2 - Style.space(52) - Style.space(34)
-              bar: root.bar
-              minimum: 0
-              maximum: 100
-              step: 5
-              integer: true
-              value: root.masterVolume
-              onReleased: function(value) { root.setVolume("master", value) }
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-              text: root.masterVolume + "%"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              color: root.contentForeground
-              width: Style.space(34)
-              anchors.verticalCenter: parent.verticalCenter
-            }
-          }
-
-          Row {
-            width: parent.width
-            spacing: Style.space(8)
-
-            Text {
               text: "Music"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              color: root.contentMuted
-              width: Style.space(52)
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            PanelSlider {
-              width: parent.width - parent.spacing * 2 - Style.space(52) - Style.space(34)
-              bar: root.bar
-              minimum: 0
-              maximum: 100
-              step: 5
-              integer: true
-              value: root.mainVolume
-              onReleased: function(value) { root.setVolume("main", value) }
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-              text: root.mainVolume + "%"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
               color: root.contentForeground
-              width: Style.space(34)
-              anchors.verticalCenter: parent.verticalCenter
-            }
-          }
-
-          Row {
-            width: parent.width
-            spacing: Style.space(8)
-
-            Text {
-              text: "Voice"
               font.family: root.contentFontFamily
               font.pixelSize: Style.font.bodySmall
-              color: root.contentMuted
-              width: Style.space(52)
               anchors.verticalCenter: parent.verticalCenter
             }
-
-            PanelSlider {
-              width: parent.width - parent.spacing * 2 - Style.space(52) - Style.space(34)
-              bar: root.bar
-              minimum: 0
-              maximum: 100
-              step: 5
-              integer: true
-              value: root.bgVolume
-              enabled: root.mixOn
-              opacity: root.mixOn ? 1 : 0.5
-              onReleased: function(value) { root.setVolume("bg", value) }
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-              text: root.bgVolume + "%"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              color: root.mixOn ? root.contentForeground : root.contentMuted
-              width: Style.space(34)
-              anchors.verticalCenter: parent.verticalCenter
+            SearchableDropdown {
+              id: musicPicker
+              width: parent.width - Style.space(52) - parent.spacing
+              showLabel: false
+              options: root.musicOptions
+              value: root.playerStationId
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+              placeholderText: "Choose a station…"
+              onChanged: function(value) { root.runAction(["start", value]) }
             }
           }
-          Row {
+          MixerLevel {
             width: parent.width
-            spacing: Style.space(8)
-
-            Text {
-              text: "Nature"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              color: root.contentMuted
-              width: Style.space(52)
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            PanelSlider {
-              width: parent.width - parent.spacing * 2 - Style.space(52) - Style.space(34)
-              bar: root.bar
-              minimum: 0
-              maximum: 100
-              step: 5
-              integer: true
-              value: root.natureVolume
-              onReleased: function(value) { root.setVolume("nature", value) }
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Text {
-              text: root.natureVolume + "%"
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              color: root.contentForeground
-              width: Style.space(34)
-              anchors.verticalCenter: parent.verticalCenter
-            }
-          }
-
-        }
-
-        PanelSeparator { width: parent.width; foreground: root.contentForeground }
-
-        PanelSectionHeader {
-          text: "Your focus space"
-          foreground: root.contentForeground
-          fontFamily: root.contentFontFamily
-        }
-
-        SearchableDropdown {
-          width: parent.width
-          id: musicPicker
-          label: "Music"
-          options: root.musicOptions
-          value: root.playerStationId
-          foreground: root.contentForeground
-          placeholderText: "Choose a station…"
-          onChanged: function(value) { root.runAction(["start", value]) }
-        }
-
-        SearchableDropdown {
-          width: parent.width
-          id: voicePicker
-          label: "Background voice"
-          options: root.backgroundOptions
-          value: root.mixOn ? root.bgStation : "off"
-          foreground: root.contentForeground
-          placeholderText: "Choose a voice…"
-          onChanged: function(value) { root.runAction(["bg", value]) }
-        }
-
-        PanelSeparator { width: parent.width; foreground: root.contentForeground }
-
-        Column {
-          width: parent.width
-          spacing: Style.space(4)
-          PanelSectionHeader {
-            text: "Nature sounds" + (root.enabledNatureCount > 0 ? " · " + root.enabledNatureCount + " selected" : "")
+            value: root.mainVolume
+            bar: root.bar
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
+            onEdited: function(value) { root.setVolume("main", value) }
           }
-          Text {
+          Row {
+            visible: root.musicConnecting || root.mainState === "failed"
             width: parent.width
-            text: "Pick a few sounds to layer together."
-            textFormat: Text.PlainText
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-            color: root.contentMuted
-          }
-        }
-
-        NatureScene {
-          id: natureScene
-          width: parent.width
-          height: Style.space(48)
-          visible: root.enabledNatureCount > 0
-          foreground: root.contentForeground
-          accent: Color.accent
-          sounds: root.audibleNature
-          playing: root.opened && root.isPlaying && root.masterVolume > 0 && root.natureVolume > 0
-            && y + height > panelScroll.contentY && y < panelScroll.contentY + panelScroll.height
-        }
-
-        Grid {
-          id: natureGrid
-          width: parent.width
-          columns: 2
-          spacing: Style.space(6)
-          Repeater {
-            model: root.noiseOptions
+            spacing: Style.space(6)
+            Text {
+              width: parent.width - (retryButton.visible ? retryButton.width + parent.spacing : 0)
+              text: root.mainState === "failed" ? "Radio unavailable"
+                : root.retryIn > 0 ? "Reconnecting in " + root.retryIn + "s…" : "Connecting to the radio…"
+              textFormat: Text.PlainText
+              color: root.contentMuted
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              anchors.verticalCenter: parent.verticalCenter
+            }
             Button {
-              required property var modelData
-              width: (natureGrid.width - natureGrid.spacing) / 2
-              text: modelData.label
-              iconText: selected ? "\uf00c" : "\uf067"
-              iconSize: Style.font.caption
-              fontSize: Style.font.bodySmall
-              leftAlign: true
-              bordered: true
-              focusable: true
+              id: retryButton
+              visible: root.mainState === "failed"
+              text: "Retry"
+              fontSize: Style.font.caption
               foreground: root.contentForeground
-              selected: root.natureLayer(modelData.value).enabled
-              tooltipText: modelData.description || ""
-              onClicked: root.runAction(["nature", modelData.value, "toggle"])
+              focusable: true
+              onClicked: root.runAction(["start", root.playerStationId])
             }
           }
-        }
-
-        Button {
-          visible: root.enabledNatureCount > 0
-          text: root.showNatureLevels ? "Hide individual levels" : "Adjust individual levels"
-          iconText: root.showNatureLevels ? "\uf106" : "\uf107"
-          fontSize: Style.font.caption
-          foreground: root.contentForeground
-          focusable: true
-          onClicked: root.showNatureLevels = !root.showNatureLevels
         }
 
         Column {
           width: parent.width
-          visible: root.showNatureLevels && root.enabledNatureCount > 0
-          spacing: Style.space(8)
-          // Keep delegates stable while status updates arrive during a drag.
-          Repeater {
-            model: root.noiseOptions
-            Row {
-              required property var modelData
-              readonly property var natureState: root.natureLayer(modelData.value)
-              visible: natureState.enabled
-              width: parent.width
-              spacing: Style.space(8)
-              Text {
-                width: Style.space(116)
-                text: modelData.label
-                textFormat: Text.PlainText
-                color: root.contentMuted
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.bodySmall
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-              }
-              PanelSlider {
-                width: parent.width - parent.spacing * 2 - Style.space(116) - Style.space(34)
-                bar: root.bar
-                minimum: 0
-                maximum: 100
-                step: 5
-                integer: true
-                value: parent.natureState.volume
-                onReleased: function(value) { root.setVolume(parent.modelData.value, value) }
-                anchors.verticalCenter: parent.verticalCenter
-              }
-              Text {
-                width: Style.space(34)
-                text: parent.natureState.volume + "%"
-                color: root.contentForeground
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                anchors.verticalCenter: parent.verticalCenter
-              }
+          spacing: Style.space(3)
+          Row {
+            width: parent.width
+            spacing: Style.space(6)
+            Text {
+              width: Style.space(52)
+              text: "Voice"
+              color: root.contentForeground
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.bodySmall
+              anchors.verticalCenter: parent.verticalCenter
             }
+            SearchableDropdown {
+              id: voicePicker
+              width: parent.width - Style.space(52) - parent.spacing
+              showLabel: false
+              options: root.backgroundOptions
+              value: root.mixOn ? root.bgStation : "off"
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+              placeholderText: "Choose a voice…"
+              onChanged: function(value) { root.runAction(["bg", value]) }
+            }
+          }
+          MixerLevel {
+            visible: root.mixOn
+            width: parent.width
+            value: root.bgVolume
+            bar: root.bar
+            foreground: root.contentForeground
+            fontFamily: root.contentFontFamily
+            onEdited: function(value) { root.setVolume("bg", value) }
           }
         }
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
-        Row {
+        Text {
+          text: "Nature"
+          color: root.contentMuted
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.caption
+        }
+
+        Column {
+          visible: root.enabledNatureCount > 0
           width: parent.width
-          spacing: Style.space(10)
+          spacing: Style.space(6)
+          Repeater {
+            // Stable delegates keep a dragged slider alive across status updates.
+            model: root.noiseOptions
+            MixerLevel {
+              required property var modelData
+              readonly property var soundState: root.natureLayer(modelData.value)
+              visible: soundState.enabled
+              width: parent.width
+              label: modelData.label
+              labelWidth: Style.space(108)
+              value: soundState.volume
+              removable: true
+              bar: root.bar
+              foreground: root.contentForeground
+              fontFamily: root.contentFontFamily
+              onEdited: function(value) { root.setVolume(modelData.value, value) }
+              onRemoveRequested: root.runAction(["nature", modelData.value, "off"])
+            }
+          }
+        }
+
+        SearchableDropdown {
+          id: naturePicker
+          width: parent.width
+          visible: root.availableSounds.length > 0
+          showLabel: false
+          triggerLabel: "+ Add sound"
+          placeholderText: "Find a sound…"
+          options: root.availableSounds
+          value: ""
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
+          onChanged: function(value) {
+            root.runAction(["nature", value, "on"])
+            Qt.callLater(function() { naturePicker.value = "" })
+          }
+        }
+
+        Button {
+          text: root.settingsExpanded ? "Hide settings" : "Settings"
+          iconText: root.settingsExpanded ? "\uf106" : "\uf013"
+          fontSize: Style.font.caption
+          foreground: root.contentMuted
+          focusable: true
+          onClicked: root.settingsExpanded = !root.settingsExpanded
+        }
+        Row {
+          visible: root.settingsExpanded
+          width: parent.width
+          spacing: Style.space(8)
           ToggleSwitch {
             checked: root.ducking
             foreground: root.contentForeground
-            anchors.verticalCenter: parent.verticalCenter
             onToggled: root.runAction(["ducking", root.ducking ? "off" : "on"])
           }
           Text {
             text: "Quiet while dictating · VoxType"
             color: root.contentForeground
             font.family: root.contentFontFamily
-            font.pixelSize: Style.font.bodySmall
+            font.pixelSize: Style.font.caption
             anchors.verticalCenter: parent.verticalCenter
           }
-        }
-
-        // ---- Footer
-        Text {
-          width: parent.width
-          text: "Your mix is saved automatically."
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
-          color: root.contentMuted
-          elide: Text.ElideMiddle
         }
       }
     }
