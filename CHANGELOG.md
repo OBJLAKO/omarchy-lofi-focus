@@ -2,7 +2,8 @@
 
 - Scroll the bar widget to adjust Master volume, preserving all channel balances.
 - Remove I Love Chillhop and FluxFM Chillhop after reported advertising interruptions.
-- Restore Groove Salad as the default for new installations.
+- Add Lilo-Fi Radio using its official player stream; the operator states no ads
+  or mid-stream interruptions. Make it the default for new installations.
 
 # 1.0.0
 

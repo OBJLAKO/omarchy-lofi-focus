@@ -38,7 +38,11 @@ the plugin directory, so changing a station or volume does not reload the shell.
 
 ## Sounds
 
-**Music:** 11 SomaFM chill, ambient and downtempo stations, including Groove Salad,
+**Music:** [Lilo-Fi Radio](https://lilofiradio.com/lofi-music-no-ads), the default
+for new installations, streams lo-fi hip-hop. Its operator explicitly states
+that this own-brand stream has no ads or mid-stream interruptions. It plays
+directly through mpv without extra packages. External stream policies can change.
+Also includes 11 SomaFM chill, ambient and downtempo stations, including Groove Salad,
 Groove Salad Classic, DEF CON Radio, Secret Agent and Synphaera.
 
 **Voices:** talk radio, ATC and ongoing developer/Linux podcasts: The Changelog,

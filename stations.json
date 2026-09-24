@@ -1,12 +1,18 @@
 {
   "_help": "Add or edit stations here. Each station needs id, name, and a direct stream url playable by mpv (mp3/aac/ogg, or a YouTube link). Changes hot-reload into the panel.",
-  "_defaultStation": "lofi-groove-salad",
+  "_defaultStation": "lofi-lilo",
   "categories": [
     {
       "id": "lofi",
       "name": "Lofi & Chill",
       "icon": "\uf001",
       "stations": [
+        {
+          "id": "lofi-lilo",
+          "name": "Lilo-Fi Radio",
+          "description": "Lo-fi hip-hop \u00b7 ad-free stream by Lilo-Fi",
+          "url": "https://azurecloud.pvtwebs.com/listen/lilo/radio.mp3"
+        },
         {
           "id": "lofi-groove-salad",
           "name": "Groove Salad",
