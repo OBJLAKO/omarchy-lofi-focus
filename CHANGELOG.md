@@ -1,5 +1,9 @@
-# Unreleased
+# 1.1.0
 
+- Close an open dropdown when its trigger is clicked again; preserve outside-click and keyboard dismissal.
+- Keep VoxType automatic Pause/Play from overriding enabled dictation ducking, and log transport command sources.
+- Add Kalizo Lo-fi, Purrple Cat and Lofi Cafe Chilling, whose operators state that their streams are ad-free.
+- Remove SomaFM following its updated third-party app policy; migrate saved stations without mislabeling active audio.
 - Retry interrupted or stalled music with bounded backoff; pause, stop and station changes cancel pending recovery.
 - Combine nature layers with directly adjustable individual levels, shown beside each selected sound.
 - Add offline tent rain, forest stream, morning birds and night crickets with source credits.

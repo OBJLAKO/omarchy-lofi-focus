@@ -38,12 +38,11 @@ the plugin directory, so changing a station or volume does not reload the shell.
 
 ## Sounds
 
-**Music:** [Lilo-Fi Radio](https://lilofiradio.com/lofi-music-no-ads), the default
-for new installations, streams lo-fi hip-hop. Its operator explicitly states
-that this own-brand stream has no ads or mid-stream interruptions. It plays
-directly through mpv without extra packages. External stream policies can change.
-Also includes 11 SomaFM chill, ambient and downtempo stations, including Groove Salad,
-Groove Salad Classic, DEF CON Radio, Secret Agent and Synphaera.
+**Music:** four relaxed lo-fi stations: Lilo-Fi Radio (the default), Kalizo Lo-fi,
+Purrple Cat and Lofi Cafe · Chilling. They range from mellow jazz-influenced beats
+to dreamy instrumentals and play directly through mpv without extra packages.
+Their operators describe these streams as ad-free. See [station sources and
+policies](STATIONS.md); external streams and policies can change.
 
 **Voices:** talk radio, ATC and ongoing developer/Linux podcasts: The Changelog,
 Changelog & Friends, LINUX Unplugged, Talk Python To Me and Linux Matters.
@@ -76,7 +75,9 @@ depends on the station and network.
 
 The **Quiet while dictating · VoxType** switch in **Settings** is enabled by default. While VoxType
 records, every channel drops to 20% of its chosen effective volume. Normal volume
-returns when recording ends, including during transcription.
+returns when recording ends, including during transcription. With ducking enabled,
+VoxType’s automatic MPRIS Pause/Play requests are ignored so they do not override
+this volume adjustment. Manual media controls still work normally.
 
 No hotkey edits, hooks or system audio changes are needed. The plugin reads
 VoxType's state every 100 ms in the shared playback worker. With no running VoxType or no enabled state file,
@@ -101,6 +102,9 @@ Settings: `$XDG_STATE_HOME/sky.lofi/settings.json` (default
 `~/.local/state/sky.lofi/settings.json`). Runtime sockets, status, podcast playlists
 and logs: `$XDG_RUNTIME_DIR/sky.lofi/`. Legacy in-plugin settings migrate once.
 Playback never writes to the watched plugin directory.
+`logs/control.log` records transport commands and their source process, rotating
+at 64 KB. It contains no audio or dictated text and helps distinguish an external
+media-key pause from a radio disconnection.
 
 ```sh
 omarchy plugin validate .
@@ -110,7 +114,9 @@ dbus-run-session -- python -B -m unittest discover -s tests -p '*_test.py'
 Integration tests use real mpv with silent local audio and isolated settings,
 runtime and D-Bus. They cover playback, concurrent settings, layered volume,
 VoxType transitions, competing MPRIS ownership, worker recovery and cancelled
-radio retries. Playback control uses a single serialized Python controller;
+radio retries. D-Bus tests also cover VoxType auto-pause and ordinary media
+controls; Qt interaction tests cover dropdown clicks, search and keyboard input.
+Playback control uses a single serialized Python controller;
 network feed loading runs outside its control lock.
 
 CLI examples:
@@ -133,7 +139,8 @@ Plugin code: [MIT](LICENSE). Derived from
 upstream attribution is preserved. Maintained by [OBJLAKO](https://github.com/OBJLAKO).
 
 Radio and podcast audio are streamed from their publishers, not bundled or
-rehosted. Sources include [SomaFM](https://somafm.com/listen/),
+rehosted. Music sources are Lilo-Fi Radio, Kalizo Radio, Purrple Cat and Lofi Cafe;
+links and stream policies are in [STATIONS.md](STATIONS.md). Voice sources include
 [The Changelog](https://changelog.com/podcast) and the broadcasters listed in
 `stations.json`. Bundled nature recordings retain their separate licenses and
 attribution in [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md). The cover is generated artwork.
