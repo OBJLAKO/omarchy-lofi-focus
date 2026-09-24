@@ -271,6 +271,30 @@
           "name": "Ocean waves",
           "description": "Local seamless loop \u00b7 no network needed",
           "url": "assets/waves.ogg"
+        },
+        {
+          "id": "noise-tent-rain",
+          "name": "Tent rain",
+          "description": "Raindrops on canvas \u00b7 offline loop",
+          "url": "assets/tent-rain.ogg"
+        },
+        {
+          "id": "noise-stream",
+          "name": "Forest stream",
+          "description": "A small stream in the woods \u00b7 offline loop",
+          "url": "assets/stream.ogg"
+        },
+        {
+          "id": "noise-birds",
+          "name": "Morning birds",
+          "description": "Wood thrush and woodland birds \u00b7 offline loop",
+          "url": "assets/birds.ogg"
+        },
+        {
+          "id": "noise-night",
+          "name": "Night crickets",
+          "description": "Quiet summer-night crickets \u00b7 offline loop",
+          "url": "assets/night.ogg"
         }
       ]
     }
