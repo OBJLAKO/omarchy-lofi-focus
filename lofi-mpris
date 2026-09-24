@@ -10,6 +10,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 sys.dont_write_bytecode = True
 
@@ -17,6 +18,9 @@ import gi
 
 gi.require_version("Gio", "2.0")
 from gi.repository import Gio, GLib  # noqa: E402
+from lofi_media import DictationTransport, is_voxtype_process, ducking_enabled
+
+dictation_transport = DictationTransport()
 
 BUS_NAME = "org.mpris.MediaPlayer2.sky.lofi"
 OBJ_PATH = "/org/mpris/MediaPlayer2"
@@ -72,12 +76,14 @@ XML = """<node>
 node = Gio.DBusNodeInfo.new_for_xml(XML)
 
 
-def run_action(*args):
+def run_action(*args, source="mpris"):
+    env = dict(os.environ, LOFI_CONTROL_SOURCE=source)
     subprocess.Popen(
         [PLAYER, *args],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         start_new_session=True,
+        env=env,
     )
 
 
@@ -177,23 +183,47 @@ def prop_variant(connection, sender, object_path, interface_name, name):
     return None
 
 
+def sender_pid(connection, sender):
+    try:
+        result = connection.call_sync('org.freedesktop.DBus', '/org/freedesktop/DBus',
+                                      'org.freedesktop.DBus', 'GetConnectionUnixProcessID',
+                                      GLib.Variant('(s)', (sender,)), GLib.VariantType.new('(u)'),
+                                      Gio.DBusCallFlags.NONE, 500, None)
+        return result.unpack()[0]
+    except GLib.Error:
+        return None
+
+
 def on_method_call(connection, sender, object_path, interface_name, method_name, parameters, invocation):
+    pid = sender_pid(connection, sender)
+    try:
+        origin = Path(f'/proc/{pid}/exe').resolve(strict=True).name if pid else 'unknown'
+    except OSError:
+        origin = 'unknown'
+    source = f'mpris:{origin}:{method_name}'
+    if (interface_name == 'org.mpris.MediaPlayer2.Player'
+            and dictation_transport.ignore(method_name, pid, is_voxtype_process(pid), ducking_enabled())):
+        # VoxType pauses before writing its recording state; use D-Bus identity,
+        # not the state-file timing. Ignore its paired resume as well.
+        print(f'Ignored {method_name} from {origin}; dictation ducking owns volume', flush=True)
+        invocation.return_value(None)
+        return
     if interface_name == "org.mpris.MediaPlayer2":
         if method_name == "Quit":
-            run_action("stop")
+            run_action("stop", source=source)
     elif interface_name == "org.mpris.MediaPlayer2.Player":
         if method_name == "Play":
-            run_action("play")
+            run_action("play", source=source)
         elif method_name == "Pause":
-            run_action("pause")
+            run_action("pause", source=source)
         elif method_name == "PlayPause":
-            run_action("toggle")
+            run_action("toggle", source=source)
         elif method_name == "Next":
-            run_action("next")
+            run_action("next", source=source)
         elif method_name == "Previous":
-            run_action("prev")
+            run_action("prev", source=source)
         elif method_name == "Stop":
-            run_action("stop")
+            run_action("stop", source=source)
         # Seek/SetPosition/OpenUri are meaningless for live streams; ignore.
     invocation.return_value(None)
 

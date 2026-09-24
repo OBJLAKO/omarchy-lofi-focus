@@ -42,6 +42,19 @@ def write_json(path, value):
     temporary.replace(path)
 
 
+def log_control(runtime, event):
+    """Small rotating transport log, with no audio or dictated text."""
+    try:
+        path = runtime/'logs'/'control.log'
+        if path.exists() and path.stat().st_size > 65536:
+            path.replace(path.with_suffix('.log.previous'))
+        event['time'] = time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        with path.open('a') as output:
+            output.write(json.dumps(event) + '\n')
+    except OSError:
+        pass  # Diagnostics must never prevent Pause or Stop.
+
+
 def level(value, default=0):
     try:
         number = float(value)
@@ -365,6 +378,13 @@ class Player:
         return state
 
     def action(self, command, args):
+        if command in ('play', 'resume', 'pause', 'toggle', 'stop', 'start', 'station', 'next', 'skip', 'prev', 'previous'):
+            try:
+                parent = Path(f'/proc/{os.getppid()}/comm').read_text().strip()
+            except OSError:
+                parent = 'unknown'
+            log_control(self.runtime, dict(command=command, source=os.environ.get('LOFI_CONTROL_SOURCE', parent),
+                                           before=self.session['mode']))
         if command in ('start', 'station'):
             self.require_station(args[0], 'lofi')
             self.begin(args[0])
