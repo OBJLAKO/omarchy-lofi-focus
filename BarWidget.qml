@@ -24,6 +24,7 @@ BarWidget {
   property int masterVolume: 100
   property int bgVolume: 40
   property bool statusReady: false
+  property string statusJson: ""
   property int pendingMasterVolume: -1
   property var actionQueue: []
 
@@ -58,6 +59,7 @@ BarWidget {
     if ("settings" in target) target.settings = root.settings
     if ("anchorItem" in target) target.anchorItem = button
     if ("hostWidget" in target) target.hostWidget = root
+    if (root.statusJson) target.applyStatus(root.statusJson)
   }
 
   function singleLineText(value, limit) {
@@ -67,7 +69,9 @@ BarWidget {
   function applyStatus(raw) {
     try {
       if (typeof raw !== "string" || raw.length > 65536) return
-      var state = JSON.parse(raw || "{}")
+      var state = JSON.parse(raw)
+      if (typeof state.running !== "boolean" || typeof state.paused !== "boolean") return
+      root.statusJson = raw
       root.playerRunning = state.running === true
       root.playerPaused = state.paused === true
       root.stationName = root.singleLineText(state.name || "", 120)
@@ -77,8 +81,13 @@ BarWidget {
       if (!volumeProcess.running && root.pendingMasterVolume < 0) root.masterVolume = Math.max(0, Math.min(100, Math.round(Number(state.master_volume === undefined ? 100 : state.master_volume)) || 0))
       root.bgVolume = Math.max(0, Math.min(100, Math.round(Number(state.bg_volume === undefined ? 40 : state.bg_volume)) || 0))
     } catch (error) {
+      console.warn("Lofi status parse:", String(error))
       return
     }
+  }
+
+  function refreshStatus() {
+    if (!statusInitProcess.running) statusInitProcess.running = true
   }
 
   function runAction(args) {
@@ -110,6 +119,7 @@ BarWidget {
 
   // ---- Status polling
   FileView {
+    id: statusFile
     path: root.statusReady ? root.statusPath : ""
     watchChanges: true
     atomicWrites: true
@@ -120,7 +130,11 @@ BarWidget {
 
   Process {
     id: statusInitProcess
-    command: []
+    command: [root.playerPath, "status"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.applyStatus(text)
+    }
     onExited: function(exitCode) {
       if (exitCode === 0) root.statusReady = true
     }
@@ -132,6 +146,7 @@ BarWidget {
     onExited: function(exitCode) {
       if (root.actionQueue.length) { var next = root.actionQueue.shift(); Qt.callLater(function() { root.runAction(next) }) }
       if (exitCode === 0) root.statusReady = true
+      Qt.callLater(root.refreshStatus)
     }
   }
 
@@ -140,6 +155,7 @@ BarWidget {
     command: []
     onExited: function(exitCode) {
       Qt.callLater(root.flushVolume)
+      Qt.callLater(root.refreshStatus)
     }
   }
 
@@ -149,7 +165,7 @@ BarWidget {
   }
 
   Timer {
-    interval: 5000
+    interval: 2000
     running: true
     repeat: true
     onTriggered: {
@@ -173,6 +189,7 @@ BarWidget {
   IpcHandler {
     target: "sky.lofi"
 
+    function status(): string { return root.statusJson }
     function open(): void { root.open() }
     function close(): void { root.close() }
     function show(): void { root.open() }
@@ -229,9 +246,7 @@ BarWidget {
         return
       }
       // Left click: play / pause / resume.
-      if (!root.playerRunning) root.runAction(["play"])
-      else if (root.playerPaused) root.runAction(["resume"])
-      else root.runAction(["pause"])
+      root.runAction(["toggle"])
     }
 
     onWheelMoved: function(delta) {

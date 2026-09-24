@@ -80,7 +80,8 @@ Panel {
   function applyStatus(raw) {
     try {
       if (typeof raw !== "string" || raw.length > 65536) return
-      var state = JSON.parse(raw || "{}")
+      var state = JSON.parse(raw)
+      if (typeof state.running !== "boolean" || typeof state.paused !== "boolean") return
       root.playerRunning = state.running === true
       root.playerPaused = state.paused === true
       root.playerStationId = String(state.station || "")
@@ -99,6 +100,7 @@ Panel {
       root.stationIndex = Math.max(0, Math.round(Number(state.index === undefined ? 0 : state.index)) || 0)
       root.stationCount = Math.max(0, Math.round(Number(state.count === undefined ? 0 : state.count)) || 0)
     } catch (error) {
+      console.warn("Lofi status parse:", String(error))
       return
     }
   }
@@ -130,6 +132,7 @@ Panel {
 
   // ---- Data files
   FileView {
+    id: stationsFile
     path: Qt.resolvedUrl("stations.json").toString().replace(/^file:\/\//, "")
     watchChanges: true
     printErrors: false
@@ -137,13 +140,19 @@ Panel {
     onFileChanged: reload()
   }
 
-  FileView {
-    path: Quickshell.env("XDG_RUNTIME_DIR") + "/sky.lofi/status.json"
-    watchChanges: true
-    atomicWrites: true
-    printErrors: false
-    onLoaded: root.applyStatus(text())
-    onFileChanged: reload()
+  Connections {
+    target: root.hostWidget
+    function onStatusJsonChanged() { root.applyStatus(root.hostWidget.statusJson) }
+  }
+
+  onOpenedChanged: {
+    if (opened) {
+      stationsFile.reload()
+      if (hostWidget) {
+        if (hostWidget.statusJson) root.applyStatus(hostWidget.statusJson)
+        hostWidget.refreshStatus()
+      }
+    }
   }
 
   Component {

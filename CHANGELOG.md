@@ -1,3 +1,8 @@
+# Unreleased
+
+- Keep the bar and panel synchronized from player status responses, including after missed file notifications.
+- Let the player decide toggle state instead of trusting stale UI state.
+
 # 1.0.1
 
 - Scroll the bar widget to adjust Master volume, preserving all channel balances.
