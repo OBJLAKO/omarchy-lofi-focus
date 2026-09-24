@@ -49,7 +49,7 @@ if [[ ! -s $settings_file ]]; then
   if [[ -s $script_dir/settings.json ]]; then
     cp "$script_dir/settings.json" "$settings_file"
   else
-    printf '%s\n' '{"defaultStation":"lofi-ilove-chillhop","mainVolume":65,"bgVolume":20,"bgStation":"talk-bbc-world","mix":true}' > "$settings_file"
+    printf '%s\n' '{"defaultStation":"lofi-groove-salad","mainVolume":65,"bgVolume":20,"bgStation":"talk-bbc-world","mix":true}' > "$settings_file"
   fi
 fi
 

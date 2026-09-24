@@ -38,13 +38,8 @@ the plugin directory, so changing a station or volume does not reload the shell.
 
 ## Sounds
 
-**Music:** I Love Chillhop and FluxFM Chillhop for lo-fi hip-hop beats, followed by
-11 SomaFM chill, ambient and downtempo stations, including Groove Salad,
+**Music:** 11 SomaFM chill, ambient and downtempo stations, including Groove Salad,
 Groove Salad Classic, DEF CON Radio, Secret Agent and Synphaera.
-
-New installations start with I Love Chillhop; existing station preferences are preserved.
-Official stream directories: [I Love Music](https://ilovemusic.de/streams) and
-[FluxFM](https://www.fluxfm.de/flux-musik-streams). No additional dependencies.
 
 **Voices:** talk radio, ATC and ongoing developer/Linux podcasts: The Changelog,
 Changelog & Friends, LINUX Unplugged, Talk Python To Me and Linux Matters.
