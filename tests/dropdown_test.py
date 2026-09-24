@@ -24,8 +24,9 @@ with tempfile.TemporaryDirectory(prefix="lofi-dropdown-test-") as directory:
         "QT_STYLE_OVERRIDE": "Basic",
     }
     env.pop("WAYLAND_DISPLAY", None)
+    # Keep this temporary shell off the user's session bus as well as offscreen.
     result = subprocess.run(
-        ["quickshell", "-p", str(test), "--no-color"],
+        ["dbus-run-session", "--", "quickshell", "-p", str(test), "--no-color"],
         env=env, capture_output=True, text=True, timeout=30,
     )
     output = result.stdout + result.stderr

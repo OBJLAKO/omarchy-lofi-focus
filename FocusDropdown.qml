@@ -192,6 +192,7 @@ Item {
 
       QQC.Popup {
         id: popup
+        objectName: "focusDropdownPopup"
         x: 0
         y: trigger.height + Style.spacing.xxs
         width: trigger.width

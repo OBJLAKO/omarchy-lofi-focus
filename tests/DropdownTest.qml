@@ -25,13 +25,14 @@ Window {
 
   TestCase {
     name: "FocusDropdown"
+    property string phase: ""
     // Quickshell hosts the real Omarchy theme types; unlike qmltestrunner,
     // it doesn't set QTestRootObject.windowShown.
     when: window.visible
 
     function init() {
       dropdown.close()
-      tryCompare(dropdown, "popupOpen", false)
+      tryCompare(findChild(dropdown, "focusDropdownPopup"), "visible", false)
       dropdown.value = ""
       selections.clear()
     }
@@ -84,21 +85,35 @@ Window {
 
     function test_mouseSelection() {
       openPicker()
+      phase = "find results"
       var results = findChild(dropdown, "focusDropdownResults")
       verify(results !== null)
+      phase = "results count"
       tryCompare(results, "count", 3)
+      // Filtering from the preceding test can leave delegate geometry pending.
+      // Send pointer events only once the new list is laid out and rendered.
+      waitForPolish(window)
+      waitForRendering(results)
+      phase = "find second row"
       var row = results.itemAtIndex(1)
       verify(row !== null)
+      phase = "mouse move"
       mouseMove(row, row.width / 2, row.height / 2)
+      phase = "mouse click"
       mouseClick(row, row.width / 2, row.height / 2)
+      phase = "click closed popup"
       tryCompare(dropdown, "popupOpen", false)
+      phase = "correct selection " + dropdown.value
       compare(dropdown.value, "wind")
+      phase = "selection signal"
       compare(selections.count, 1)
     }
 
     function cleanup() {
       if (qtest_results.failed)
-        console.error("FAIL", qtest_results.functionName)
+        console.error("FAIL", qtest_results.functionName, phase)
+      dropdown.close()
+      tryCompare(findChild(dropdown, "focusDropdownPopup"), "visible", false)
     }
 
     function cleanupTestCase() {
