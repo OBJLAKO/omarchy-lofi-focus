@@ -91,7 +91,20 @@ BarWidget {
   }
 
   function runAction(args) {
-    if (actionProcess.running) { root.actionQueue.push(args); return }
+    if (actionProcess.running) {
+      // A dragged slider only needs its latest target, not every intermediate step.
+      if (args[0] === "vol") {
+        for (var i = root.actionQueue.length - 1; i >= 0; --i) {
+          var queued = root.actionQueue[i]
+          if (queued[0] === "vol" && queued[1] === args[1]) {
+            root.actionQueue[i] = args
+            return
+          }
+        }
+      }
+      root.actionQueue.push(args)
+      return
+    }
     actionProcess.command = [root.playerPath].concat(args)
     actionProcess.running = true
   }

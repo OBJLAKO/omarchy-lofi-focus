@@ -5,8 +5,8 @@ Chill radio, background voices and nature sounds for Omarchy. One click to settl
 ![Lofi Focus — a cozy desk on a rainy evening](preview.png)
 
 A native Omarchy shell widget that follows your theme, fonts and panel controls.
-Choose one music station, an optional voice and an optional nature sound. Adjust
-all three together with Master volume, or set their individual balance.
+Choose one music station, an optional voice and any combination of nature sounds.
+Master changes the whole mix; Music, Voice and Nature set the balance.
 
 ## Install
 
@@ -33,7 +33,7 @@ omarchy plugin update sky.lofi
 - **Scroll:** adjust Master volume for music, voice and nature together (5% per step).
 - **Media keys:** control playback through MPRIS.
 
-Switching music leaves the voice and nature sound playing. Settings live outside
+Switching or reconnecting music leaves the voice and nature layers playing. Settings live outside
 the plugin directory, so changing a station or volume does not reload the shell.
 
 ## Sounds
@@ -51,8 +51,27 @@ Podcasts use the publisher's RSS feed and queue up to 12 recent episodes. Feeds
 are cached for six hours. A new voice session starts at the latest episode;
 playback position is not saved. Streams depend on broadcaster availability and region.
 
-**Nature:** rain, wind, thunderstorm, fireplace and ocean waves. These loops ship
-locally (~7 MB total), with no further downloads. See [audio credits and licenses](SOUNDS-LICENSES.md).
+**Nature:** rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a forest
+stream, morning birds and night crickets. Tap sound tiles to combine layers.
+Use Nature for the overall level, or expand **Adjust individual levels** to
+balance selected sounds. Your selection and levels are remembered.
+
+All nine loops ship locally (~14 MB total), with no further downloads.
+Small nature animations follow the sounds inside the open panel and stop when
+hidden or paused. See [audio credits and licenses](SOUNDS-LICENSES.md).
+
+## Radio recovery
+
+If music fails to connect or stops making progress, the player retries the same
+station after 2, 5, 10, 20 and 30 seconds. Connection attempts time out instead
+of hanging indefinitely. The panel distinguishes connecting, reconnecting and
+unavailable music from actual playback. After five unsuccessful retries, use
+**Retry music** to try again or choose another station.
+
+Pause suspends recovery; Stop cancels it. Starting a different station cancels
+pending attempts for the previous one. Voice and nature layers keep their
+positions and volume during music recovery. External radio availability still
+depends on the station and network.
 
 ## Quiet while dictating
 
@@ -61,7 +80,7 @@ records, every channel drops to 20% of its chosen effective volume. Normal volum
 returns when recording ends, including during transcription.
 
 No hotkey edits, hooks or system audio changes are needed. The plugin reads
-VoxType's state every 100 ms. With no running VoxType or no enabled state file,
+VoxType's state every 100 ms in the shared playback worker. With no running VoxType or no enabled state file,
 volume is unaffected. Standard `state_file = "auto"` and custom state paths in
 VoxType's default config are supported. A daemon using a separate config is not
 auto-discovered. The switch is always accessible in the panel.
@@ -86,12 +105,14 @@ Playback never writes to the watched plugin directory.
 
 ```sh
 omarchy plugin validate .
-dbus-run-session -- python tests/player_test.py
+dbus-run-session -- python -B -m unittest discover -s tests -p '*_test.py'
 ```
 
 Integration tests use real mpv with silent local audio and isolated settings,
-runtime and D-Bus. They cover playback, concurrent settings, three-channel volume,
-VoxType transitions, competing MPRIS ownership and volume-worker recovery.
+runtime and D-Bus. They cover playback, concurrent settings, layered volume,
+VoxType transitions, competing MPRIS ownership, worker recovery and cancelled
+radio retries. Playback control uses a single serialized Python controller;
+network feed loading runs outside its control lock.
 
 CLI examples:
 
@@ -99,7 +120,10 @@ CLI examples:
 ./lofi-player toggle
 ./lofi-player vol master 50
 ./lofi-player ducking off
-./lofi-player noise noise-rain
+./lofi-player nature noise-tent-rain on
+./lofi-player nature noise-wind on
+./lofi-player vol noise-wind 40
+./lofi-player vol nature 35
 ./lofi-player stop
 ```
 
