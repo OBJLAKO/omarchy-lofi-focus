@@ -200,12 +200,12 @@ def on_method_call(connection, sender, object_path, interface_name, method_name,
         origin = Path(f'/proc/{pid}/exe').resolve(strict=True).name if pid else 'unknown'
     except OSError:
         origin = 'unknown'
-    source = f'mpris:{origin}:{method_name}'
+    source = f'mpris:{origin}[{pid or "unknown"}]:{method_name}'
     if (interface_name == 'org.mpris.MediaPlayer2.Player'
             and dictation_transport.ignore(method_name, pid, is_voxtype_process(pid), ducking_enabled())):
         # VoxType pauses before writing its recording state; use D-Bus identity,
         # not the state-file timing. Ignore its paired resume as well.
-        print(f'Ignored {method_name} from {origin}; dictation ducking owns volume', flush=True)
+        print(f'Ignored {source}; dictation ducking owns volume', flush=True)
         invocation.return_value(None)
         return
     if interface_name == "org.mpris.MediaPlayer2":
