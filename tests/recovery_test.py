@@ -229,13 +229,14 @@ class RecoveryIntegrationTest(unittest.TestCase):
         catalog_path.write_text(json.dumps(catalog))
         entered = self.base/'feed-entered'
         release = self.base/'feed-release'
-        (self.plugin/'lofi-feed').write_text(
-            "import sys, time\nfrom pathlib import Path\n"
-            f"Path({str(entered)!r}).touch()\n"
-            "deadline = time.monotonic() + 8\n"
-            f"while not Path({str(release)!r}).exists() and time.monotonic() < deadline:\n"
-            "    time.sleep(.01)\n"
-            f"Path(sys.argv[2]).write_text({str(self.base/'tone.wav')!r} + '\\n')\n"
+        (self.plugin/'lofi_feed.py').write_text(
+            "import time\nfrom pathlib import Path\n"
+            "def resolve(url, destination):\n"
+            f"    Path({str(entered)!r}).touch()\n"
+            "    deadline = time.monotonic() + 8\n"
+            f"    while not Path({str(release)!r}).exists() and time.monotonic() < deadline:\n"
+            "        time.sleep(.01)\n"
+            f"    Path(destination).write_text({str(self.base/'tone.wav')!r} + '\\n')\n"
         )
         self.action('bg', 'off')
         self.action('play')
@@ -243,6 +244,8 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.action('bg', 'voice-changelog')
         self.assertLess(time.monotonic() - started, 2)
         self.wait_for(entered.exists, 3)
+        feed_handle = os.pidfd_open(int(self.pid('feed')))
+        self.addCleanup(os.close, feed_handle)
         started = time.monotonic()
         self.action('pause')
         self.assertLess(time.monotonic() - started, 2)
@@ -251,8 +254,30 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.action('stop')
         self.assertLess(time.monotonic() - started, 2)
         release.touch()
+        import select
+        self.assertTrue(select.select([feed_handle], [], [], 1)[0], 'Feed worker must exit on Stop')
+        self.assertFalse(list((self.base/'runtime/sky.lofi').glob('*.m3u')))
         self.assertFalse(self.status()['bg_running'])
         self.assertFalse((self.base/'runtime/sky.lofi/feed.pid').exists())
+
+    def test_update_replaces_old_worker_without_restarting_audio(self):
+        self.action('play')
+        self.action('nature', 'noise-rain', 'on')
+        channels = ('main', 'bg', 'nature-noise-rain')
+        previous = {channel: self.pid(channel) for channel in channels}
+        worker = self.pid('volume')
+        handle = os.pidfd_open(int(worker))
+        self.addCleanup(os.close, handle)
+        controller = self.plugin/'lofi_backend.py'
+        controller.write_text(controller.read_text() + '\n# Simulate a controller update.\n')
+        self.assertTrue(self.status()['running'])
+        self.assertNotEqual(self.pid('volume'), worker)
+        import select
+        self.assertTrue(select.select([handle], [], [], 1)[0])
+        for channel in channels:
+            self.assertEqual(self.pid(channel), previous[channel])
+        self.action('vol', 'master', '50')
+        self.wait_volume('main', 32.5)
 
     def test_legacy_nature_selection_migrates_once_with_same_volume(self):
         path = self.base/'state/sky.lofi/settings.json'
@@ -427,8 +452,7 @@ class RecoveryScheduleTest(unittest.TestCase):
                 self.player.save()
                 self.player.release()
                 self.player.spawn.reset_mock()
-                result = subprocess.CompletedProcess([], 0, '')
-                with mock.patch.object(backend.subprocess, 'run', return_value=result):
+                with mock.patch.object(backend, 'resolve_playlist'):
                     backend.resolve_feed(self.player, 'voice-changelog', 'old')
                 self.player.spawn.assert_not_called()
 

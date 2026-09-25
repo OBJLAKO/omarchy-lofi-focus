@@ -10,14 +10,17 @@ import math
 import os
 from pathlib import Path
 import signal
+import select
 import socket
 import subprocess
 import sys
 import time
 
 from lofi_duck import Ducker
+from lofi_feed import resolve as resolve_playlist
 
 ROOT = Path(__file__).resolve().parent
+WORKER_VERSION = hashlib.sha256(Path(__file__).read_bytes() + (ROOT/'lofi_duck.py').read_bytes()).hexdigest()
 RETRY_DELAYS = (2, 5, 10, 20, 30)
 CONNECT_TIMEOUT = 15
 STABLE_SECONDS = 30
@@ -157,35 +160,55 @@ class Player:
     def channels(self, include_legacy=False):
         return ['main', 'bg'] + ['nature-' + s for s in self.nature] + (['noise'] if include_legacy else [])
 
+    def matches_process(self, channel, pid):
+        try:
+            argv = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
+            if channel == 'volume':
+                return (b'--watch' in argv and any(str(ROOT/name).encode() in argv
+                        for name in ('lofi-player', 'lofi_duck.py')))
+            if channel == 'mpris':
+                return str(ROOT/'lofi-mpris').encode() in argv
+            if channel == 'feed':
+                return str(ROOT/'lofi-player').encode() in argv and b'--resolve-feed' in argv
+            return ('--input-ipc-server=' + str(self.sock(channel))).encode() in argv
+        except OSError:
+            return False
+
     def alive(self, channel):
         try:
             pid = int((self.runtime/f'{channel}.pid').read_text())
-            argv = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
-            if channel in ('volume', 'mpris', 'feed'):
-                name = {'volume': b'--watch', 'mpris': b'lofi-mpris', 'feed': b'--resolve-feed'}[channel]
-                return any(name in arg for arg in argv)
-            return ('--input-ipc-server=' + str(self.sock(channel))).encode() in argv
+            return pid > 0 and self.matches_process(channel, pid)
         except (OSError, ValueError):
             return False
 
     def stop_channel(self, channel):
-        if self.alive(channel):
-            pid = int((self.runtime/f'{channel}.pid').read_text())
-            # SIGTERM also interrupts a pending network connection immediately.
+        pid_path = self.runtime/f'{channel}.pid'
+        try:
+            pid = int(pid_path.read_text())
+        except (FileNotFoundError, ValueError):
+            pid = 0
+        if pid > 0:
             try:
-                os.killpg(pid, signal.SIGTERM) if channel == 'feed' else os.kill(pid, signal.SIGTERM)
+                # Pin before inspecting /proc. Both signals and exit polling use
+                # this same handle, never a numeric PID or process-group fallback.
+                handle = os.pidfd_open(pid)
             except ProcessLookupError:
-                pass
-            for _ in range(25):
-                if not self.alive(channel):
-                    break
-                time.sleep(.01)
-            if self.alive(channel):
+                handle = None
+            if handle is not None:
                 try:
-                    os.kill(pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-        (self.runtime/f'{channel}.pid').unlink(missing_ok=True)
+                    if self.matches_process(channel, pid):
+                        exited = select.poll()
+                        exited.register(handle, select.POLLIN)
+                        try:
+                            signal.pidfd_send_signal(handle, signal.SIGTERM)
+                            if not exited.poll(250):
+                                signal.pidfd_send_signal(handle, signal.SIGKILL)
+                                exited.poll(250)
+                        except ProcessLookupError:
+                            pass  # The pinned process exited; never follow a reused PID.
+                finally:
+                    os.close(handle)
+        pid_path.unlink(missing_ok=True)
         self.sock(channel).unlink(missing_ok=True)
 
     def spawn(self, channel, url, volume, loop=False, paused=False):
@@ -250,13 +273,13 @@ class Player:
     def ensure_services(self):
         if self.session['mode'] == 'stopped':
             return
-        # Retire the old duck-only worker during an in-place upgrade.
+        # Retire a worker that still has pre-update controller code in memory.
         if self.alive('volume'):
             pid = int((self.runtime/'volume.pid').read_text())
-            if b'lofi_duck.py' in Path(f'/proc/{pid}/cmdline').read_bytes():
+            if WORKER_VERSION.encode() not in Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0'):
                 self.stop_channel('volume')
         if not self.alive('volume'):
-            self.spawn_service('volume', [sys.executable, str(ROOT/'lofi-player'), '--watch'])
+            self.spawn_service('volume', [sys.executable, str(ROOT/'lofi-player'), '--watch', WORKER_VERSION])
         if not self.alive('mpris'):
             self.spawn_service('mpris', [sys.executable, str(ROOT/'lofi-mpris'), str(ROOT/'lofi-player')])
 
@@ -520,10 +543,13 @@ def resolve_feed(player, id, token):
     cache = player.runtime/(hashlib.sha256(id.encode()).hexdigest()[:16] + '.m3u')
     with cache.with_suffix('.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        result = subprocess.run([sys.executable, str(ROOT/'lofi-feed'), station['url'], str(cache)],
-                                capture_output=True, text=True, timeout=12)
-    if result.returncode:
-        return
+        # This resolver is already a dedicated process. Fetch in it directly,
+        # so cancellation needs only its pinned pidfd, never killpg().
+        signal.alarm(12)
+        try:
+            resolve_playlist(station['url'], cache)
+        finally:
+            signal.alarm(0)
     player.acquire()
     try:
         if (player.session['mode'] != 'stopped' and player.settings.get('mix')
@@ -542,7 +568,7 @@ def main():
     try:
         if sys.argv[1:2] == ['--resolve-feed']:
             resolve_feed(player, *sys.argv[2:])
-        elif sys.argv[1:] == ['--watch']:
+        elif sys.argv[1:2] == ['--watch']:
             watch(player)
         else:
             player.acquire()
