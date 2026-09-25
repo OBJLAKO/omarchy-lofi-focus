@@ -1,3 +1,10 @@
+# 1.1.1
+
+- Pin each process with a Linux pidfd before checking its identity; use that same handle for SIGTERM, exit polling and SIGKILL, with no numeric-PID or process-group fallback.
+- Fetch podcasts directly inside the bounded resolver process so cancellation cannot leave a separate fetch child or require killpg.
+- Replace outdated playback workers automatically after an update, preserving running audio and saved levels.
+- Add regressions for PID-file replacement, exited and unrelated processes, forced termination, feed cancellation and controller upgrades.
+
 # 1.1.0
 
 - Close an open dropdown when its trigger is clicked again; preserve outside-click and keyboard dismissal.

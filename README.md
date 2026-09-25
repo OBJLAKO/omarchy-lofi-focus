@@ -117,7 +117,11 @@ VoxType transitions, competing MPRIS ownership, worker recovery and cancelled
 radio retries. D-Bus tests also cover VoxType auto-pause and ordinary media
 controls; Qt interaction tests cover dropdown clicks, search and keyboard input.
 Playback control uses a single serialized Python controller;
-network feed loading runs outside its control lock.
+network feed loading runs outside its control lock. Process termination uses
+Linux pidfds to avoid signalling an unrelated process after PID reuse. The feed
+resolver has a 12-second deadline and performs its own fetch without a child
+process group. An updated controller replaces its old worker automatically
+without restarting the audio layers.
 
 CLI examples:
 
