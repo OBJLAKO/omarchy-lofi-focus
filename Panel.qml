@@ -48,6 +48,25 @@ Panel {
   readonly property color contentMuted: bar ? Qt.alpha(bar.foreground, 0.55) : Color.muted
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
+  readonly property string heroStatus: root.playerPaused ? "Paused"
+    : root.musicConnecting ? (root.retryIn > 0 ? "Reconnecting in " + root.retryIn + "s"
+      : (root.mainState === "reconnecting" ? "Reconnecting" : "Connecting"))
+    : root.playerRunning ? "Playing"
+    : "Ready"
+
+  readonly property string heroMeta: {
+    var parts = []
+    if (root.playerCategoryName) parts.push(root.playerCategoryName)
+    if (root.mixOn && root.bgName) parts.push(root.bgName)
+    if (root.enabledNatureCount > 0) parts.push(root.enabledNatureCount + (root.enabledNatureCount === 1 ? " sound" : " sounds"))
+    parts.push(root.heroStatus)
+    return parts.join(" · ")
+  }
+
+  readonly property string heroTitle: root.playerRunning || root.musicConnecting
+    ? (root.playerName || "Lofi Focus")
+    : "Lofi Focus"
+
   readonly property var musicOptions: {
     var out = []
     for (var c of categories) {
@@ -209,60 +228,51 @@ Panel {
         width: parent.width
         spacing: Style.space(10)
 
-        Row {
+        PanelHero {
           width: parent.width
-          spacing: Style.space(8)
-          Canvas {
-            width: Style.space(26)
-            height: Style.space(26)
-            anchors.verticalCenter: parent.verticalCenter
-            property color ink: root.isPlaying ? Color.urgent : root.contentForeground
-            onInkChanged: requestPaint()
-            onPaint: {
-              var c = getContext("2d")
-              c.reset(); c.scale(width / 24, height / 24)
-              c.strokeStyle = ink; c.lineWidth = 1.6; c.lineCap = "round"; c.lineJoin = "round"
-              c.beginPath(); c.moveTo(4,8); c.lineTo(16,8); c.lineTo(16,14)
-              c.quadraticCurveTo(16,18,12,18); c.lineTo(8,18); c.quadraticCurveTo(4,18,4,14); c.closePath(); c.stroke()
-              c.beginPath(); c.moveTo(16,9); c.lineTo(18,9); c.bezierCurveTo(23,9,23,15,16,15); c.stroke()
-              c.beginPath(); c.moveTo(3,21); c.lineTo(21,21); c.moveTo(8,5); c.lineTo(8,3); c.moveTo(13,5); c.lineTo(13,3); c.stroke()
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
+          title: root.heroTitle
+          meta: root.heroMeta
+          detail: root.stationCount > 0 ? (root.stationIndex + 1) + "/" + root.stationCount : ""
+          iconOpacity: root.isPlaying ? 1.0 : 0.75
+          iconComponent: Component {
+            Canvas {
+              width: Style.font.display
+              height: Style.font.display
+              property color ink: root.isPlaying ? Color.urgent : root.contentForeground
+              onInkChanged: requestPaint()
+              onPaint: {
+                var c = getContext("2d")
+                c.reset(); c.scale(width / 24, height / 24)
+                c.strokeStyle = ink; c.lineWidth = 1.6; c.lineCap = "round"; c.lineJoin = "round"
+                c.beginPath(); c.moveTo(4,8); c.lineTo(16,8); c.lineTo(16,14)
+                c.quadraticCurveTo(16,18,12,18); c.lineTo(8,18); c.quadraticCurveTo(4,18,4,14); c.closePath(); c.stroke()
+                c.beginPath(); c.moveTo(16,9); c.lineTo(18,9); c.bezierCurveTo(23,9,23,15,16,15); c.stroke()
+                c.beginPath(); c.moveTo(3,21); c.lineTo(21,21); c.moveTo(8,5); c.lineTo(8,3); c.moveTo(13,5); c.lineTo(13,3); c.stroke()
+              }
             }
           }
-          Column {
-            width: parent.width - Style.space(26) - playButton.width - stopButton.width - parent.spacing * 3
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(2)
-            Text {
-              text: "Lofi Focus"
-              color: root.contentForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.body
-              font.bold: true
+          trailingControl: Component {
+            Row {
+              spacing: Style.space(6)
+              Button {
+                id: playButton
+                iconText: root.sessionActive && !root.playerPaused ? "\uf04c" : "\uf04b"
+                tooltipText: root.playerPaused ? "Resume" : (root.sessionActive ? "Pause" : "Play")
+                foreground: root.contentForeground
+                focusable: true
+                onClicked: root.runAction(["toggle"])
+              }
+              Button {
+                id: stopButton
+                iconText: "\uf04d"
+                tooltipText: "Stop all sounds"
+                foreground: root.contentForeground
+                focusable: true
+                onClicked: root.runAction(["stop"])
+              }
             }
-            Text {
-              text: root.playerPaused ? "Paused" : (root.musicConnecting ? "Connecting…" : (root.playerRunning ? "Playing" : "Ready"))
-              color: root.contentMuted
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-            }
-          }
-          Button {
-            id: playButton
-            text: root.playerPaused ? "Resume" : (root.sessionActive ? "Pause" : "Play")
-            iconText: root.sessionActive && !root.playerPaused ? "\uf04c" : "\uf04b"
-            foreground: root.contentForeground
-            focusable: true
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: root.runAction(["toggle"])
-          }
-          Button {
-            id: stopButton
-            iconText: "\uf04d"
-            tooltipText: "Stop all sounds"
-            foreground: root.contentForeground
-            focusable: true
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: root.runAction(["stop"])
           }
         }
 
