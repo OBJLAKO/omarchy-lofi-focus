@@ -36,6 +36,9 @@ Panel {
   property int bgVolume: 40
   property int stationIndex: 0
   property int stationCount: 0
+  property string mainTitle: ""
+  property real mainPosition: -1
+  property real mainDuration: -1
 
   // ---- Look-and-feel preferences, mirrored from status.json. They persist in
   //      the same settings.json the backend owns, so the panel and the CLI
@@ -116,6 +119,24 @@ Panel {
     return root.sessionActive && !root.playerPaused && root.playerStationId === id && root.musicRunning
   }
 
+  // Progress only makes sense when the stream reports a duration: live radio
+  // leaves it unset, podcasts and YouTube links do not.
+  readonly property bool hasProgress: root.mainDuration > 0 && root.mainPosition >= 0
+  readonly property real progressFraction: root.hasProgress
+    ? Math.max(0, Math.min(1, root.mainPosition / root.mainDuration)) : 0
+  readonly property string nowPlayingTitle: root.mainTitle !== "" ? root.mainTitle : root.playerName
+
+  function formatTime(seconds) {
+    if (!(seconds >= 0)) return "--:--"
+    var total = Math.floor(seconds)
+    var hours = Math.floor(total / 3600)
+    var minutes = Math.floor((total % 3600) / 60)
+    var secs = total % 60
+    var mm = (minutes < 10 && hours > 0 ? "0" : "") + minutes
+    var ss = (secs < 10 ? "0" : "") + secs
+    return hours > 0 ? hours + ":" + mm + ":" + ss : mm + ":" + ss
+  }
+
   readonly property var noiseOptions: {
     var out = []
     for (var c of categories) {
@@ -169,6 +190,9 @@ Panel {
       root.bgVolume = clampVolume(state.bg_volume, 40)
       root.stationIndex = Math.max(0, Math.round(Number(state.index === undefined ? 0 : state.index)) || 0)
       root.stationCount = Math.max(0, Math.round(Number(state.count === undefined ? 0 : state.count)) || 0)
+      root.mainTitle = String(state.main_title || "").replace(/[\r\n\t]+/g, " ").slice(0, 200)
+      root.mainPosition = typeof state.main_position === "number" ? state.main_position : -1
+      root.mainDuration = typeof state.main_duration === "number" ? state.main_duration : -1
       root.animationsEnabled = state.animations !== false
       root.revealEnabled = state.reveal_animations !== false
       root.steamEnabled = state.steam_animation !== false
@@ -184,6 +208,9 @@ Panel {
       return
     }
   }
+
+  function loadStations(raw) {
+    try {
       var data = JSON.parse(raw || "{}")
       root.categories = Array.isArray(data.categories) ? data.categories : []
     } catch (error) {
@@ -440,6 +467,121 @@ Panel {
           }
         }
 
+        // Now playing: what is on, with a progress bar when the stream reports
+        // a duration (podcasts and future YouTube links), plus station skip.
+        BorderSurface {
+          id: nowPlaying
+          width: parent.width
+          implicitHeight: nowPlayingContent.implicitHeight + Style.space(12)
+          height: implicitHeight
+          radius: Style.cornerRadius
+          color: "transparent"
+          borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
+
+          Column {
+            id: nowPlayingContent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: Style.space(10)
+            anchors.rightMargin: Style.space(10)
+            spacing: Style.space(6)
+
+            Row {
+              width: parent.width
+              spacing: Style.space(8)
+
+              Text {
+                width: parent.width - skip.width - parent.spacing
+                text: root.nowPlayingTitle
+                textFormat: Text.PlainText
+                color: root.contentForeground
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.body
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+              }
+
+              Row {
+                id: skip
+                spacing: Style.space(2)
+                anchors.verticalCenter: parent.verticalCenter
+
+                Button {
+                  iconText: "\uf048"
+                  tooltipText: "Previous station"
+                  foreground: root.contentForeground
+                  focusable: true
+                  onClicked: root.runAction(["prev"])
+                }
+                Button {
+                  iconText: "\uf051"
+                  tooltipText: "Next station"
+                  foreground: root.contentForeground
+                  focusable: true
+                  onClicked: root.runAction(["next"])
+                }
+              }
+            }
+
+            Row {
+              width: parent.width
+              spacing: Style.space(8)
+              visible: root.hasProgress
+
+              Text {
+                id: elapsed
+                text: root.formatTime(root.mainPosition)
+                textFormat: Text.PlainText
+                color: root.contentMuted
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.caption
+                anchors.verticalCenter: parent.verticalCenter
+              }
+
+              Item {
+                width: parent.width - elapsed.width - remaining.width - parent.spacing * 2
+                height: Style.space(6)
+                anchors.verticalCenter: parent.verticalCenter
+
+                Rectangle {
+                  anchors.fill: parent
+                  radius: height / 2
+                  color: Qt.alpha(root.contentForeground, 0.18)
+                }
+                Rectangle {
+                  width: parent.width * root.progressFraction
+                  height: parent.height
+                  radius: height / 2
+                  color: root.contentForeground
+                  Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                }
+              }
+
+              Text {
+                id: remaining
+                text: root.formatTime(root.mainDuration)
+                textFormat: Text.PlainText
+                color: root.contentMuted
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.caption
+                anchors.verticalCenter: parent.verticalCenter
+              }
+            }
+
+            Text {
+              visible: !root.hasProgress
+              text: root.playerCategoryName
+              textFormat: Text.PlainText
+              color: root.contentMuted
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              elide: Text.ElideRight
+              width: parent.width
+            }
+          }
+        }
 
         MixerLevel {
           width: parent.width
