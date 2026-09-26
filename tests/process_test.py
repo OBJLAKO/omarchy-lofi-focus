@@ -53,6 +53,36 @@ class ProcessTerminationTest(unittest.TestCase):
         self.assert_decoy_alive()
         self.assertFalse(self.pid_path.exists())
 
+    def test_lost_pid_file_still_reaps_orphaned_audio(self):
+        # A wiped runtime directory (or a crashed controller) removes the PID
+        # file while mpv keeps running. The socket marker must still identify
+        # the orphan so Stop cannot leak audio. plugin_pids is pinned to the
+        # orphan to keep the test hermetic on a machine already running audio.
+        orphan = self.child(target=True)
+        self.pid_path.unlink()
+        with mock.patch.object(self.player, 'plugin_pids', return_value=iter([orphan.pid])):
+            self.player.stop_channel('main')
+        self.assertEqual(orphan.wait(timeout=2), -signal.SIGTERM)
+        self.assert_decoy_alive()
+
+    def test_reap_verifies_identity_before_signalling(self):
+        # plugin_pids may surface a reused or unrelated PID; reap must re-check
+        # identity and never signal it.
+        with mock.patch.object(self.player, 'plugin_pids', return_value=iter([self.decoy.pid])):
+            with mock.patch.object(signal, 'pidfd_send_signal') as send:
+                self.player.reap('main')
+        send.assert_not_called()
+        self.assert_decoy_alive()
+
+    def test_socket_marker_matches_foreign_runtime_directory(self):
+        # Audio started under an older or wiped runtime directory still belongs
+        # to this plugin and must be reapable.
+        foreign = [b'mpv', b'--input-ipc-server=/tmp/other/runtime/sky.lofi/sockets/main.sock']
+        self.assertTrue(self.player.socket_matches('main', foreign))
+        self.assertFalse(self.player.socket_matches('bg', foreign))
+        current = [b'--input-ipc-server=' + str(self.player.sock('main')).encode()]
+        self.assertTrue(self.player.socket_matches('main', current))
+
     def test_pid_file_replacement_after_identity_check_does_not_redirect_signal(self):
         target = self.child(target=True)
         matches = self.player.matches_process
