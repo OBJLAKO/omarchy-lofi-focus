@@ -49,9 +49,13 @@ def write_json(path, value):
             return
     except OSError:
         pass
-    temporary = path.with_suffix(path.suffix + '.tmp')
-    temporary.write_text(text)
-    temporary.replace(path)
+    try:
+        temporary = path.with_suffix(path.suffix + '.tmp')
+        temporary.write_text(text)
+        temporary.replace(path)
+    except OSError:
+        pass  # State is best effort: a vanished or read-only directory must
+        # never take the controller or its volume worker down with it.
 
 
 def log_control(runtime, event):
@@ -190,6 +194,24 @@ class Player:
     def channels(self, include_legacy=False):
         return ['main', 'bg'] + ['nature-' + s for s in self.nature] + (['noise'] if include_legacy else [])
 
+    def socket_matches(self, channel, argv):
+        """True when argv carries this plugin's IPC socket for the channel.
+
+        The current runtime socket is matched exactly so a process started by
+        this instance is always recognized. The stable
+        ``sky.lofi/sockets/<channel>.sock`` suffix also recognizes processes
+        started under an older or wiped runtime directory, so audio can be
+        reaped after a crash or a controller upgrade instead of being orphaned.
+        """
+        current = ('--input-ipc-server=' + str(self.sock(channel))).encode()
+        suffix = f'/sky.lofi/sockets/{channel}.sock'.encode()
+        for argument in argv:
+            if argument == current:
+                return True
+            if argument.startswith(b'--input-ipc-server=') and argument.endswith(suffix):
+                return True
+        return False
+
     def matches_process(self, channel, pid):
         try:
             argv = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
@@ -200,7 +222,7 @@ class Player:
                 return str(ROOT/'lofi-mpris').encode() in argv
             if channel == 'feed':
                 return str(ROOT/'lofi-player').encode() in argv and b'--resolve-feed' in argv
-            return ('--input-ipc-server=' + str(self.sock(channel))).encode() in argv
+            return self.socket_matches(channel, argv)
         except OSError:
             return False
 
@@ -210,6 +232,133 @@ class Player:
             return pid > 0 and self.matches_process(channel, pid)
         except (OSError, ValueError):
             return False
+
+    def terminate(self, handle):
+        """SIGTERM then SIGKILL a process pinned by pidfd, never a numeric PID."""
+        exited = select.poll()
+        exited.register(handle, select.POLLIN)
+        try:
+            signal.pidfd_send_signal(handle, signal.SIGTERM)
+            if not exited.poll(250):
+                signal.pidfd_send_signal(handle, signal.SIGKILL)
+                exited.poll(250)
+        except ProcessLookupError:
+            pass  # The pinned process exited; never follow a reused PID.
+
+    def plugin_pids(self, channel):
+        """Yield PIDs whose command line carries this channel's socket marker."""
+        try:
+            entries = list(os.scandir('/proc'))
+        except OSError:
+            return
+        for entry in entries:
+            if not entry.name.isdigit():
+                continue
+            try:
+                argv = Path(entry.path, 'cmdline').read_bytes().split(b'\0')
+            except OSError:
+                continue
+            if self.socket_matches(channel, argv):
+                yield int(entry.name)
+
+    def process_socket(self, channel, pid):
+        """Return the channel socket this process was started with, or None."""
+        try:
+            argv = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
+        except OSError:
+            return None
+        current = str(self.sock(channel)).encode()
+        suffix = f'/sky.lofi/sockets/{channel}.sock'.encode()
+        for argument in argv:
+            if argument.startswith(b'--input-ipc-server='):
+                path = argument[len(b'--input-ipc-server='):]
+                if path == current or path.endswith(suffix):
+                    return path
+        return None
+
+    def reap(self, channel, orphan_only=False):
+        """Terminate orphaned audio for one channel that lost its PID file.
+
+        A crashed controller, a killed worker or a wiped runtime directory can
+        drop the PID file while mpv keeps running. Candidates are found by the
+        plugin's own socket marker, pinned with a pidfd and only signalled once
+        that same handle's process matches, so a reused or unrelated PID is
+        never signalled. A healthy process belonging to another live controller
+        still owns its socket and is left alone; only our own channel (even
+        without a PID file) and orphans whose runtime directory is gone are
+        reaped. With ``orphan_only`` even our own live channel is spared, which
+        lets a crashing worker clean up leaked audio without cutting off
+        healthy playback. Long-lived services manage their own lifetime.
+        """
+        if channel in ('volume', 'mpris', 'feed'):
+            return
+        own_pid = os.getpid()
+        current = str(self.sock(channel)).encode()
+        for pid in self.plugin_pids(channel):
+            if pid == own_pid:
+                continue
+            socket_path = self.process_socket(channel, pid)
+            if socket_path is None:
+                continue
+            # A live runtime directory means an instance still owns this
+            # process, so only a normal stop may reap our own channel; a
+            # crashing worker and foreign instances leave it alone. The
+            # directory exists as soon as an instance starts, unlike the socket
+            # file, so this never mistakes a just-started stream for an orphan.
+            if os.path.isdir(os.path.dirname(socket_path)):
+                if orphan_only or socket_path != current:
+                    continue
+            try:
+                handle = os.pidfd_open(pid)
+            except OSError:
+                continue
+            try:
+                if self.matches_process(channel, pid):
+                    self.terminate(handle)
+            finally:
+                os.close(handle)
+
+    def live_channels(self):
+        """Yield channel names found in live processes' socket markers.
+
+        Unlike channels(), this does not depend on the catalog, so it still
+        finds nature layers after a wiped or updated stations.json.
+        """
+        try:
+            entries = list(os.scandir('/proc'))
+        except OSError:
+            return
+        for entry in entries:
+            if not entry.name.isdigit():
+                continue
+            try:
+                argv = Path(entry.path, 'cmdline').read_bytes().split(b'\0')
+            except OSError:
+                continue
+            for argument in argv:
+                if not (argument.startswith(b'--input-ipc-server=')
+                        and b'/sky.lofi/sockets/' in argument):
+                    continue
+                name = argument.rsplit(b'/', 1)[-1]
+                if name.endswith(b'.sock'):
+                    yield name[:-len(b'.sock')].decode(errors='replace')
+
+    def reap_orphans(self, orphan_only=False):
+        """Reap leftover audio for every channel this plugin can play.
+
+        Called when the worker retires, so a wiped runtime directory cannot
+        leave detached mpv processes behind. Channels come from both the
+        catalog and live processes, so a removed or unreadable stations.json
+        cannot hide audio. Foreign live controllers are left alone; see reap().
+        """
+        channels = list(self.channels(include_legacy=True))
+        seen = set(channels)
+        for channel in self.live_channels():
+            if channel not in seen:
+                seen.add(channel)
+                channels.append(channel)
+        for channel in channels:
+            self.reap(channel, orphan_only=orphan_only)
 
     def stop_channel(self, channel):
         pid_path = self.runtime/f'{channel}.pid'
@@ -227,17 +376,12 @@ class Player:
             if handle is not None:
                 try:
                     if self.matches_process(channel, pid):
-                        exited = select.poll()
-                        exited.register(handle, select.POLLIN)
-                        try:
-                            signal.pidfd_send_signal(handle, signal.SIGTERM)
-                            if not exited.poll(250):
-                                signal.pidfd_send_signal(handle, signal.SIGKILL)
-                                exited.poll(250)
-                        except ProcessLookupError:
-                            pass  # The pinned process exited; never follow a reused PID.
+                        self.terminate(handle)
                 finally:
                     os.close(handle)
+        # The PID file is the fast path, never the only one: reap by socket
+        # marker so a missing PID file can no longer orphan audio.
+        self.reap(channel)
         pid_path.unlink(missing_ok=True)
         self.sock(channel).unlink(missing_ok=True)
 
@@ -754,31 +898,44 @@ def watch(player):
         except BlockingIOError:
             return
         deadline = 0
-        while True:
-            # Advance volume ramps first; they own their channels' volume and
-            # tell the ducker to leave those channels alone this tick.
-            fading = player.step_fades()
-            player.ducker.poll(skip=fading)
-            if time.monotonic() >= deadline and player.acquire(blocking=False):
-                try:
-                    if player.session['mode'] == 'stopped' and not player.session.get('pending'):
-                        # Retire this worker: remove its pid marker so a later
-                        # Play starts a fresh one.
-                        (player.runtime/'volume.pid').unlink(missing_ok=True)
-                        return
-                    player.maintain()
-                    player.save()
-                    player.status()
-                finally:
-                    player.release()
-                deadline = time.monotonic() + 1
-                # Reap mpv children from previous attempts in this worker.
-                try:
-                    while os.waitpid(-1, os.WNOHANG)[0]:
+        try:
+            while True:
+                # Advance volume ramps first; they own their channels' volume and
+                # tell the ducker to leave those channels alone this tick.
+                fading = player.step_fades()
+                player.ducker.poll(skip=fading)
+                if time.monotonic() >= deadline and player.acquire(blocking=False):
+                    try:
+                        if player.session['mode'] == 'stopped' and not player.session.get('pending'):
+                            # Retire this worker: remove its pid marker so a later
+                            # Play starts a fresh one. Reap first, so a runtime
+                            # directory that vanished with its PID files cannot
+                            # leave detached audio behind.
+                            player.reap_orphans()
+                            (player.runtime/'volume.pid').unlink(missing_ok=True)
+                            return
+                        player.maintain()
+                        player.save()
+                        player.status()
+                    finally:
+                        player.release()
+                    deadline = time.monotonic() + 1
+                    # Reap mpv children from previous attempts in this worker.
+                    try:
+                        while os.waitpid(-1, os.WNOHANG)[0]:
+                            pass
+                    except ChildProcessError:
                         pass
-                except ChildProcessError:
-                    pass
-            time.sleep(.1)
+                time.sleep(.1)
+        except BaseException:
+            # A worker that dies must not leave detached audio behind. Only
+            # orphans are reaped, so healthy playback survives a transient
+            # fault while a removed runtime directory is still cleaned up.
+            try:
+                player.reap_orphans(orphan_only=True)
+            except Exception:
+                pass
+            raise
 
 
 def resolve_feed(player, id, token):
