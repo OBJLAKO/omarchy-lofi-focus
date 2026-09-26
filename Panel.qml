@@ -67,13 +67,26 @@ Panel {
     ? (root.playerName || "Lofi Focus")
     : "Lofi Focus"
 
-  readonly property var musicOptions: {
+  // Music stations listed on the panel, with a glyph per category.
+  function categoryGlyph(id) {
+    var map = { lofi: "\uf001", podcasts: "\uf130", talk: "\uf130", atc: "\uf072", ambience: "\uf0f5" }
+    return map[id] || "\uf001"
+  }
+
+  readonly property var musicStations: {
     var out = []
     for (var c of categories) {
       if (c.id !== "lofi") continue
-      for (var st of c.stations) out.push({ value: st.id, label: st.name, description: st.description })
+      for (var st of c.stations) out.push({
+        id: st.id, name: st.name, description: st.description,
+        glyph: categoryGlyph(c.id)
+      })
     }
     return out
+  }
+
+  function isMusicPlaying(id) {
+    return root.sessionActive && !root.playerPaused && root.playerStationId === id && root.musicRunning
   }
 
   readonly property var noiseOptions: {
@@ -205,13 +218,13 @@ Panel {
     open: root.opened
     centerOnBar: true
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(360))
-    contentHeight: panel.fittedContentHeight(Math.min(contentColumn.implicitHeight, Style.space(520)))
+    contentWidth: panel.fittedContentWidth(Style.space(380))
+    contentHeight: panel.fittedContentHeight(Math.min(contentColumn.implicitHeight, Style.space(620)))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: musicPicker.popupOpen || voicePicker.popupOpen || naturePicker.popupOpen
+      blocked: voicePicker.popupOpen || naturePicker.popupOpen
       onCloseRequested: root.close()
     }
 
@@ -290,30 +303,39 @@ Panel {
 
         Column {
           width: parent.width
-          spacing: Style.space(3)
-          Row {
-            width: parent.width
-            spacing: Style.space(6)
-            Text {
-              width: Style.space(52)
-              text: "Music"
-              color: root.contentForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              anchors.verticalCenter: parent.verticalCenter
-            }
-            FocusDropdown {
-              id: musicPicker
-              width: parent.width - Style.space(52) - parent.spacing
-              showLabel: false
-              options: root.musicOptions
-              value: root.playerStationId
+          spacing: Style.space(6)
+
+          PanelSectionHeader {
+            text: "STATIONS"
+            foreground: root.contentForeground
+            fontFamily: root.contentFontFamily
+          }
+
+          Repeater {
+            model: root.musicStations
+
+            StationRow {
+              required property var modelData
+              required property int index
+              width: parent.width
+              glyph: modelData.glyph
+              name: modelData.name
+              description: modelData.description
+              current: root.playerStationId === modelData.id
+              playing: root.isMusicPlaying(modelData.id)
+              muted: root.playerStationId === modelData.id && root.sessionActive && root.playerPaused
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
-              placeholderText: "Choose a station…"
-              onChanged: function(value) { root.runAction(["start", value]) }
+
+              MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.runAction(["start", modelData.id])
+              }
             }
           }
+
           MixerLevel {
             width: parent.width
             value: root.mainVolume
@@ -322,6 +344,7 @@ Panel {
             fontFamily: root.contentFontFamily
             onEdited: function(value) { root.setVolume("main", value) }
           }
+
           Row {
             visible: root.musicConnecting || root.mainState === "failed"
             width: parent.width
@@ -348,23 +371,24 @@ Panel {
           }
         }
 
+        PanelSeparator { width: parent.width; foreground: root.contentForeground }
+
         Column {
           width: parent.width
-          spacing: Style.space(3)
+          spacing: Style.space(6)
+
+          PanelSectionHeader {
+            text: "VOICE"
+            foreground: root.contentForeground
+            fontFamily: root.contentFontFamily
+          }
+
           Row {
             width: parent.width
             spacing: Style.space(6)
-            Text {
-              width: Style.space(52)
-              text: "Voice"
-              color: root.contentForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              anchors.verticalCenter: parent.verticalCenter
-            }
             FocusDropdown {
               id: voicePicker
-              width: parent.width - Style.space(52) - parent.spacing
+              width: parent.width
               showLabel: false
               options: root.backgroundOptions
               value: root.mixOn ? root.bgStation : "off"
@@ -387,11 +411,10 @@ Panel {
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
-        Text {
-          text: "Nature"
-          color: root.contentMuted
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
+        PanelSectionHeader {
+          text: "NATURE"
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
         }
 
         Column {
