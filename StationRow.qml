@@ -15,6 +15,7 @@ CursorSurface {
   property string description: ""
   property bool playing: false
   property bool muted: false
+  property bool animate: true
   property string fontFamily: Style.font.family
 
   implicitHeight: rowInner.implicitHeight + Style.spacing.xl
@@ -63,9 +64,13 @@ CursorSurface {
             anchors.verticalCenter: parent.verticalCenter
             color: root.muted ? Qt.alpha(root.foreground, 0.5) : root.accent
             transformOrigin: Item.Bottom
+            // A fixed stepped height keeps the equalizer readable when motion
+            // is disabled; the animation overrides scale only while running.
+            readonly property real restingScale: index === 0 ? 1.0 : (index === 1 ? 1.6 : 0.7)
+            scale: root.animate ? 1 : restingScale
 
             SequentialAnimation on scale {
-              running: root.playing && root.visible
+              running: root.playing && root.visible && root.animate
               loops: Animation.Infinite
               PauseAnimation { duration: index * 140 }
               NumberAnimation { to: 1.9; duration: 260; easing.type: Easing.InOutSine }
