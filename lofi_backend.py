@@ -91,6 +91,12 @@ def ipc(path, command):
     return None
 
 
+def fetch_number(sock, prop):
+    """Read a numeric mpv property, returning None when it is unset (e.g. live)."""
+    value = ipc(sock, ['get_property', prop])
+    return float(value) if isinstance(value, (int, float)) and math.isfinite(value) else None
+
+
 class Player:
     def __init__(self):
         self.runtime = Path(os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')) / 'sky.lofi'
@@ -134,7 +140,8 @@ class Player:
         # them, so every setting survives restarts and stays CLI-addressable.
         for key, value in dict(animations=True, revealAnimations=True, steamAnimation=True,
                                glowAnimation=True, equalizerAnimation=True, fadeEnabled=True,
-                               fadeSeconds=3, revealSpeed=1).items():
+                               fadeSeconds=3, revealSpeed=1, collapsibleSections=True,
+                               duckLevel=35).items():
             self.settings.setdefault(key, value)
         previous_default = self.settings['defaultStation']
         if previous_default not in self.music:
@@ -272,8 +279,12 @@ class Player:
         return level(self.settings.get('fadeSeconds', FADE_OUT_SECONDS * 1.8), 3) * 0.6
 
     def effective(self, base):
-        return level(base) * level(self.settings['masterVolume'], 100) / 100 * (
-            .2 if self.settings.get('ducking', True) and self.ducker.recording() else 1)
+        # Target the ducked level directly from settings, not the ducker's
+        # in-flight gain: this runs in the CLI process, where that gain is
+        # fresh. The volume worker still eases the mix to whatever we pick.
+        ducked = self.settings.get('ducking', True) and self.ducker.recording()
+        gain = level(self.settings.get('duckLevel', 35), 35) / 100 if ducked else 1.0
+        return level(base) * level(self.settings['masterVolume'], 100) / 100 * gain
 
     def request_fade(self, channel, target, duration):
         """Queue a volume ramp for the worker. Reads current mpv volume as the start."""
@@ -598,9 +609,17 @@ class Player:
                      fade_enabled=bool(self.settings.get('fadeEnabled', True)),
                      fade_seconds=level(self.settings.get('fadeSeconds', 3), 3),
                      reveal_speed=level(self.settings.get('revealSpeed', 1), 1),
+                     collapsible_sections=bool(self.settings.get('collapsibleSections', True)),
+                     duck_level=level(self.settings.get('duckLevel', 35), 35),
                      index=self.music.index(id) if id in self.music else 0, count=len(self.music),
                      main_title=ipc(self.sock('main'), ['get_property', 'media-title']) if ready else '',
-                     bg_title=ipc(self.sock('bg'), ['get_property', 'media-title']) if self.alive('bg') else '')
+                     bg_title=ipc(self.sock('bg'), ['get_property', 'media-title']) if self.alive('bg') else '',
+                     # Progress is only meaningful when the stream reports a
+                     # duration; live radio leaves it null, podcasts do not.
+                     main_position=fetch_number(self.sock('main'), 'time-pos') if ready else None,
+                     main_duration=fetch_number(self.sock('main'), 'duration') if ready else None,
+                     bg_position=fetch_number(self.sock('bg'), 'time-pos') if self.alive('bg') else None,
+                     bg_duration=fetch_number(self.sock('bg'), 'duration') if self.alive('bg') else None)
         write_json(self.runtime/'status.json', state)
         return state
 
@@ -698,8 +717,9 @@ class Player:
             key, value = args
             boolean_keys = {'animations': 'animations', 'reveal': 'revealAnimations',
                             'steam': 'steamAnimation', 'glow': 'glowAnimation',
-                            'equalizer': 'equalizerAnimation', 'fade': 'fadeEnabled'}
-            number_keys = {'fadeSeconds': 8, 'revealSpeed': 3}
+                            'equalizer': 'equalizerAnimation', 'fade': 'fadeEnabled',
+                            'collapsible': 'collapsibleSections'}
+            number_keys = {'fadeSeconds': 8, 'revealSpeed': 3, 'duckLevel': 100}
             if key in boolean_keys:
                 if value not in ('on', 'off'):
                     raise ValueError(f'{key} takes on/off')

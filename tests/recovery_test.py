@@ -191,6 +191,8 @@ class RecoveryIntegrationTest(unittest.TestCase):
         (vox/'pid').write_text(str(os.getpid()))
         (vox/'state').write_text('idle')
         self.action('play')
+        self.action('ui', 'duckLevel', '20')
+        self.action('ui', 'fade', 'off')
         self.action('vol', 'noise-rain', '50')
         self.action('vol', 'noise-wind', '80')
         self.action('nature', 'noise-rain', 'on')

@@ -3,7 +3,14 @@ import json
 import os
 from pathlib import Path
 import socket
+import time
 import tomllib
+
+# Ducking eases over roughly this long instead of snapping, so the mix dips
+# under a dictation without a click. The ducked level itself is a setting
+# (duckLevel, a percent kept while recording) so the music can stay audible.
+DUCK_RAMP_SECONDS = 0.5
+DUCK_DEFAULT_LEVEL = 35
 
 
 class Ducker:
@@ -12,6 +19,8 @@ class Ducker:
         self.settings = Path(os.environ.get('XDG_STATE_HOME', str(Path.home()/'.local/state'))) / 'sky.lofi/settings.json'
         self.config = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home()/'.config'))) / 'voxtype/config.toml'
         self.last = {}
+        self.duck_gain = 1.0
+        self.duck_at = None
 
     def recording(self):
         state = self.runtime/'voxtype/state'
@@ -38,7 +47,20 @@ class Ducker:
                 settings_revision = os.fstat(source.fileno()).st_mtime_ns
         except (OSError, ValueError):
             return True
-        factor = (0.2 if settings.get('ducking', True) and self.recording() else 1) * max(0, min(100, float(settings.get('masterVolume', 100)))) / 100
+        # Ease the duck gain toward its target so recording starts and stops
+        # with a dip, not a click. Time-based so a slow worker still lands.
+        now = time.monotonic()
+        elapsed = (now - self.duck_at) if self.duck_at is not None else DUCK_RAMP_SECONDS
+        self.duck_at = now
+        duck_level = max(0.0, min(1.0, float(settings.get('duckLevel', DUCK_DEFAULT_LEVEL)) / 100))
+        target_gain = duck_level if settings.get('ducking', True) and self.recording() else 1.0
+        if self.duck_gain != target_gain:
+            step = min(1.0, elapsed / DUCK_RAMP_SECONDS)
+            self.duck_gain += (target_gain - self.duck_gain) * step
+            if abs(self.duck_gain - target_gain) < 0.005:
+                self.duck_gain = target_gain
+        master = max(0, min(100, float(settings.get('masterVolume', 100)))) / 100
+        factor = self.duck_gain * master
         channels = [('main', settings.get('mainVolume', 80)), ('bg', settings.get('bgVolume', 20))]
         layers = settings.get('natureLayers')
         if isinstance(layers, dict):
@@ -57,7 +79,7 @@ class Ducker:
             try:
                 stat = path.stat()
                 volume = max(0, min(100, float(base_volume))) * factor
-                value = (stat.st_ino, stat.st_mtime_ns, settings_revision, volume)
+                value = (stat.st_ino, stat.st_mtime_ns, settings_revision, round(self.duck_gain, 4), volume)
                 if self.last.get(channel) == value:
                     continue
                 with socket.socket(socket.AF_UNIX) as client:

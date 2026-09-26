@@ -92,6 +92,11 @@ class PlayerTest(unittest.TestCase):
         (vox/'pid').write_text(str(os.getpid()))
         state = vox/'state'; state.write_text('idle')
         self.action('play')
+        # Pin the duck level so the expected volumes are exact, then check it
+        # is configurable below. Fades off keeps station switches immediate,
+        # so this test measures ducking alone.
+        self.action('ui', 'duckLevel', '20')
+        self.action('ui', 'fade', 'off')
         def wait_volume(channel, expected):
             deadline = time.monotonic() + 3
             while time.monotonic() < deadline:
@@ -113,6 +118,12 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(self.status()['bg_volume'], 20)
         self.action('vol', 'master', '0'); wait_volume('main', 0); wait_volume('bg', 0)
         self.action('vol', 'master', '100'); wait_volume('main', 40)
+        # The ducked level is configurable: keeping 50% leaves the music
+        # audible at half volume while recording.
+        state.write_text('recording')
+        self.action('ui', 'duckLevel', '50'); wait_volume('main', 20)
+        self.action('ui', 'duckLevel', '0'); wait_volume('main', 0)
+        state.unlink(); wait_volume('main', 40)
         self.action('pause'); self.action('resume'); wait_volume('main', 40)
 
     def test_ambience_and_missing_media_bridge(self):
@@ -149,6 +160,7 @@ class PlayerTest(unittest.TestCase):
         try:
             time.sleep(0.4)
             self.action('play')
+            self.action('ui', 'duckLevel', '20')
             self.action('vol', 'master', '25')
             self.wait_prop('main', 'volume', 16.25)
             vox = self.base/'runtime/voxtype'; vox.mkdir()
