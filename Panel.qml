@@ -48,6 +48,12 @@ Panel {
   property bool fadeEnabled: true
   property int fadeSeconds: 3
   property int revealSpeed: 1
+  property bool collapsibleSections: true
+  property int duckLevel: 35
+
+  // Which sections the user has collapsed, by section key. Session-only: the
+  // master switch is a setting, the collapse state itself is a transient view.
+  property var collapsed: ({})
 
   readonly property bool motionOn: animationsEnabled
   readonly property bool steamOn: motionOn && steamEnabled && isPlaying
@@ -171,14 +177,13 @@ Panel {
       root.fadeEnabled = state.fade_enabled !== false
       root.fadeSeconds = Math.max(0, Math.min(8, Number(state.fade_seconds === undefined ? 3 : state.fade_seconds) || 0))
       root.revealSpeed = Math.max(0, Math.min(3, Number(state.reveal_speed === undefined ? 1 : state.reveal_speed) || 1))
+      root.collapsibleSections = state.collapsible_sections !== false
+      root.duckLevel = Math.max(0, Math.min(100, Math.round(Number(state.duck_level === undefined ? 35 : state.duck_level) || 0)))
     } catch (error) {
       console.warn("Lofi status parse:", String(error))
       return
     }
   }
-
-  function loadStations(raw) {
-    try {
       var data = JSON.parse(raw || "{}")
       root.categories = Array.isArray(data.categories) ? data.categories : []
     } catch (error) {
@@ -246,6 +251,16 @@ Panel {
   function natureLayer(id) {
     for (var layer of natureLayers) if (layer.id === id) return layer
     return { enabled: false, running: false, volume: 25 }
+  }
+
+  function isCollapsed(key) {
+    return root.collapsibleSections && root.collapsed[key] === true
+  }
+
+  function toggleCollapsed(key) {
+    var next = Object.assign({}, root.collapsed)
+    next[key] = !(next[key] === true)
+    root.collapsed = next
   }
 
   // ---- Data files
@@ -425,6 +440,7 @@ Panel {
           }
         }
 
+
         MixerLevel {
           width: parent.width
           label: "Master"
@@ -437,15 +453,10 @@ Panel {
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
-        Column {
-          width: parent.width
-          spacing: Style.space(6)
-
-          PanelSectionHeader {
-            text: "STATIONS"
-            foreground: root.contentForeground
-            fontFamily: root.contentFontFamily
-          }
+        CollapsibleSection {
+          title: "STATIONS"
+          sectionKey: "stations"
+          summary: root.playerName
 
           Repeater {
             model: root.musicStations
@@ -510,15 +521,10 @@ Panel {
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
-        Column {
-          width: parent.width
-          spacing: Style.space(6)
-
-          PanelSectionHeader {
-            text: "VOICE"
-            foreground: root.contentForeground
-            fontFamily: root.contentFontFamily
-          }
+        CollapsibleSection {
+          title: "VOICE"
+          sectionKey: "voice"
+          summary: root.mixOn && root.bgName ? root.bgName : "Off"
 
           Row {
             width: parent.width
@@ -548,33 +554,35 @@ Panel {
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
-        PanelSectionHeader {
-          text: "NATURE"
-          foreground: root.contentForeground
-          fontFamily: root.contentFontFamily
-        }
+        CollapsibleSection {
+          title: "NATURE"
+          sectionKey: "nature"
+          summary: root.enabledNatureCount > 0
+            ? root.enabledNatureCount + (root.enabledNatureCount === 1 ? " sound" : " sounds")
+            : "None"
 
-        Column {
-          visible: root.enabledNatureCount > 0
-          width: parent.width
-          spacing: Style.space(6)
-          Repeater {
-            // Stable delegates keep a dragged slider alive across status updates.
-            model: root.noiseOptions
-            MixerLevel {
-              required property var modelData
-              readonly property var soundState: root.natureLayer(modelData.value)
-              visible: soundState.enabled
-              width: parent.width
-              label: modelData.label
-              labelWidth: Style.space(108)
-              value: soundState.volume
-              removable: true
-              bar: root.bar
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-              onEdited: function(value) { root.setVolume(modelData.value, value) }
-              onRemoveRequested: root.runAction(["nature", modelData.value, "off"])
+          Column {
+            visible: root.enabledNatureCount > 0
+            width: parent.width
+            spacing: Style.space(6)
+            Repeater {
+              // Stable delegates keep a dragged slider alive across status updates.
+              model: root.noiseOptions
+        MixerLevel {
+                required property var modelData
+                readonly property var soundState: root.natureLayer(modelData.value)
+                visible: soundState.enabled
+                width: parent.width
+                label: modelData.label
+                labelWidth: Style.space(108)
+                value: soundState.volume
+                removable: true
+                bar: root.bar
+                foreground: root.contentForeground
+                fontFamily: root.contentFontFamily
+                onEdited: function(value) { root.setVolume(modelData.value, value) }
+                onRemoveRequested: root.runAction(["nature", modelData.value, "off"])
+              }
             }
           }
         }
@@ -718,6 +726,21 @@ Panel {
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
         PanelSectionHeader {
+          text: "LAYOUT"
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
+        }
+
+        SettingToggle {
+          label: "Collapsible sections"
+          hint: "Fold Stations, Voice and Nature by tapping their headers"
+          checked: root.collapsibleSections
+          onToggled: root.runAction(["ui", "collapsible", root.collapsibleSections ? "off" : "on"])
+        }
+
+        PanelSeparator { width: parent.width; foreground: root.contentForeground }
+
+        PanelSectionHeader {
           text: "AUDIO"
           foreground: root.contentForeground
           fontFamily: root.contentFontFamily
@@ -744,8 +767,22 @@ Panel {
         }
         SettingToggle {
           label: "Quiet while dictating · VoxType"
+          hint: "Lower the mix while VoxType records"
           checked: root.ducking
           onToggled: root.runAction(["ducking", root.ducking ? "off" : "on"])
+        }
+        SettingSlider {
+          label: "Keep audible"
+          value: root.duckLevel
+          minimum: 0
+          maximum: 100
+          step: 5
+          suffix: root.duckLevel + "%"
+          enabled: root.ducking
+          bar: root.bar
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
+          onEdited: function(value) { root.runAction(["ui", "duckLevel", String(value)]) }
         }
       }
     }
@@ -846,6 +883,102 @@ Panel {
       font.pixelSize: Style.font.caption
       horizontalAlignment: Text.AlignRight
       anchors.verticalCenter: parent.verticalCenter
+    }
+  }
+
+  // A titled section that can fold away. The whole header is a click target
+  // with a hover highlight and a chevron next to the title, and collapsing is
+  // animated. When the Collapsible sections setting is off, the header is
+  // inert and the chevron is hidden; collapsed, it shows a short summary.
+  component CollapsibleSection: Column {
+    id: section
+    property string title: ""
+    property string summary: ""
+    property string sectionKey: ""
+    default property alias content: body.data
+    width: parent.width
+    spacing: Style.space(6)
+    readonly property bool collapsed: root.isCollapsed(section.sectionKey)
+    readonly property bool interactive: root.collapsibleSections
+
+    BorderSurface {
+      id: header
+      width: parent.width
+      // Comfortable click target, and only as tall as its contents.
+      implicitHeight: headerContent.implicitHeight + Style.space(6)
+      height: implicitHeight
+      radius: Style.cornerRadius
+      color: headerMouse.containsMouse && section.interactive
+        ? Style.hoverFillFor(root.contentForeground, Color.accent)
+        : "transparent"
+
+      Row {
+        id: headerContent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: Style.space(4)
+        anchors.rightMargin: Style.space(4)
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Style.space(6)
+
+        Text {
+          id: chevron
+          visible: section.interactive
+          text: section.collapsed ? "\uf054" : "\uf078"
+          color: root.contentForeground
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.bodySmall
+          width: section.interactive ? implicitWidth : 0
+          anchors.verticalCenter: parent.verticalCenter
+        }
+
+        PanelSectionHeader {
+          id: titleText
+          text: section.title
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
+          anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Item {
+          width: Math.max(0, parent.width - chevron.width - titleText.width - summaryText.implicitWidth
+            - parent.spacing * 3)
+          height: 1
+        }
+
+        Text {
+          id: summaryText
+          visible: section.collapsed && section.summary !== ""
+          text: section.summary
+          textFormat: Text.PlainText
+          color: Qt.darker(root.contentForeground, 1.5)
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.caption
+          elide: Text.ElideRight
+          width: Math.min(implicitWidth, parent.width - chevron.width - titleText.width - parent.spacing * 3)
+          horizontalAlignment: Text.AlignRight
+          anchors.verticalCenter: parent.verticalCenter
+        }
+      }
+
+      MouseArea {
+        id: headerMouse
+        anchors.fill: parent
+        enabled: section.interactive
+        hoverEnabled: true
+        cursorShape: section.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: root.toggleCollapsed(section.sectionKey)
+      }
+    }
+
+    Column {
+      id: body
+      width: parent.width
+      spacing: Style.space(6)
+      // Animate the fold so a collapse is visible, not a jump.
+      visible: !section.collapsed
+      opacity: section.collapsed ? 0 : 1
+      Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
     }
   }
 }
