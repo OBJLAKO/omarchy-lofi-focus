@@ -37,6 +37,17 @@ class PlayerTest(unittest.TestCase):
     def action(self, *args, check=True):
         return subprocess.run([str(self.plugin/'lofi-player'), *args], env=self.env, capture_output=True, text=True, timeout=20, check=check)
 
+    def wait_for(self, predicate, timeout=6):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if predicate():
+                return
+            time.sleep(.05)
+        self.assertTrue(predicate(), 'Playback did not reach the expected state')
+
+    def wait_prop(self, channel, name, expected):
+        self.wait_for(lambda: abs(self.prop(channel, name) - expected) < .1)
+
     def status(self): return json.loads(self.action('status').stdout)
     def channel(self, channel):
         if channel == 'noise':
@@ -59,17 +70,19 @@ class PlayerTest(unittest.TestCase):
         self.assertTrue(self.status()['running'])
         main = self.pid('main'); bg = self.pid('bg')
         self.action('vol','main','37'); self.action('vol','bg','12')
-        self.assertEqual(self.prop('main','volume'),37)
+        self.wait_prop('main', 'volume', 37)
         self.assertEqual(self.pid('main'),main)
         self.action('start','lofi-kalizo')
         self.assertEqual(self.pid('bg'),bg)
-        self.action('pause'); self.action('bg','voice-changelog')
-        self.assertTrue(self.prop('bg','pause'))
+        self.action('pause')
+        self.action('bg','voice-changelog')
+        self.wait_for(lambda: self.prop('bg','pause'))
         self.action('resume'); self.assertFalse(self.prop('bg','pause'))
         self.assertNotEqual(self.action('bg','lofi-kalizo',check=False).returncode,0)
         self.assertNotEqual(self.action('start','talk-bbc-world',check=False).returncode,0)
         self.action('stop'); self.action('play')
         st=self.status(); self.assertEqual(st['station'],'lofi-kalizo'); self.assertEqual(st['main_volume'],37)
+        self.action('bg','off'); self.assertFalse(self.status()['bg_running'])
         self.action('bg','off'); self.assertFalse(self.status()['bg_running'])
         after={str(p.relative_to(self.plugin)):p.read_bytes() for p in self.plugin.rglob("*") if p.is_file()}
         self.assertEqual(self.before,after,'Playback must never modify watched plugin files')
@@ -109,15 +122,15 @@ class PlayerTest(unittest.TestCase):
         self.action('noise', 'noise-rain')
         self.action('vol', 'noise', '30')
         self.action('vol', 'master', '50')
-        self.assertAlmostEqual(self.prop('main', 'volume'), 32.5)
-        self.assertAlmostEqual(self.prop('bg', 'volume'), 10)
-        self.assertAlmostEqual(self.prop('noise', 'volume'), 15)
+        self.wait_prop('main', 'volume', 32.5)
+        self.wait_prop('bg', 'volume', 10)
+        self.wait_prop('noise', 'volume', 15)
         layers = {entry['id']: entry for entry in self.status()['nature_layers']}
         self.assertEqual(layers['noise-rain']['volume'], 30)
         noise = self.pid('noise')
         self.action('start', 'lofi-kalizo')
         self.assertEqual(self.pid('noise'), noise)
-        self.action('pause'); self.assertTrue(self.prop('noise', 'pause'))
+        self.action('pause'); self.wait_for(lambda: self.prop('noise', 'pause'))
         self.action('resume'); self.assertFalse(self.prop('noise', 'pause'))
         self.assertNotEqual(self.action('bg', 'noise-rain', check=False).returncode, 0)
         self.action('noise', 'off'); self.assertFalse(self.status()['noise_running'])
@@ -127,8 +140,8 @@ class PlayerTest(unittest.TestCase):
         # Killing the volume worker must not break the next master adjustment.
         worker = int(self.pid('volume')); os.kill(worker, 15); time.sleep(0.1)
         self.action('vol', 'master', '0')
-        self.assertEqual(self.prop('main', 'volume'), 0)
-        self.assertEqual(self.prop('noise', 'volume'), 0)
+        self.wait_prop('main', 'volume', 0)
+        self.wait_prop('noise', 'volume', 0)
         self.assertNotEqual(self.pid('volume'), str(worker) + '\n')
 
     def test_existing_mpris_owner_does_not_disable_volume(self):
@@ -137,12 +150,11 @@ class PlayerTest(unittest.TestCase):
             time.sleep(0.4)
             self.action('play')
             self.action('vol', 'master', '25')
-            self.assertAlmostEqual(self.prop('main', 'volume'), 16.25)
+            self.wait_prop('main', 'volume', 16.25)
             vox = self.base/'runtime/voxtype'; vox.mkdir()
             (vox/'pid').write_text(str(os.getpid()))
             (vox/'state').write_text('recording')
-            time.sleep(0.4)
-            self.assertAlmostEqual(self.prop('main', 'volume'), 3.25)
+            self.wait_prop('main', 'volume', 3.25)
         finally:
             owner.terminate(); owner.wait(timeout=3)
 
@@ -158,15 +170,15 @@ class PlayerTest(unittest.TestCase):
         self.assertTrue(st['running'])
         self.assertFalse(st['paused'])
         self.action('toggle')
-        self.assertTrue(self.status()['paused'])
+        self.wait_for(lambda: self.status()['paused'])
         for channel in ('bg', 'noise'):
-            self.assertTrue(self.prop(channel, 'pause'))
+            self.wait_for(lambda channel=channel: self.prop(channel, 'pause'))
         self.action('toggle')
         for channel in ('bg', 'noise'):
             self.assertFalse(self.prop(channel, 'pause'))
         self.action('vol', 'master', '0')
         for channel in ('bg', 'noise'):
-            self.assertEqual(self.prop(channel, 'volume'), 0)
+            self.wait_prop(channel, 'volume', 0)
         self.action('pause'); self.action('play')
         self.assertFalse(self.status()['paused'])
         self.action('start', 'lofi-lilo')
@@ -182,7 +194,7 @@ class PlayerTest(unittest.TestCase):
         time.sleep(0.1)
         self.assertTrue(self.status()['running'])
         self.action('pause')
-        self.assertTrue(self.prop('noise', 'pause'))
+        self.wait_for(lambda: self.prop('noise', 'pause'))
         self.assertTrue(self.status()['paused'])
         self.action('resume')
         self.assertFalse(self.prop('noise', 'pause'))

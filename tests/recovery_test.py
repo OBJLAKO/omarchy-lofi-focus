@@ -255,10 +255,15 @@ class RecoveryIntegrationTest(unittest.TestCase):
         self.assertLess(time.monotonic() - started, 2)
         release.touch()
         import select
+        # Stop fades the mix out before it tears the feed worker down, so the
+        # worker exits once the ramp completes rather than instantly.
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not select.select([feed_handle], [], [], .2)[0]:
+            pass
         self.assertTrue(select.select([feed_handle], [], [], 1)[0], 'Feed worker must exit on Stop')
-        self.assertFalse(list((self.base/'runtime/sky.lofi').glob('*.m3u')))
+        self.wait_for(lambda: not list((self.base/'runtime/sky.lofi').glob('*.m3u')))
         self.assertFalse(self.status()['bg_running'])
-        self.assertFalse((self.base/'runtime/sky.lofi/feed.pid').exists())
+        self.wait_for(lambda: not (self.base/'runtime/sky.lofi/feed.pid').exists())
 
     def test_update_replaces_old_worker_without_restarting_audio(self):
         self.action('play')

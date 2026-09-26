@@ -31,7 +31,7 @@ class Ducker:
         except (OSError, ValueError):
             return False
 
-    def poll(self):
+    def poll(self, skip=()):
         try:
             with self.settings.open() as source:
                 settings = json.load(source)
@@ -49,6 +49,10 @@ class Ducker:
         else:
             channels.append(('noise', settings.get('noiseVolume', 25)))
         for channel, base_volume in channels:
+            # A channel with an active fade owns its own volume; leave it alone
+            # so the ramp is not overwritten on the next 100 ms tick.
+            if channel in skip:
+                continue
             path = self.runtime/f'sky.lofi/sockets/{channel}.sock'
             try:
                 stat = path.stat()

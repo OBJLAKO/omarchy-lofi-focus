@@ -24,6 +24,15 @@ WORKER_VERSION = hashlib.sha256(Path(__file__).read_bytes() + (ROOT/'lofi_duck.p
 RETRY_DELAYS = (2, 5, 10, 20, 30)
 CONNECT_TIMEOUT = 15
 STABLE_SECONDS = 30
+# Gentle ramps: a stream should ease in when it starts and ease out before it
+# stops, so the mix never cuts in or dies abruptly.
+FADE_IN_SECONDS = 2.5
+FADE_OUT_SECONDS = 1.6
+
+
+def ease(progress):
+    """Smoothstep, so a ramp accelerates and settles instead of moving linearly."""
+    return progress * progress * (3 - 2 * progress)
 
 
 def read_json(path, fallback):
@@ -95,6 +104,13 @@ class Player:
         self.session = {}
         self.lock = (self.runtime/'control.lock').open('w')
         self.ducker = Ducker()
+        # Fades live in their own file and lock: the volume worker steps them
+        # ten times a second, while control commands only request them. Keeping
+        # them out of settings/session avoids re-reading those on every tick.
+        self.fades_path = self.runtime/'fades.json'
+        self.fades_lock = (self.runtime/'fades.lock').open('w')
+        self.fades = read_json(self.fades_path, {})
+        self.fades_revision = None
 
     def reload_catalog(self):
         catalog = read_json(ROOT/'stations.json', {})
@@ -211,16 +227,19 @@ class Player:
         pid_path.unlink(missing_ok=True)
         self.sock(channel).unlink(missing_ok=True)
 
-    def spawn(self, channel, url, volume, loop=False, paused=False):
+    def spawn(self, channel, url, volume, loop=False, paused=False, fade_in=False):
         self.stop_channel(channel)
         log = self.runtime/'logs'/f'{channel}.log'
         if log.exists():
             log.replace(log.with_suffix('.log.previous'))
+        # A new stream starts silent and ramps up, so it glides in rather than
+        # popping. The worker owns its volume until the ramp finishes.
+        start_volume = 0 if (fade_in and not paused) else volume
         # Warnings/errors and lifecycle messages, not every IPC request.
         args = ['mpv', '--no-config', '--no-video', '--terminal=yes', '--input-terminal=no', '--load-scripts=no',
                 '--ytdl=no', '--audio-display=no', '--msg-level=all=warn,cplayer=info',
                 '--msg-color=no', '--term-status-msg=', '--network-timeout=12',
-                f'--volume={volume}', f'--input-ipc-server={self.sock(channel)}',
+                f'--volume={start_volume}', f'--input-ipc-server={self.sock(channel)}',
                 '--user-agent=sky.lofi/1.0 (mpv)']
         if loop:
             args.append('--loop-file=inf')
@@ -234,14 +253,85 @@ class Player:
             if self.sock(channel).exists() or child.poll() is not None:
                 break
             time.sleep(.01)
+        if fade_in and not paused:
+            self.request_fade(channel, volume, FADE_IN_SECONDS)
 
     def effective(self, base):
         return level(base) * level(self.settings['masterVolume'], 100) / 100 * (
             .2 if self.settings.get('ducking', True) and self.ducker.recording() else 1)
 
+    def request_fade(self, channel, target, duration):
+        """Queue a volume ramp for the worker. Reads current mpv volume as the start."""
+        if not self.alive(channel):
+            return
+        current = ipc(self.sock(channel), ['get_property', 'volume'])
+        start = float(current) if isinstance(current, (int, float)) else float(target)
+        fcntl.flock(self.fades_lock, fcntl.LOCK_EX)
+        try:
+            self.fades = read_json(self.fades_path, {})
+            if duration <= 0 or abs(start - float(target)) < 1:
+                self.fades.pop(channel, None)
+                ipc(self.sock(channel), ['set_property', 'volume', float(target)])
+            else:
+                self.fades[channel] = dict(from_=start, to=float(target),
+                                           started=time.monotonic(), duration=float(duration))
+            write_json(self.fades_path, self.fades)
+        finally:
+            fcntl.flock(self.fades_lock, fcntl.LOCK_UN)
+
+    def fade_out_all(self, duration=FADE_OUT_SECONDS):
+        for channel in self.channels(include_legacy=True):
+            if self.alive(channel):
+                self.request_fade(channel, 0.0, duration)
+
+    def fade_in_channel(self, channel, target, duration=FADE_IN_SECONDS):
+        if self.alive(channel):
+            self.request_fade(channel, target, duration)
+
+    def step_fades(self):
+        """Advance every active ramp. Called by the volume worker each tick."""
+        try:
+            revision = self.fades_path.stat().st_mtime_ns
+        except OSError:
+            revision = None
+        try:
+            fcntl.flock(self.fades_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return set()  # A control command is rewriting the file; try next tick.
+        try:
+            if revision != self.fades_revision:
+                self.fades = read_json(self.fades_path, {})
+                self.fades_revision = revision
+            if not self.fades:
+                return set()
+            now = time.monotonic()
+            active = set()
+            changed = False
+            for channel, fade in list(self.fades.items()):
+                if not self.alive(channel):
+                    self.fades.pop(channel, None); changed = True
+                    continue
+                duration = float(fade.get('duration', 0)) or 1.0
+                progress = min(1.0, (now - float(fade.get('started', now))) / duration)
+                start = float(fade.get('from_', 0)); target = float(fade.get('to', 0))
+                volume = start + (target - start) * ease(progress)
+                ipc(self.sock(channel), ['set_property', 'volume', volume])
+                if progress >= 1.0:
+                    self.fades.pop(channel, None); changed = True
+                else:
+                    active.add(channel)
+            if changed or self.fades:
+                write_json(self.fades_path, self.fades)
+                self.fades_revision = self.fades_path.stat().st_mtime_ns
+            return active
+        finally:
+            fcntl.flock(self.fades_lock, fcntl.LOCK_UN)
+
+
+
     def start_music(self, reset=True):
         station = self.stations[self.session['station']]
-        self.spawn('main', station['url'], self.effective(self.settings['mainVolume']))
+        self.spawn('main', station['url'], self.effective(self.settings['mainVolume']), fade_in=True)
         self.session.update(started=time.monotonic(), retry_due=0, playing_since=0, last_position=None, progress_at=time.monotonic())
         if reset:
             self.session['attempts'] = 0
@@ -260,7 +350,8 @@ class Player:
             self.spawn_service('feed', [sys.executable, str(ROOT/'lofi-player'),
                                        '--resolve-feed', station['id'], token])
             return
-        self.spawn('bg', url, self.effective(self.settings['bgVolume']), paused=self.session['mode'] == 'paused')
+        self.spawn('bg', url, self.effective(self.settings['bgVolume']), paused=self.session['mode'] == 'paused',
+                   fade_in=True)
 
     def start_nature(self, id):
         entry = self.settings['natureLayers'].get(id, {})
@@ -268,7 +359,7 @@ class Player:
             return
         volume = level(entry.get('volume', 25))
         self.spawn('nature-' + id, ROOT/self.stations[id]['url'], self.effective(volume),
-                   loop=True, paused=self.session['mode'] == 'paused')
+                   loop=True, paused=self.session['mode'] == 'paused', fade_in=True)
 
     def ensure_services(self):
         if self.session['mode'] == 'stopped':
@@ -291,6 +382,7 @@ class Player:
     def begin(self, station=None):
         previous = self.session['mode']
         self.session['mode'] = 'playing'
+        self.session['pending'] = None
         self.session['progress_at'] = time.monotonic()
         if station is not None:
             self.require_station(station, 'lofi')
@@ -298,11 +390,21 @@ class Player:
             self.session['station'] = station
         if station or previous == 'stopped' or not self.alive('main'):
             self.start_music()
+        else:
+            # Resuming: the stream is still loaded and silent after its fade
+            # out, so unpause it and glide back to level.
+            self.fade_in_channel('main', self.effective(self.settings['mainVolume']))
         if not self.alive('bg') and not self.alive('feed'):
             self.start_bg()
+        else:
+            self.fade_in_channel('bg', self.effective(self.settings['bgVolume']))
         for id in self.nature:
             if not self.alive('nature-' + id):
                 self.start_nature(id)
+            else:
+                entry = self.settings['natureLayers'].get(id, {})
+                if entry.get('enabled'):
+                    self.fade_in_channel('nature-' + id, self.effective(level(entry.get('volume', 25))))
         for channel in self.channels():
             if self.alive(channel):
                 ipc(self.sock(channel), ['set_property', 'pause', False])
@@ -311,17 +413,68 @@ class Player:
     def pause(self):
         if self.session['mode'] == 'stopped':
             return
-        self.session.update(mode='paused', retry_due=0)
-        for channel in self.channels(include_legacy=True):
-            if self.alive(channel):
-                ipc(self.sock(channel), ['set_property', 'pause', True])
-        (self.runtime/'paused.flag').touch()
+        # The UI reflects the pause at once; the audio ramps down and the
+        # worker commits the hard pause when the ramp reaches silence.
+        self.session.update(mode='paused', retry_due=0,
+                            pending=dict(action='pause', at=time.monotonic() + FADE_OUT_SECONDS))
+        self.fade_out_all()
+        self.commit_without_worker()
 
     def stop(self):
-        self.session.update(mode='stopped', retry_due=0, attempts=0, playing_since=0, feed_token='')
-        for channel in self.channels(include_legacy=True) + ['feed', 'volume', 'mpris']:
-            self.stop_channel(channel)
-        (self.runtime/'paused.flag').unlink(missing_ok=True)
+        # Same shape as pause: stop intent is immediate, the processes are torn
+        # down only after they have faded out.
+        self.session.update(mode='stopped', retry_due=0, attempts=0, playing_since=0, feed_token='',
+                            pending=dict(action='stop', at=time.monotonic() + FADE_OUT_SECONDS))
+        self.fade_out_all()
+        self.commit_without_worker()
+
+    def commit_without_worker(self):
+        """If no volume worker is alive to run the ramp, finish the transport now.
+
+        Called from control commands (a different process than the worker), so
+        tearing the worker down here is safe."""
+        if self.alive('volume'):
+            return
+        pending = self.session.get('pending') or {}
+        if pending.get('action') == 'pause':
+            for channel in self.channels(include_legacy=True):
+                if self.alive(channel):
+                    ipc(self.sock(channel), ['set_property', 'pause', True])
+            (self.runtime/'paused.flag').touch()
+        else:
+            for channel in self.channels(include_legacy=True) + ['feed', 'volume', 'mpris']:
+                self.stop_channel(channel)
+            self.clear_feed_cache()
+            (self.runtime/'paused.flag').unlink(missing_ok=True)
+        self.session['pending'] = None
+
+    def commit_pending(self):
+        """Finish a transport that had to wait for its fade-out to complete."""
+        pending = self.session.get('pending')
+        if not pending or time.monotonic() < pending.get('at', 0):
+            return
+        action = pending.get('action')
+        self.session['pending'] = None
+        if action == 'pause':
+            for channel in self.channels(include_legacy=True):
+                if self.alive(channel):
+                    ipc(self.sock(channel), ['set_property', 'pause', True])
+            (self.runtime/'paused.flag').touch()
+        elif action == 'stop':
+            # Never signal the volume worker from here: this runs inside it, so
+            # it tears everything else down and cleans up its own files as it
+            # exits the watch loop.
+            for channel in self.channels(include_legacy=True) + ['feed', 'mpris']:
+                self.stop_channel(channel)
+            self.clear_feed_cache()
+            (self.runtime/'paused.flag').unlink(missing_ok=True)
+
+    def clear_feed_cache(self):
+        """A stopped session leaves no resolved podcast playlists behind."""
+        for id in self.stations:
+            cache = self.runtime/(hashlib.sha256(id.encode()).hexdigest()[:16] + '.m3u')
+            cache.unlink(missing_ok=True)
+            cache.with_suffix('.lock').unlink(missing_ok=True)
 
     def require_station(self, id, category):
         if id not in self.stations or self.stations[id]['category'] != category:
@@ -329,6 +482,8 @@ class Player:
 
     def maintain(self):
         now = time.monotonic()
+        # Finish a Pause/Stop as soon as its fade-out has had time to complete.
+        self.commit_pending()
         # Migrate the single old nature process without resetting music/voice.
         if self.alive('noise'):
             self.stop_channel('noise')
@@ -505,7 +660,8 @@ class Player:
         elif command != 'status':
             raise ValueError('Unknown command')
         self.save()
-        self.ducker.poll()
+        # Apply volume without clobbering ramps that were just requested.
+        self.ducker.poll(skip=set(self.fades))
         self.ensure_services()
         return self.status()
 
@@ -518,10 +674,16 @@ def watch(player):
             return
         deadline = 0
         while True:
-            player.ducker.poll()
+            # Advance volume ramps first; they own their channels' volume and
+            # tell the ducker to leave those channels alone this tick.
+            fading = player.step_fades()
+            player.ducker.poll(skip=fading)
             if time.monotonic() >= deadline and player.acquire(blocking=False):
                 try:
-                    if player.session['mode'] == 'stopped':
+                    if player.session['mode'] == 'stopped' and not player.session.get('pending'):
+                        # Retire this worker: remove its pid marker so a later
+                        # Play starts a fresh one.
+                        (player.runtime/'volume.pid').unlink(missing_ok=True)
                         return
                     player.maintain()
                     player.save()
