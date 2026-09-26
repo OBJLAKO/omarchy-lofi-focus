@@ -129,6 +129,13 @@ class Player:
         for key, value in dict(defaultStation='lofi-lilo', mainVolume=65, bgVolume=20,
                                bgStation='talk-bbc-world', mix=True, masterVolume=100, ducking=True).items():
             self.settings.setdefault(key, value)
+        # Look-and-feel preferences. The panel reads them from status.json and
+        # writes them back through the `ui` command; the backend only stores
+        # them, so every setting survives restarts and stays CLI-addressable.
+        for key, value in dict(animations=True, revealAnimations=True, steamAnimation=True,
+                               glowAnimation=True, equalizerAnimation=True, fadeEnabled=True,
+                               fadeSeconds=3, revealSpeed=1).items():
+            self.settings.setdefault(key, value)
         previous_default = self.settings['defaultStation']
         if previous_default not in self.music:
             self.settings['defaultStation'] = self.music[0]
@@ -234,7 +241,8 @@ class Player:
             log.replace(log.with_suffix('.log.previous'))
         # A new stream starts silent and ramps up, so it glides in rather than
         # popping. The worker owns its volume until the ramp finishes.
-        start_volume = 0 if (fade_in and not paused) else volume
+        fading = fade_in and not paused and self.settings.get('fadeEnabled', True)
+        start_volume = 0 if fading else volume
         # Warnings/errors and lifecycle messages, not every IPC request.
         args = ['mpv', '--no-config', '--no-video', '--terminal=yes', '--input-terminal=no', '--load-scripts=no',
                 '--ytdl=no', '--audio-display=no', '--msg-level=all=warn,cplayer=info',
@@ -253,8 +261,15 @@ class Player:
             if self.sock(channel).exists() or child.poll() is not None:
                 break
             time.sleep(.01)
-        if fade_in and not paused:
-            self.request_fade(channel, volume, FADE_IN_SECONDS)
+        if fading:
+            self.request_fade(channel, volume, self.fade_in_seconds())
+
+    def fade_in_seconds(self):
+        return level(self.settings.get('fadeSeconds', FADE_IN_SECONDS), FADE_IN_SECONDS)
+
+    def fade_out_seconds(self):
+        # A touch shorter than the ramp in, but never zero unless disabled.
+        return level(self.settings.get('fadeSeconds', FADE_OUT_SECONDS * 1.8), 3) * 0.6
 
     def effective(self, base):
         return level(base) * level(self.settings['masterVolume'], 100) / 100 * (
@@ -390,42 +405,60 @@ class Player:
             self.session['station'] = station
         if station or previous == 'stopped' or not self.alive('main'):
             self.start_music()
-        else:
+        elif self.fade_configured():
             # Resuming: the stream is still loaded and silent after its fade
             # out, so unpause it and glide back to level.
-            self.fade_in_channel('main', self.effective(self.settings['mainVolume']))
+            self.fade_in_channel('main', self.effective(self.settings['mainVolume']), self.fade_in_seconds())
         if not self.alive('bg') and not self.alive('feed'):
             self.start_bg()
-        else:
-            self.fade_in_channel('bg', self.effective(self.settings['bgVolume']))
+        elif self.fade_configured():
+            self.fade_in_channel('bg', self.effective(self.settings['bgVolume']), self.fade_in_seconds())
         for id in self.nature:
             if not self.alive('nature-' + id):
                 self.start_nature(id)
-            else:
+            elif self.fade_configured():
                 entry = self.settings['natureLayers'].get(id, {})
                 if entry.get('enabled'):
-                    self.fade_in_channel('nature-' + id, self.effective(level(entry.get('volume', 25))))
+                    self.fade_in_channel('nature-' + id, self.effective(level(entry.get('volume', 25))), self.fade_in_seconds())
         for channel in self.channels():
             if self.alive(channel):
                 ipc(self.sock(channel), ['set_property', 'pause', False])
         (self.runtime/'paused.flag').unlink(missing_ok=True)
 
+    def fade_configured(self):
+        return self.settings.get('fadeEnabled', True) and self.fade_in_seconds() > 0
+
     def pause(self):
         if self.session['mode'] == 'stopped':
+            return
+        if not self.fade_configured():
+            # Fades off: pause immediately, exactly as before.
+            self.session.update(mode='paused', retry_due=0, pending=None)
+            for channel in self.channels(include_legacy=True):
+                if self.alive(channel):
+                    ipc(self.sock(channel), ['set_property', 'pause', True])
+            (self.runtime/'paused.flag').touch()
             return
         # The UI reflects the pause at once; the audio ramps down and the
         # worker commits the hard pause when the ramp reaches silence.
         self.session.update(mode='paused', retry_due=0,
-                            pending=dict(action='pause', at=time.monotonic() + FADE_OUT_SECONDS))
-        self.fade_out_all()
+                            pending=dict(action='pause', at=time.monotonic() + self.fade_out_seconds()))
+        self.fade_out_all(self.fade_out_seconds())
         self.commit_without_worker()
 
     def stop(self):
+        if not self.fade_configured():
+            self.session.update(mode='stopped', retry_due=0, attempts=0, playing_since=0, feed_token='', pending=None)
+            for channel in self.channels(include_legacy=True) + ['feed', 'volume', 'mpris']:
+                self.stop_channel(channel)
+            self.clear_feed_cache()
+            (self.runtime/'paused.flag').unlink(missing_ok=True)
+            return
         # Same shape as pause: stop intent is immediate, the processes are torn
         # down only after they have faded out.
         self.session.update(mode='stopped', retry_due=0, attempts=0, playing_since=0, feed_token='',
-                            pending=dict(action='stop', at=time.monotonic() + FADE_OUT_SECONDS))
-        self.fade_out_all()
+                            pending=dict(action='stop', at=time.monotonic() + self.fade_out_seconds()))
+        self.fade_out_all(self.fade_out_seconds())
         self.commit_without_worker()
 
     def commit_without_worker(self):
@@ -557,6 +590,14 @@ class Player:
                      mix=self.settings.get('mix', False), nature_layers=layers,
                      nature_volume=self.settings['natureVolume'], noise_volume=self.settings['natureVolume'],
                      noise_station=selected[0] if selected else 'off', noise_running=any(s['running'] for s in layers),
+                     animations=bool(self.settings.get('animations', True)),
+                     reveal_animations=bool(self.settings.get('revealAnimations', True)),
+                     steam_animation=bool(self.settings.get('steamAnimation', True)),
+                     glow_animation=bool(self.settings.get('glowAnimation', True)),
+                     equalizer_animation=bool(self.settings.get('equalizerAnimation', True)),
+                     fade_enabled=bool(self.settings.get('fadeEnabled', True)),
+                     fade_seconds=level(self.settings.get('fadeSeconds', 3), 3),
+                     reveal_speed=level(self.settings.get('revealSpeed', 1), 1),
                      index=self.music.index(id) if id in self.music else 0, count=len(self.music),
                      main_title=ipc(self.sock('main'), ['get_property', 'media-title']) if ready else '',
                      bg_title=ipc(self.sock('bg'), ['get_property', 'media-title']) if self.alive('bg') else '')
@@ -650,6 +691,26 @@ class Player:
             if args[0] not in ('on', 'off'):
                 raise ValueError('ducking takes on/off')
             self.settings['ducking'] = args[0] == 'on'
+        elif command == 'ui':
+            # Persist a look-and-feel preference. Keys are the setting names the
+            # panel uses; booleans take on/off, numbers take 0-8 (fade seconds)
+            # or 0-3 (reveal speed).
+            key, value = args
+            boolean_keys = {'animations': 'animations', 'reveal': 'revealAnimations',
+                            'steam': 'steamAnimation', 'glow': 'glowAnimation',
+                            'equalizer': 'equalizerAnimation', 'fade': 'fadeEnabled'}
+            number_keys = {'fadeSeconds': 8, 'revealSpeed': 3}
+            if key in boolean_keys:
+                if value not in ('on', 'off'):
+                    raise ValueError(f'{key} takes on/off')
+                self.settings[boolean_keys[key]] = value == 'on'
+            elif key in number_keys:
+                number = int(value)
+                if not 0 <= number <= number_keys[key]:
+                    raise ValueError(f'{key} takes 0-{number_keys[key]}')
+                self.settings[key] = number
+            else:
+                raise ValueError('Unknown ui setting')
         elif command == 'default':
             self.require_station(args[0], 'lofi')
             self.settings['defaultStation'] = args[0]
