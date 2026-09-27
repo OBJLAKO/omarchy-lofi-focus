@@ -29,3 +29,20 @@ These music policies do not apply to the optional podcasts, talk radio or ATC
 channels. Those are separate third-party broadcasts and may contain speech or
 sponsor messages. Offline nature sounds and their licenses are documented in
 [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md).
+
+## Lofi Girl live presets (v2)
+
+The [official channel’s live page](https://www.youtube.com/@LofiGirl/streams)
+listed these active streams on 2026-09-27:
+
+| Preset | Official stream |
+| --- | --- |
+| Study beats | https://www.youtube.com/watch?v=rFZHOHl-L8A |
+| Synthwave | https://www.youtube.com/watch?v=4xDzrJKXOOY |
+| Jazz lofi | https://www.youtube.com/watch?v=E2vONfzoyRI |
+| Sleep & chill | https://www.youtube.com/watch?v=JD-kMIpDfnY |
+
+Playback uses the same constrained yt-dlp path as saved YouTube links. These
+are external live streams, not bundled or rehosted recordings. This project is
+not affiliated with Lofi Girl. Stream availability and identifiers may change.
+The no-ad descriptions of the direct radio providers do not apply to YouTube.

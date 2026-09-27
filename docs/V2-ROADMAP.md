@@ -1,6 +1,6 @@
 # Lofi Focus v2 — listening first
 
-## Implemented on dev
+## Shipped in v2
 
 A saved YouTube shelf shares the same foreground player, Master volume,
 VoxType ducking and nature mixer as radio. A single Now Playing card owns

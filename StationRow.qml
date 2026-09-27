@@ -103,7 +103,7 @@ CursorSurface {
         textFormat: Text.PlainText
         visible: text !== ""
         text: root.description
-        color: Qt.darker(root.foreground, 1.5)
+        color: Qt.alpha(root.foreground, 0.65)
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
         elide: Text.ElideRight

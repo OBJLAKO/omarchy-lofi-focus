@@ -7,6 +7,7 @@ Column {
   property var entries: []
   property string selectedId: ""
   property bool playing: false
+  property bool animate: true
   property bool available: true
   property bool saving: false
   property bool addingLink: false
@@ -148,7 +149,7 @@ Column {
           glyph: "\uf144"
           current: root.selectedId === modelData.id
           playing: current && root.playing
-          animate: false
+          animate: root.animate && root.visible
           foreground: root.foreground
           fontFamily: root.fontFamily
           activeFocusOnTab: true

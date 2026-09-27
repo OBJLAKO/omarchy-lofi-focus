@@ -1,12 +1,34 @@
-# Lofi Focus ☕
+# Lofi Focus ☕ · v2
 
-Chill radio, background voices and nature sounds for Omarchy. One click to settle into work.
+**Version 2 is here.** Your favourite audio, with a little rain.
 
-![Lofi Focus — a cozy desk on a rainy evening](preview.png)
+![Lofi Focus v2 — YouTube audio, radio, podcasts and nature in one native Omarchy panel](preview.png)
 
-A native Omarchy shell widget that follows your theme, fonts and panel controls.
-Choose one music station, an optional voice and any combination of nature sounds.
-Master changes the whole mix; music, voice and each nature sound have their own level.
+A personal listening space in your Omarchy bar. Play lo-fi radio or a YouTube
+video, layer in nature sounds, and settle into work. The panel follows your
+Omarchy theme and fonts.
+
+| Listen | Make it yours |
+| --- | --- |
+| **YouTube audio** — save up to 40 links, resume and seek | **Nine offline nature loops** with individual volume |
+| **Lofi Girl** — Study, Synthwave, Jazz and Sleep live radios | **Master volume** and independent audio levels |
+| **Four direct lo-fi stations**, talk radio, ATC and podcasts | **VoxType ducking**, smooth fades and media keys |
+| A saved listening shelf that survives updates | Animated playback, folding sections and motion controls |
+
+## See it in action
+
+**YouTube:** open the tab → paste a link → save → play. Rain keeps playing;
+finite videos remember your position.
+
+![Save a YouTube link, play with rain, seek and pause](docs/youtube-guide.gif)
+
+**Build your atmosphere:** choose music → add rain or a fireplace → balance each
+sound → adjust the whole mix with Master.
+
+![Choose radio, add nature sounds and adjust their volume](docs/nature-guide.gif)
+
+These short GIFs are scripted walkthroughs of the actual QML interface with
+sample data. The playback indicator is decorative, not an audio spectrum.
 
 ## Install
 
@@ -18,8 +40,8 @@ omarchy plugin add https://github.com/OBJLAKO/omarchy-lofi-focus --enable
 
 Requires the Quickshell-based Omarchy shell with third-party plugin support.
 Uses Omarchy's bundled **mpv, Python, python-gobject, jq and util-linux**.
-The upcoming YouTube feature also uses **yt-dlp**.
-No extra installation steps, API keys or accounts are needed.
+YouTube and Lofi Girl stations also need **yt-dlp** and a supported JavaScript runtime (such as **Deno**).
+No API keys or accounts are needed. Radio and bundled nature sounds remain available when yt-dlp is absent.
 The repository root is the plugin; its permanent ID is `sky.lofi`.
 
 ```sh
@@ -37,7 +59,7 @@ omarchy plugin update sky.lofi
 Switching or reconnecting music leaves the voice and nature layers playing. Settings live outside
 the plugin directory, so changing a station or volume does not reload the shell.
 
-## YouTube library (dev / upcoming v2)
+## YouTube library
 
 Open the panel → **YouTube** → **Add link**. Paste a video link, optionally give
 it a name, and choose **Save to library**. Click a saved entry to listen. Its
@@ -63,9 +85,7 @@ same video again updates its optional name instead of creating a duplicate.
   holds up to 40 entries. Removing an entry requires a second click; removing
   the active one pauses the mix without unexpectedly starting another source.
 
-Requires **yt-dlp** and its normal YouTube runtime dependencies. These are
-already available on the development machine; radio/nature still work without
-yt-dlp. Playback uses mpv's built-in extractor integration, selects an audio-only
+Requires **yt-dlp** and its normal YouTube runtime dependencies. Keep yt-dlp and its supported JavaScript runtime up to date; radio/nature still work without yt-dlp. Playback uses mpv's built-in extractor integration, selects an audio-only
 format and does not save a video/audio download. It ignores user yt-dlp config
 and plugins, does not read browser cookies, and disables remote component
 installation. Restricted/private videos are not supported. If a public video
@@ -78,10 +98,10 @@ tree. Network extraction does not hold the controller lock.
 
 ## Sounds
 
-**Music:** four relaxed lo-fi stations: Lilo-Fi Radio (the default), Kalizo Lo-fi,
+**Music:** four direct lo-fi stations: Lilo-Fi Radio (the default), Kalizo Lo-fi,
 Purrple Cat and Lofi Cafe · Chilling. They range from mellow jazz-influenced beats
 to dreamy instrumentals and play directly through mpv without extra packages.
-Their operators describe these streams as ad-free. See [station sources and
+Their operators describe these direct streams as ad-free. Four additional **Lofi Girl** presets play the official Study beats, Synthwave, Jazz lofi and Sleep & chill YouTube live streams. They need yt-dlp, keep nature layers playing, and suspend the optional voice layer. Live stream IDs can change; see the official [Lofi Girl channel](https://www.youtube.com/@LofiGirl/streams) if a preset becomes unavailable. See [station sources and
 policies](STATIONS.md); external streams and policies can change.
 
 **Voices:** talk radio, ATC and ongoing developer/Linux podcasts: The Changelog,
@@ -148,7 +168,7 @@ media-key pause from a radio disconnection.
 
 ```sh
 omarchy plugin validate .
-dbus-run-session -- python -B -m unittest discover -s tests -p '*_test.py'
+dbus-run-session --config-file tests/dbus-no-activation.conf -- python -B -m unittest discover -s tests -p '*_test.py'
 ```
 
 YouTube integration tests use real mpv with a deterministic local HTTP audio
@@ -166,12 +186,14 @@ resolver has a 12-second deadline and performs its own fetch without a child
 process group. An updated controller replaces its old worker automatically
 without restarting the audio layers.
 
-Development happens on `dev`; `main` and release tags remain the marketplace
-release. Do not merge or publish version 2 until its remaining features and
-release checks are complete. See [the development audit](DEV-AUDIT.md).
+Development happens on `dev`; `main` and release tags carry published versions.
+See the [v2 security and release review](docs/V2-SECURITY.md) and the
+[earlier development audit](DEV-AUDIT.md). Marketplace verification applies to
+an exact commit and requires a separate update review; a release does not
+automatically inherit the previous version’s Verified status.
 
-The `Dev checks` workflow runs backend integration tests and Bandit on pushes
-and pull requests targeting `dev`. It has read-only repository permissions.
+The `Release checks` workflow runs backend integration tests and Bandit on pushes
+and pull requests targeting `dev` and `main`. It has read-only repository permissions.
 Native panel tests require an Omarchy Wayland session and run locally; the
 workflow does not claim to validate desktop rendering.
 
@@ -199,4 +221,4 @@ rehosted. Music sources are Lilo-Fi Radio, Kalizo Radio, Purrple Cat and Lofi Ca
 links and stream policies are in [STATIONS.md](STATIONS.md). Voice sources include
 [The Changelog](https://changelog.com/podcast) and the broadcasters listed in
 `stations.json`. Bundled nature recordings retain their separate licenses and
-attribution in [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md). The cover is generated artwork.
+attribution in [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md). The cover uses the native interface with sample listening entries.

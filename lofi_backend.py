@@ -17,13 +17,15 @@ import subprocess
 import sys
 import time
 import tempfile
+import stat
 
 from lofi_youtube import canonical_url, clean_title, saved_entries, MAX_SAVED
+from lofi_config import read_json, level, preferences, session_state
 from lofi_duck import Ducker
 from lofi_feed import resolve as resolve_playlist
 
 ROOT = Path(__file__).resolve().parent
-WORKER_VERSION = hashlib.sha256(Path(__file__).read_bytes() + (ROOT/'lofi_duck.py').read_bytes() + (ROOT/'lofi_youtube.py').read_bytes()).hexdigest()
+WORKER_VERSION = hashlib.sha256(Path(__file__).read_bytes() + (ROOT/'lofi_duck.py').read_bytes() + (ROOT/'lofi_youtube.py').read_bytes() + (ROOT/'lofi_config.py').read_bytes()).hexdigest()
 RETRY_DELAYS = (2, 5, 10, 20, 30)
 CONNECT_TIMEOUT = 15
 STABLE_SECONDS = 30
@@ -36,13 +38,6 @@ FADE_OUT_SECONDS = 1.6
 def ease(progress):
     """Smoothstep, so a ramp accelerates and settles instead of moving linearly."""
     return progress * progress * (3 - 2 * progress)
-
-
-def read_json(path, fallback):
-    try:
-        return json.loads(path.read_text())
-    except (OSError, ValueError):
-        return fallback
 
 
 def write_json(path, value):
@@ -78,14 +73,6 @@ def log_control(runtime, event):
         pass  # Diagnostics must never prevent Pause or Stop.
 
 
-def level(value, default=0):
-    try:
-        number = float(value)
-        return max(0, min(100, number)) if math.isfinite(number) else default
-    except (TypeError, ValueError):
-        return default
-
-
 def ipc(path, command):
     try:
         with socket.socket(socket.AF_UNIX) as client:
@@ -93,11 +80,17 @@ def ipc(path, command):
             client.connect(str(path))
             client.sendall((json.dumps({'command': command, 'request_id': 1}) + '\n').encode())
             with client.makefile() as stream:
-                for line in stream:
+                deadline = time.monotonic() + 1
+                for _ in range(64):
+                    line = stream.readline(1024 * 1024 + 1)
+                    if not line or len(line) > 1024 * 1024 or time.monotonic() > deadline:
+                        return None
                     reply = json.loads(line)
+                    if not isinstance(reply, dict):
+                        return None
                     if reply.get('request_id') == 1:
                         return reply.get('data') if reply.get('error') == 'success' else None
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         pass
     return None
 
@@ -113,7 +106,11 @@ class Player:
         self.runtime = Path(os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')) / 'sky.lofi'
         self.settings_dir = Path(os.environ.get('XDG_STATE_HOME', str(Path.home()/'.local/state'))) / 'sky.lofi'
         self.runtime.mkdir(parents=True, exist_ok=True, mode=0o700)
-        self.settings_dir.mkdir(parents=True, exist_ok=True)
+        info = self.runtime.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid():
+            raise ValueError('Playback runtime must be an owned directory, not a symlink')
+        self.runtime.chmod(0o700)
+        self.settings_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         for name in ('sockets', 'logs'):
             (self.runtime/name).mkdir(exist_ok=True)
         self.reload_catalog()
@@ -130,8 +127,17 @@ class Player:
 
     def reload_catalog(self):
         catalog = read_json(ROOT/'stations.json', {})
-        self.stations = {s['id']: dict(s, category=c['id'], category_name=c['name'])
-                         for c in catalog.get('categories', []) for s in c['stations']}
+        categories = catalog.get('categories', [])
+        self.stations = {}
+        for category in categories if isinstance(categories, list) else []:
+            if not isinstance(category, dict) or not all(isinstance(category.get(k), str) for k in ('id', 'name')):
+                continue
+            stations = category.get('stations', [])
+            for station in stations if isinstance(stations, list) else []:
+                if (isinstance(station, dict) and all(isinstance(station.get(k), str) for k in ('id', 'name', 'url'))
+                        and station['id'] and len(station['id']) <= 80
+                        and all(c.isascii() and (c.isalnum() or c == '-') for c in station['id'])):
+                    self.stations[station['id']] = dict(station, category=category['id'], category_name=category['name'])
         self.music = [s for s in self.stations if self.stations[s]['category'] == 'lofi']
         self.nature = [s for s in self.stations if self.stations[s]['category'] == 'ambience']
 
@@ -141,7 +147,8 @@ class Player:
         self.music = [s for s in self.stations if self.stations[s]['category'] in ('lofi', 'youtube')]
 
     def is_youtube(self):
-        return self.stations.get(self.session.get('station'), {}).get('category') == 'youtube'
+        station = self.stations.get(self.session.get('station'), {})
+        return station.get('category') == 'youtube' or station.get('kind') == 'youtube'
 
     def remember_youtube(self, force=False):
         if not self.is_youtube() or not self.alive('main'):
@@ -176,7 +183,7 @@ class Player:
         except BlockingIOError:
             return False
         self.reload_catalog()
-        self.settings = read_json(self.settings_dir/'settings.json', read_json(ROOT/'settings.json', {}))
+        self.settings = preferences(read_json(self.settings_dir/'settings.json', read_json(ROOT/'settings.json', {})))
         for key, value in dict(defaultStation='lofi-lilo', mainVolume=65, bgVolume=20,
                                bgStation='talk-bbc-world', mix=True, masterVolume=100, ducking=True).items():
             self.settings.setdefault(key, value)
@@ -192,7 +199,7 @@ class Player:
         self.add_saved_sources()
         previous_default = self.settings['defaultStation']
         if previous_default not in self.music:
-            self.settings['defaultStation'] = self.music[0]
+            self.settings['defaultStation'] = self.music[0] if self.music else ''
         # Preserve the old single ambience selection and its effective volume.
         if 'natureLayers' not in self.settings:
             old = self.settings.get('noiseStation', 'off')
@@ -205,7 +212,7 @@ class Player:
                 layer['volume'] = round(level(layer.get('volume', 100)) * gain, 6)
             self.settings['natureMixVersion'] = 2
             self.settings['natureVolume'] = 100  # Legacy CLI field; audio uses direct layer levels.
-        self.session = read_json(self.runtime/'session.json', {})
+        self.session = session_state(read_json(self.runtime/'session.json', {}))
         if not self.session:
             active = any(self.alive(c) for c in self.channels(include_legacy=True))
             paused = (self.runtime/'paused.flag').exists()
@@ -620,9 +627,12 @@ class Player:
             fcntl.flock(self.fades_lock, fcntl.LOCK_UN)
 
     def start_music(self, reset=True):
+        if self.session.get('station') not in self.stations:
+            self.session['mode'] = 'stopped'
+            return
         station = self.stations[self.session['station']]
         options = dict(fade_in=True)
-        if station['category'] == 'youtube':
+        if station['category'] == 'youtube' or station.get('kind') == 'youtube':
             options.update(youtube=True, position=station.get('position', 0))
         self.spawn('main', station['url'], self.effective(self.settings['mainVolume']), **options)
         self.session.update(main_ended=False, started=time.monotonic(), retry_due=0, playing_since=0, last_position=None, progress_at=time.monotonic())
@@ -877,7 +887,7 @@ class Player:
         else:
             main_state = 'reconnecting'
         id = self.session.get('station', self.settings['defaultStation'])
-        station = self.stations.get(id, self.stations[self.music[0]])
+        station = self.stations.get(id, dict(name='No sources available', category='', category_name='', url=''))
         bg = self.stations.get(self.settings.get('bgStation'), {})
         layers = []
         for sound in self.nature:
@@ -888,8 +898,8 @@ class Player:
         selected = [s['id'] for s in layers if s['enabled']]
         state = dict(running=mode != 'stopped', paused=mode == 'paused', main_running=main_alive,
                      main_state=main_state, retry_in=retry_in, retry_attempt=self.session.get('attempts', 0),
-                     station=id, name=station['name'], category=station['category'],
-                     category_name=station['category_name'], url=station['url'],
+                     station=id, name=station['name'], category='youtube' if self.is_youtube() else station['category'],
+                     category_name='YouTube live' if station.get('kind') == 'youtube' else station['category_name'], url=station['url'],
                      main_volume=self.settings['mainVolume'], bg_volume=self.settings['bgVolume'],
                      master_volume=self.settings['masterVolume'], ducking=self.settings['ducking'],
                      bg_station=bg.get('id', ''), bg_name=bg.get('name', ''), bg_running=self.alive('bg'),
@@ -941,6 +951,8 @@ class Player:
         elif command in ('next', 'skip', 'prev', 'previous'):
             current = self.session.get('station', self.settings['defaultStation'])
             index = self.music.index(current) if current in self.music else 0
+            if not self.music:
+                raise ValueError('No sources available')
             self.begin(self.music[(index + (1 if command in ('next', 'skip') else -1)) % len(self.music)])
         elif command in ('vol', 'volume'):
             channel, value = args

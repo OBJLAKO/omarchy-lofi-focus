@@ -113,6 +113,20 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.action('start', ID)
         self.wait_for(lambda: self.status()['main_state'] == 'playing', timeout=10)
 
+    def test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature(self):
+        catalog_path = self.plugin/'stations.json'
+        catalog = json.loads(catalog_path.read_text())
+        catalog['categories'][0]['stations'].append(dict(id='lofi-girl-test', name='Lofi Girl test', kind='youtube', url=URL))
+        catalog_path.write_text(json.dumps(catalog))
+        self.action('ui', 'fade', 'off')
+        self.action('nature', 'noise-rain', 'on')
+        self.action('start', 'lofi-girl-test')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        self.assertEqual(self.status()['category'], 'youtube')
+        self.assertFalse(self.status()['mix'])
+        self.assertTrue(any(layer['running'] for layer in self.status()['nature_layers'] if layer['id'] == 'noise-rain'))
+        self.action('stop')
+
     def test_save_reopen_deduplicate_and_remove_without_playback(self):
         self.action('youtube-add', URL, 'Long conversation')
         self.action('youtube-add', 'https://youtu.be/BaW_jenozKc')

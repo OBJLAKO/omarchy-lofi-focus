@@ -69,6 +69,7 @@ Panel {
   property var collapsed: ({})
 
   readonly property bool motionOn: animationsEnabled
+  readonly property bool liveMotion: motionOn && opened && !settingsOpen
   readonly property bool steamOn: motionOn && steamEnabled && isPlaying
   readonly property bool glowOn: motionOn && glowEnabled
   readonly property bool equalizerOn: motionOn && equalizerEnabled
@@ -350,6 +351,7 @@ Panel {
   }
 
   onSettingsOpenChanged: Qt.callLater(root.revealSections)
+  onLibraryOpenChanged: Qt.callLater(root.revealSections)
 
   KeyboardPanel {
     id: panel
@@ -409,7 +411,7 @@ Panel {
                 color: Qt.alpha(Color.accent, 0.10)
                 opacity: root.glowOn ? 1 : 0
                 scale: 1
-                Behavior on opacity { NumberAnimation { duration: 400 } }
+                Behavior on opacity { enabled: root.liveMotion; NumberAnimation { duration: 400 } }
                 SequentialAnimation on scale {
                   running: root.opened && !root.settingsOpen && root.glowOn && root.isPlaying
                   loops: Animation.Infinite
@@ -508,7 +510,8 @@ Panel {
           implicitHeight: nowPlayingContent.implicitHeight + Style.space(24)
           height: implicitHeight
           radius: Style.cornerRadius
-          color: Qt.alpha(Color.accent, 0.045)
+          color: Qt.alpha(Color.accent, root.isPlaying ? 0.075 : 0.025)
+          Behavior on color { enabled: root.liveMotion; ColorAnimation { duration: 300 } }
           borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
 
           Column {
@@ -521,7 +524,7 @@ Panel {
             spacing: Style.space(8)
 
             Text {
-              text: root.youtubeSelected ? "YOUTUBE · AUDIO" : "LIVE RADIO"
+              text: (root.youtubeSelected ? "YOUTUBE · AUDIO" : "LIVE RADIO") + (root.enabledNatureCount > 0 ? "  /  + NATURE" : "")
               textFormat: Text.PlainText
               color: root.contentMuted
               font.family: root.contentFontFamily
@@ -607,7 +610,7 @@ Panel {
                   anchors.verticalCenter: parent.verticalCenter
                   radius: height / 2
                   color: Color.accent
-                  Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                  Behavior on width { enabled: root.liveMotion; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                 }
               }
 
@@ -620,6 +623,14 @@ Panel {
                 font.pixelSize: Style.font.caption
                 anchors.verticalCenter: parent.verticalCenter
               }
+            }
+
+            PlaybackWave {
+              width: parent.width
+              height: Style.space(22)
+              active: root.isPlaying && root.musicRunning
+              animate: root.liveMotion && root.equalizerEnabled
+              ink: Color.accent
             }
 
             Text {
@@ -711,6 +722,7 @@ Panel {
           entries: root.youtubeEntries
           selectedId: root.playerStationId
           playing: root.isPlaying && root.youtubeSelected
+          animate: root.liveMotion && root.equalizerEnabled
           foreground: root.contentForeground
           muted: root.contentMuted
           fontFamily: root.contentFontFamily
@@ -742,7 +754,7 @@ Panel {
               current: root.playerStationId === modelData.id
               playing: root.isMusicPlaying(modelData.id)
               muted: root.playerStationId === modelData.id && root.sessionActive && root.playerPaused
-              animate: root.equalizerOn
+              animate: root.equalizerOn && root.opened && !root.settingsOpen
               foreground: root.contentForeground
               fontFamily: root.contentFontFamily
 
@@ -1143,6 +1155,12 @@ Panel {
 
     BorderSurface {
       id: header
+      activeFocusOnTab: section.interactive
+      Keys.onReturnPressed: root.toggleCollapsed(section.sectionKey)
+      Keys.onSpacePressed: root.toggleCollapsed(section.sectionKey)
+      Accessible.role: Accessible.Button
+      Accessible.name: section.title
+      Accessible.description: section.collapsed ? "Expand section" : "Collapse section"
       width: parent.width
       // Comfortable click target, and only as tall as its contents.
       implicitHeight: headerContent.implicitHeight + Style.space(6)
@@ -1164,7 +1182,9 @@ Panel {
         Text {
           id: chevron
           visible: section.interactive
-          text: section.collapsed ? "\uf054" : "\uf078"
+          text: "\uf054"
+          rotation: section.collapsed ? 0 : 90
+          Behavior on rotation { enabled: root.liveMotion; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
           color: root.contentForeground
           font.family: root.contentFontFamily
           font.pixelSize: Style.font.bodySmall
@@ -1211,14 +1231,20 @@ Panel {
       }
     }
 
-    Column {
-      id: body
+    Item {
+      objectName: "section-body-" + section.sectionKey
       width: parent.width
-      spacing: Style.space(6)
-      // Animate the fold so a collapse is visible, not a jump.
-      visible: !section.collapsed
-      opacity: section.collapsed ? 0 : 1
-      Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+      height: section.collapsed ? 0 : body.implicitHeight
+      clip: true
+      enabled: !section.collapsed
+      Behavior on height { enabled: root.liveMotion; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+      Column {
+        id: body
+        width: parent.width
+        spacing: Style.space(6)
+        opacity: section.collapsed ? 0 : 1
+        Behavior on opacity { enabled: root.liveMotion; NumberAnimation { duration: 160 } }
+      }
     }
   }
 }

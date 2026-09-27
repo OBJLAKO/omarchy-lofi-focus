@@ -59,9 +59,23 @@ Window {
       compare(panel.heroStatus, "Finished")
     }
 
+    function test_closedPanelStopsDecorativeMotion() {
+      panel.close()
+      panel.animationsEnabled = true
+      compare(panel.liveMotion, false)
+      var wave = Qt.createComponent("Plugin/PlaybackWave.qml").createObject(panel, {active:true,animate:false})
+      verify(wave !== null)
+      compare(wave.moving, false)
+      wave.destroy()
+    }
+
     function test_barWidgetCompiles() {
       var component = Qt.createComponent("Plugin/BarWidget.qml")
       compare(component.status, Component.Ready, component.errorString())
+    }
+
+    function cleanup() {
+      if (qtest_results.failed) console.error("PANEL FAILURE", qtest_results.functionName)
     }
 
     function cleanupTestCase() {

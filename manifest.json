@@ -2,18 +2,19 @@
   "schemaVersion": 1,
   "id": "sky.lofi",
   "name": "Lofi Focus",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "author": "OBJLAKO",
   "license": "MIT",
-  "description": "Chill radio, background voices and nature sounds. Your focus space, one click away.",
+  "description": "v2: YouTube audio, Lofi Girl radios, podcasts and nine nature sounds. Save links, resume listening and build your own focus mix.",
   "keywords": [
     "lofi",
+    "youtube",
+    "lofi-girl",
     "radio",
-    "talk",
-    "news",
-    "atc",
+    "podcasts",
     "ambient",
-    "stream"
+    "focus",
+    "voxtype"
   ],
   "kinds": [
     "bar-widget"
@@ -24,7 +25,7 @@
   },
   "barWidget": {
     "displayName": "Lofi Focus",
-    "description": "Chill radio, background voices and nature sounds. Your focus space, one click away.",
+    "description": "v2: YouTube audio, Lofi Girl radios, podcasts and nine nature sounds. Save links, resume listening and build your own focus mix.",
     "category": "Media",
     "allowMultiple": false,
     "defaultSection": "right"

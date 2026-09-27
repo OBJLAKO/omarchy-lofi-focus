@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix="lofi-dropdown-test-") as directory:
     env.pop("WAYLAND_DISPLAY", None)
     # Keep this temporary shell off the user's session bus as well as offscreen.
     result = subprocess.run(
-        ["dbus-run-session", "--", "quickshell", "-p", str(test), "--no-color"],
+        ["dbus-run-session", "--config-file", str(repo / "tests/dbus-no-activation.conf"), "--", "quickshell", "-p", str(test), "--no-color"],
         env=env, capture_output=True, text=True, timeout=30,
     )
     output = result.stdout + result.stderr

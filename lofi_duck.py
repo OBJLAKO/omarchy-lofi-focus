@@ -6,6 +6,8 @@ import socket
 import time
 import tomllib
 
+from lofi_config import read_json, preferences
+
 # Ducking eases over roughly this long instead of snapping, so the mix dips
 # under a dictation without a click. The ducked level itself is a setting
 # (duckLevel, a percent kept while recording) so the music can stay audible.
@@ -31,22 +33,28 @@ class Ducker:
                 return False
             if location != 'auto':
                 state = Path(location).expanduser()
-        except (OSError, ValueError):
+        except (OSError, ValueError, TypeError):
             pass
         try:
             pid = int((self.runtime/'voxtype/pid').read_text().strip())
             os.kill(pid, 0)
             return state.read_text().strip() in ('recording', 'streaming')
-        except (OSError, ValueError):
+        except (OSError, ValueError, TypeError):
             return False
 
     def poll(self, gains=None):
         try:
             with self.settings.open() as source:
-                settings = json.load(source)
+                text = source.read(1024 * 1024 + 1)
+                if len(text) > 1024 * 1024:
+                    return True
+                settings = json.loads(text)
                 settings_revision = os.fstat(source.fileno()).st_mtime_ns
-        except (OSError, ValueError):
+        except (OSError, ValueError, TypeError, RecursionError):
             return True
+        if not isinstance(settings, dict):
+            return True
+        settings = preferences(settings)
         # Ease the duck gain toward its target so recording starts and stops
         # with a dip, not a click. Time-based so a slow worker still lands.
         now = time.monotonic()
@@ -83,14 +91,20 @@ class Ducker:
                     client.connect(str(path))
                     client.sendall((json.dumps({'command': ['set_property', 'volume', volume], 'request_id': 1})+'\n').encode())
                     with client.makefile('r') as stream:
-                        for line in stream:
+                        deadline = time.monotonic() + .5
+                        for _ in range(32):
+                            line = stream.readline(65537)
+                            if not line or len(line) > 65536 or time.monotonic() > deadline:
+                                raise OSError('Invalid or excessive mpv response')
                             reply = json.loads(line)
+                            if not isinstance(reply, dict):
+                                raise OSError('Invalid mpv response')
                             if reply.get('request_id') == 1:
                                 if reply.get('error') != 'success': raise OSError('mpv rejected volume')
                                 break
                         else: raise OSError('mpv disconnected')
                 self.last[channel] = value
-            except (OSError, ValueError, TypeError):
+            except (OSError, ValueError, TypeError, RecursionError):
                 self.last.pop(channel, None)
         return True
 
@@ -113,8 +127,8 @@ if __name__ == '__main__':
             time.sleep(0.1)
     else:
         try:
-            settings = json.loads(ducker.settings.read_text())
-        except (OSError, ValueError):
+            settings = preferences(read_json(ducker.settings, {}))
+        except (OSError, ValueError, TypeError):
             settings = {}
         factor = (0.2 if settings.get('ducking', True) and ducker.recording() else 1) * max(0, min(100, float(settings.get('masterVolume', 100)))) / 100
         print(float(sys.argv[1]) * factor)

@@ -1,9 +1,9 @@
-name: Dev checks
+name: Release checks
 on:
   push:
-    branches: [dev]
+    branches: [dev, main]
   pull_request:
-    branches: [dev]
+    branches: [dev, main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,10 +21,10 @@ jobs:
           sudo apt-get install -y mpv dbus python3-gi python3-venv
       - name: Backend and process isolation tests
         run: |
-          PYTHONPATH=tests dbus-run-session -- /usr/bin/python3 -B -m unittest -v fade_test feed_test media_test mpris_test player_test process_test recovery_test youtube_test
+          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v fade_test feed_test media_test mpris_test player_test process_test recovery_test youtube_test config_test
       - name: Security analysis
         run: |
           /usr/bin/python3 -m venv /tmp/lofi-bandit
           /tmp/lofi-bandit/bin/pip install bandit==1.9.4
-          /tmp/lofi-bandit/bin/bandit -ll -f json -o /tmp/bandit.json lofi_backend.py lofi_youtube.py lofi_duck.py lofi_feed.py lofi_media.py lofi-player lofi-mpris lofi-feed lofi-ipc
+          /tmp/lofi-bandit/bin/bandit -ll -f json -o /tmp/bandit.json lofi_backend.py lofi_config.py lofi_youtube.py lofi_duck.py lofi_feed.py lofi_media.py lofi-player lofi-mpris lofi-feed lofi-ipc
           /usr/bin/python3 -c 'import json; r=json.load(open("/tmp/bandit.json")); assert not r["errors"], r["errors"]'

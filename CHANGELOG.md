@@ -1,7 +1,10 @@
-# 1.1.1
+# 2.0.0 — 2026-09-27
 
-## Unreleased — dev
-
+- Four official Lofi Girl live presets: Study beats, Synthwave, Jazz lofi and Sleep & chill.
+- Animated playback indicator, smooth section folding and keyboard-accessible section headers.
+- Recover malformed settings/session files, bound JSON reads and keep Stop usable with an empty catalog.
+- Isolate test D-Bus services to prevent auto-starting desktop portals during UI tests.
+- New v2 project cover and lightweight GIF walkthroughs.
 - Saved YouTube listening shelf: validated links, optional titles, audio-only
   streaming through yt-dlp, position memory, seeking and replay.
 - Stop cancels mpv's extractor and helper processes using verified pidfds.
@@ -14,8 +17,9 @@
 - Compose fades with live mix levels; preserve silence through Pause/Stop.
 - Restrict orphan cleanup to the owning runtime while retaining pidfd safety.
 - Harden atomic state writes and bound/validate podcast feeds.
-- Add regression tests and a dev-only CI/security gate. See DEV-AUDIT.md.
+- Add regression tests and a CI/security gate for dev and main. See DEV-AUDIT.md.
 
+# 1.1.1
 
 - Pin each process with a Linux pidfd before checking its identity; use that same handle for SIGTERM, exit polling and SIGKILL, with no numeric-PID or process-group fallback.
 - Fetch podcasts directly inside the bounded resolver process so cancellation cannot leave a separate fetch child or require killpg.

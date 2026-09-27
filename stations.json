@@ -1,35 +1,63 @@
 {
-  "_help": "Add or edit stations here. Each station needs id, name, and a direct stream url playable by mpv (mp3/aac/ogg, or a YouTube link). Changes hot-reload into the panel.",
+  "_help": "Stations use direct mpv streams. YouTube sources must declare kind: youtube and a canonical HTTPS video URL.",
   "_defaultStation": "lofi-lilo",
   "categories": [
     {
       "id": "lofi",
       "name": "Lofi & Chill",
-      "icon": "\uf001",
+      "icon": "",
       "stations": [
         {
           "id": "lofi-lilo",
           "name": "Lilo-Fi Radio",
-          "description": "Lo-fi hip-hop \u00b7 ad-free stream by Lilo-Fi",
+          "description": "Lo-fi hip-hop · ad-free stream by Lilo-Fi",
           "url": "https://azurecloud.pvtwebs.com/listen/lilo/radio.mp3"
         },
         {
           "id": "lofi-kalizo",
           "name": "Kalizo Lo-fi",
-          "description": "Mellow lo-fi & soft jazz \u00b7 formerly Chillofi",
+          "description": "Mellow lo-fi & soft jazz · formerly Chillofi",
           "url": "https://streams.dez.ovh/listen/chillofi/radio.mp3"
         },
         {
           "id": "lofi-purrple-cat",
           "name": "Purrple Cat",
-          "description": "Dreamy instrumental lo-fi \u00b7 artist-run radio",
+          "description": "Dreamy instrumental lo-fi · artist-run radio",
           "url": "https://streaming.live365.com/a30440"
         },
         {
           "id": "lofi-cafe-chilling",
-          "name": "Lofi Cafe \u00b7 Chilling",
+          "name": "Lofi Cafe · Chilling",
           "description": "Slow lo-fi beats & soft jazz instrumentals",
           "url": "https://radio.loficafe.net/listen/chilling/radio.mp3"
+        },
+        {
+          "id": "lofi-girl-study",
+          "name": "Lofi Girl · Study beats",
+          "description": "Official YouTube live · requires yt-dlp",
+          "url": "https://www.youtube.com/watch?v=rFZHOHl-L8A",
+          "kind": "youtube"
+        },
+        {
+          "id": "lofi-girl-synthwave",
+          "name": "Lofi Girl · Synthwave",
+          "description": "Official YouTube live · requires yt-dlp",
+          "url": "https://www.youtube.com/watch?v=4xDzrJKXOOY",
+          "kind": "youtube"
+        },
+        {
+          "id": "lofi-girl-jazz",
+          "name": "Lofi Girl · Jazz lofi",
+          "description": "Official YouTube live · requires yt-dlp",
+          "url": "https://www.youtube.com/watch?v=E2vONfzoyRI",
+          "kind": "youtube"
+        },
+        {
+          "id": "lofi-girl-sleep",
+          "name": "Lofi Girl · Sleep & chill",
+          "description": "Official YouTube live · requires yt-dlp",
+          "url": "https://www.youtube.com/watch?v=JD-kMIpDfnY",
+          "kind": "youtube"
         }
       ]
     },
@@ -40,35 +68,35 @@
         {
           "id": "voice-changelog",
           "name": "The Changelog",
-          "description": "Software & open source \u00b7 latest interviews \u00b7 English",
+          "description": "Software & open source · latest interviews · English",
           "kind": "podcast",
           "url": "https://changelog.com/podcast/feed"
         },
         {
           "id": "voice-linux-unplugged",
           "name": "LINUX Unplugged",
-          "description": "Linux & open source \u00b7 English",
+          "description": "Linux & open source · English",
           "kind": "podcast",
           "url": "https://linuxunplugged.com/rss"
         },
         {
           "id": "voice-changelog-friends",
           "name": "Changelog & Friends",
-          "description": "Developer conversations \u00b7 English",
+          "description": "Developer conversations · English",
           "kind": "podcast",
           "url": "https://changelog.com/friends/feed"
         },
         {
           "id": "voice-talk-python",
           "name": "Talk Python To Me",
-          "description": "Python & software development \u00b7 English",
+          "description": "Python & software development · English",
           "kind": "podcast",
           "url": "https://talkpython.fm/episodes/rss"
         },
         {
           "id": "voice-linux-matters",
           "name": "Linux Matters",
-          "description": "Linux, open source & developer tools \u00b7 English",
+          "description": "Linux, open source & developer tools · English",
           "kind": "podcast",
           "url": "https://linuxmatters.sh/episode/index.xml"
         }
@@ -77,18 +105,18 @@
     {
       "id": "talk",
       "name": "Talk & News",
-      "icon": "\uf130",
+      "icon": "",
       "stations": [
         {
           "id": "talk-bbc-world",
           "name": "BBC World Service",
-          "description": "International news \u00b7 English",
+          "description": "International news · English",
           "url": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"
         },
         {
           "id": "talk-npr",
           "name": "NPR",
-          "description": "US public radio \u00b7 news & talk",
+          "description": "US public radio · news & talk",
           "url": "https://npr-ice.streamguys1.com/live.mp3"
         },
         {
@@ -120,72 +148,72 @@
     {
       "id": "atc",
       "name": "Air Traffic (ATC)",
-      "icon": "\uf072",
+      "icon": "",
       "stations": [
         {
           "id": "atc-kjfk-twr",
           "name": "KJFK Tower",
-          "description": "New York JFK \u00b7 tower",
+          "description": "New York JFK · tower",
           "url": "http://d.liveatc.net/kjfk_twr"
         },
         {
           "id": "atc-kjfk-gnd",
           "name": "KJFK Ground",
-          "description": "New York JFK \u00b7 ground",
+          "description": "New York JFK · ground",
           "url": "http://d.liveatc.net/kjfk_gnd"
         },
         {
           "id": "atc-klax-twr",
           "name": "KLAX Tower",
-          "description": "Los Angeles \u00b7 tower",
+          "description": "Los Angeles · tower",
           "url": "http://d.liveatc.net/klax_twr"
         },
         {
           "id": "atc-klax-gnd",
           "name": "KLAX Ground",
-          "description": "Los Angeles \u00b7 ground",
+          "description": "Los Angeles · ground",
           "url": "http://d.liveatc.net/klax_gnd"
         },
         {
           "id": "atc-ksfo-twr",
           "name": "KSFO Tower",
-          "description": "San Francisco \u00b7 tower",
+          "description": "San Francisco · tower",
           "url": "http://d.liveatc.net/ksfo_twr"
         },
         {
           "id": "atc-katl-twr",
           "name": "KATL Tower",
-          "description": "Atlanta \u00b7 tower",
+          "description": "Atlanta · tower",
           "url": "http://d.liveatc.net/katl_twr"
         },
         {
           "id": "atc-kewr-twr",
           "name": "KEWR Tower",
-          "description": "Newark \u00b7 tower",
+          "description": "Newark · tower",
           "url": "http://d.liveatc.net/kewr_twr"
         },
         {
           "id": "atc-klga-twr",
           "name": "KLGA Tower",
-          "description": "New York LaGuardia \u00b7 tower",
+          "description": "New York LaGuardia · tower",
           "url": "http://d.liveatc.net/klga_twr"
         },
         {
           "id": "atc-rjtt-twr",
           "name": "RJTT Tokyo Tower",
-          "description": "Tokyo Haneda \u00b7 tower",
+          "description": "Tokyo Haneda · tower",
           "url": "http://d.liveatc.net/rjtt_twr"
         },
         {
           "id": "atc-rjtt-app",
           "name": "RJTT Tokyo Approach",
-          "description": "Tokyo Haneda \u00b7 approach",
+          "description": "Tokyo Haneda · approach",
           "url": "http://d.liveatc.net/rjtt_app"
         },
         {
           "id": "atc-rjtt-gnd",
           "name": "RJTT Tokyo Ground",
-          "description": "Tokyo Haneda \u00b7 ground",
+          "description": "Tokyo Haneda · ground",
           "url": "http://d.liveatc.net/rjtt_gnd"
         }
       ]
@@ -197,55 +225,55 @@
         {
           "id": "noise-rain",
           "name": "Rain",
-          "description": "Local seamless loop \u00b7 no network needed",
+          "description": "Local seamless loop · no network needed",
           "url": "assets/rain.ogg"
         },
         {
           "id": "noise-wind",
           "name": "Wind",
-          "description": "Local seamless loop \u00b7 no network needed",
+          "description": "Local seamless loop · no network needed",
           "url": "assets/wind.ogg"
         },
         {
           "id": "noise-storm",
           "name": "Thunderstorm",
-          "description": "Local seamless loop \u00b7 no network needed",
+          "description": "Local seamless loop · no network needed",
           "url": "assets/storm.ogg"
         },
         {
           "id": "noise-fireplace",
           "name": "Fireplace",
-          "description": "Local seamless loop \u00b7 no network needed",
+          "description": "Local seamless loop · no network needed",
           "url": "assets/fireplace.ogg"
         },
         {
           "id": "noise-waves",
           "name": "Ocean waves",
-          "description": "Local seamless loop \u00b7 no network needed",
+          "description": "Local seamless loop · no network needed",
           "url": "assets/waves.ogg"
         },
         {
           "id": "noise-tent-rain",
           "name": "Tent rain",
-          "description": "Raindrops on canvas \u00b7 offline loop",
+          "description": "Raindrops on canvas · offline loop",
           "url": "assets/tent-rain.ogg"
         },
         {
           "id": "noise-stream",
           "name": "Forest stream",
-          "description": "A small stream in the woods \u00b7 offline loop",
+          "description": "A small stream in the woods · offline loop",
           "url": "assets/stream.ogg"
         },
         {
           "id": "noise-birds",
           "name": "Morning birds",
-          "description": "Wood thrush and woodland birds \u00b7 offline loop",
+          "description": "Wood thrush and woodland birds · offline loop",
           "url": "assets/birds.ogg"
         },
         {
           "id": "noise-night",
           "name": "Night crickets",
-          "description": "Quiet summer-night crickets \u00b7 offline loop",
+          "description": "Quiet summer-night crickets · offline loop",
           "url": "assets/night.ogg"
         }
       ]
