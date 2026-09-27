@@ -61,6 +61,7 @@ class PlayerTest(unittest.TestCase):
         return json.loads(out)['data']
 
     def tearDown(self):
+        self.action('ui', 'fade', 'off', check=False)
         self.action('stop', check=False)
         self.temp.cleanup()
 
@@ -212,6 +213,41 @@ class PlayerTest(unittest.TestCase):
         self.assertFalse(self.prop('noise', 'pause'))
         self.action('stop')
         self.assertFalse(self.status()['running'])
+
+    def test_mute_during_fade_is_immediate_and_stays_muted(self):
+        self.action('ui', 'fadeSeconds', '8')
+        self.action('play')
+        self.action('vol', 'master', '0')
+        self.wait_prop('main', 'volume', 0)
+        time.sleep(.4)
+        self.assertAlmostEqual(self.prop('main', 'volume'), 0)
+        self.action('vol', 'master', '100')
+        self.wait_for(lambda: self.prop('main', 'volume') > 0)
+
+    def test_dictation_during_fade_still_ducks_audio(self):
+        self.env['XDG_CONFIG_HOME'] = str(self.base/'config')
+        vox = self.base/'runtime/voxtype'; vox.mkdir()
+        (vox/'pid').write_text(str(os.getpid()))
+        state = vox/'state'; state.write_text('idle')
+        self.action('ui', 'fadeSeconds', '8')
+        self.action('ui', 'duckLevel', '0')
+        self.action('play')
+        self.wait_for(lambda: self.prop('main', 'volume') > 1)
+        state.write_text('recording')
+        self.wait_prop('main', 'volume', 0)
+        self.assertAlmostEqual(self.prop('bg', 'volume'), 0, places=1)
+
+    def test_volume_after_completed_resume_uses_latest_mix(self):
+        self.action('ui', 'fadeSeconds', '1')
+        self.action('play')
+        self.wait_prop('main', 'volume', 65)
+        self.action('pause')
+        self.wait_for(lambda: self.prop('main', 'pause'))
+        self.action('resume')
+        self.action('vol', 'main', '23')
+        self.wait_prop('main', 'volume', 23)
+        time.sleep(.4)
+        self.assertAlmostEqual(self.prop('main', 'volume'), 23, places=1)
 
     def test_concurrent_updates(self):
         jobs=[subprocess.Popen([str(self.plugin/'lofi-player'),'vol',channel,value],env=self.env,stdout=subprocess.DEVNULL) for channel,value in [('main','43'),('bg','17')]]

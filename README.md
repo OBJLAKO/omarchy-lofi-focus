@@ -47,7 +47,7 @@ policies](STATIONS.md); external streams and policies can change.
 **Voices:** talk radio, ATC and ongoing developer/Linux podcasts: The Changelog,
 Changelog & Friends, LINUX Unplugged, Talk Python To Me and Linux Matters.
 Podcasts use the publisher's RSS feed and queue up to 12 recent episodes. Feeds
-are cached for six hours. A new voice session starts at the latest episode;
+are cached for up to six hours during a session; Stop clears resolved playlists. A new voice session starts at the latest episode;
 playback position is not saved. Streams depend on broadcaster availability and region.
 
 **Nature:** rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a forest
@@ -74,7 +74,7 @@ depends on the station and network.
 ## Quiet while dictating
 
 The **Quiet while dictating · VoxType** switch in **Settings** is enabled by default. While VoxType
-records, every channel drops to 20% of its chosen effective volume. Normal volume
+records, every channel smoothly drops to a configurable share of its chosen effective volume (35% by default). Normal volume
 returns when recording ends, including during transcription. With ducking enabled,
 VoxType’s automatic MPRIS Pause/Play requests are ignored so they do not override
 this volume adjustment. Manual media controls still work normally.
@@ -83,7 +83,7 @@ No hotkey edits, hooks or system audio changes are needed. The plugin reads
 VoxType's state every 100 ms in the shared playback worker. With no running VoxType or no enabled state file,
 volume is unaffected. Standard `state_file = "auto"` and custom state paths in
 VoxType's default config are supported. A daemon using a separate config is not
-auto-discovered. The switch is accessible under Settings.
+auto-discovered. The switch and retained-volume slider are accessible under Settings.
 
 ## Remove
 
@@ -122,6 +122,15 @@ Linux pidfds to avoid signalling an unrelated process after PID reuse. The feed
 resolver has a 12-second deadline and performs its own fetch without a child
 process group. An updated controller replaces its old worker automatically
 without restarting the audio layers.
+
+Development happens on `dev`; `main` and release tags remain the marketplace
+release. Do not merge or publish version 2 until its remaining features and
+release checks are complete. See [the development audit](DEV-AUDIT.md).
+
+The `Dev checks` workflow runs backend integration tests and Bandit on pushes
+and pull requests targeting `dev`. It has read-only repository permissions.
+Native panel tests require an Omarchy Wayland session and run locally; the
+workflow does not claim to validate desktop rendering.
 
 CLI examples:
 

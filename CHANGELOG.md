@@ -1,5 +1,16 @@
 # 1.1.1
 
+## Unreleased — dev
+
+- New station list, animated hero, appearance settings, collapsible sections,
+  and Now Playing metadata/progress.
+- Configurable VoxType ducking and playback fades.
+- Compose fades with live mix levels; preserve silence through Pause/Stop.
+- Restrict orphan cleanup to the owning runtime while retaining pidfd safety.
+- Harden atomic state writes and bound/validate podcast feeds.
+- Add regression tests and a dev-only CI/security gate. See DEV-AUDIT.md.
+
+
 - Pin each process with a Linux pidfd before checking its identity; use that same handle for SIGTERM, exit polling and SIGKILL, with no numeric-PID or process-group fallback.
 - Fetch podcasts directly inside the bounded resolver process so cancellation cannot leave a separate fetch child or require killpg.
 - Replace outdated playback workers automatically after an update, preserving running audio and saved levels.

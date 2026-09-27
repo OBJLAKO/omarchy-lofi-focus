@@ -200,7 +200,7 @@ Panel {
       root.equalizerEnabled = state.equalizer_animation !== false
       root.fadeEnabled = state.fade_enabled !== false
       root.fadeSeconds = Math.max(0, Math.min(8, Number(state.fade_seconds === undefined ? 3 : state.fade_seconds) || 0))
-      root.revealSpeed = Math.max(0, Math.min(3, Number(state.reveal_speed === undefined ? 1 : state.reveal_speed) || 1))
+      root.revealSpeed = Math.max(0, Math.min(3, Number(state.reveal_speed === undefined ? 1 : state.reveal_speed) || 0))
       root.collapsibleSections = state.collapsible_sections !== false
       root.duckLevel = Math.max(0, Math.min(100, Math.round(Number(state.duck_level === undefined ? 35 : state.duck_level) || 0)))
     } catch (error) {
@@ -378,7 +378,7 @@ Panel {
                 scale: 1
                 Behavior on opacity { NumberAnimation { duration: 400 } }
                 SequentialAnimation on scale {
-                  running: root.glowOn && root.isPlaying
+                  running: root.opened && !root.settingsOpen && root.glowOn && root.isPlaying
                   loops: Animation.Infinite
                   NumberAnimation { to: 1.06; duration: 2600; easing.type: Easing.InOutSine }
                   NumberAnimation { to: 0.94; duration: 2600; easing.type: Easing.InOutSine }
@@ -421,7 +421,7 @@ Panel {
 
                 Timer {
                   interval: 40
-                  running: root.steamOn
+                  running: root.opened && !root.settingsOpen && root.steamOn
                   repeat: true
                   onTriggered: steam.phase += 0.05
                 }

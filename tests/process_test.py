@@ -74,14 +74,22 @@ class ProcessTerminationTest(unittest.TestCase):
         send.assert_not_called()
         self.assert_decoy_alive()
 
-    def test_socket_marker_matches_foreign_runtime_directory(self):
-        # Audio started under an older or wiped runtime directory still belongs
-        # to this plugin and must be reapable.
+    def test_socket_marker_rejects_foreign_runtime_directory(self):
+        # Dev/test copies must not claim a different runtime, even if deleted.
         foreign = [b'mpv', b'--input-ipc-server=/tmp/other/runtime/sky.lofi/sockets/main.sock']
-        self.assertTrue(self.player.socket_matches('main', foreign))
+        self.assertFalse(self.player.socket_matches('main', foreign))
         self.assertFalse(self.player.socket_matches('bg', foreign))
         current = [b'--input-ipc-server=' + str(self.player.sock('main')).encode()]
         self.assertTrue(self.player.socket_matches('main', current))
+
+    def test_deleted_foreign_runtime_is_not_reaped(self):
+        foreign = self.runtime_foreign = self.player.runtime/'foreign/sky.lofi/sockets/main.sock'
+        child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)',
+                                  '--input-ipc-server=' + str(foreign)])
+        self.addCleanup(lambda: (child.kill() if child.poll() is None else None, child.wait()))
+        with mock.patch.object(self.player, 'plugin_pids', return_value=iter([child.pid])):
+            self.player.reap('main')
+        self.assertIsNone(child.poll())
 
     def test_pid_file_replacement_after_identity_check_does_not_redirect_signal(self):
         target = self.child(target=True)
