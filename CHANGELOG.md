@@ -2,6 +2,12 @@
 
 ## Unreleased — dev
 
+- Saved YouTube listening shelf: validated links, optional titles, audio-only
+  streaming through yt-dlp, position memory, seeking and replay.
+- Stop cancels mpv's extractor and helper processes using verified pidfds.
+- Unified Radio/YouTube tabs, shared audio controls, collapsible add-link form,
+  clearer metadata, higher-contrast helper text and removal confirmation.
+
 - New station list, animated hero, appearance settings, collapsible sections,
   and Now Playing metadata/progress.
 - Configurable VoxType ducking and playback fades.

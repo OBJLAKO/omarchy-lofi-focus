@@ -18,6 +18,7 @@ omarchy plugin add https://github.com/OBJLAKO/omarchy-lofi-focus --enable
 
 Requires the Quickshell-based Omarchy shell with third-party plugin support.
 Uses Omarchy's bundled **mpv, Python, python-gobject, jq and util-linux**.
+The upcoming YouTube feature also uses **yt-dlp**.
 No extra installation steps, API keys or accounts are needed.
 The repository root is the plugin; its permanent ID is `sky.lofi`.
 
@@ -35,6 +36,45 @@ omarchy plugin update sky.lofi
 
 Switching or reconnecting music leaves the voice and nature layers playing. Settings live outside
 the plugin directory, so changing a station or volume does not reload the shell.
+
+## YouTube library (dev / upcoming v2)
+
+Open the panel → **YouTube** → **Add link**. Paste a video link, optionally give
+it a name, and choose **Save to library**. Click a saved entry to listen. Its
+title fills in when playback starts if you did not supply a name. Adding the
+same video again updates its optional name instead of creating a duplicate.
+
+![YouTube listening shelf, rendered with sample entries](docs/youtube-preview.png)
+
+- Public YouTube video, `youtu.be`, Shorts and `/live/` links are accepted.
+  Playlist-only links are not supported; a video link with playlist/tracking
+  parameters saves just that video.
+- YouTube replaces the foreground radio. Your nature sounds keep playing.
+  The additional voice channel is suspended while YouTube is selected; its
+  previous selection returns when you switch back to radio.
+- **Audio** changes the foreground level; **Master** changes the complete mix.
+  VoxType ducking applies to YouTube and nature together.
+- The progress bar seeks within finite videos; its adjacent buttons move
+  backward/forward 15 seconds. Live streams do not show a seek bar.
+- Finite-video position is remembered every ten seconds and on Pause, Stop
+  and source changes. Finished videos replay from the beginning. Live streams
+  are reopened at their live position.
+- Links and positions live in the existing external settings file. The library
+  holds up to 40 entries. Removing an entry requires a second click; removing
+  the active one pauses the mix without unexpectedly starting another source.
+
+Requires **yt-dlp** and its normal YouTube runtime dependencies. These are
+already available on the development machine; radio/nature still work without
+yt-dlp. Playback uses mpv's built-in extractor integration, selects an audio-only
+format and does not save a video/audio download. It ignores user yt-dlp config
+and plugins, does not read browser cookies, and disables remote component
+installation. Restricted/private videos are not supported. If a public video
+fails, check availability, connection and installed yt-dlp updates, then Retry.
+
+Stopping or replacing a source also stops its pinned extractor/helper process
+tree. Network extraction does not hold the controller lock.
+
+[Development notes and next v2 ideas](docs/V2-ROADMAP.md).
 
 ## Sounds
 
@@ -111,6 +151,9 @@ omarchy plugin validate .
 dbus-run-session -- python -B -m unittest discover -s tests -p '*_test.py'
 ```
 
+YouTube integration tests use real mpv with a deterministic local HTTP audio
+server and a fake extractor, including seeking, EOF/replay and helper-process
+cancellation. A separate real public YouTube audio smoke test was also run.
 Integration tests use real mpv with silent local audio and isolated settings,
 runtime and D-Bus. They cover playback, concurrent settings, layered volume,
 VoxType transitions, competing MPRIS ownership, worker recovery and cancelled

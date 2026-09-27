@@ -96,3 +96,9 @@ marketplace update, tag, deployment, or merge-to-main step is included.
 
 Passing these checks is evidence for the tested scope, not certification that
 all security vulnerabilities or all future marketplace checks are covered.
+
+## Follow-on YouTube work
+
+The later YouTube feature and its separate validation are described in
+[the v2 development notes](docs/V2-ROADMAP.md). The original audit above remains
+a record of the preceding ten-commit review.

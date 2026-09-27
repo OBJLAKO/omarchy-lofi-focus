@@ -37,6 +37,16 @@ Panel {
   property int stationIndex: 0
   property int stationCount: 0
   property string mainTitle: ""
+  property var youtubeEntries: []
+  property bool youtubeAvailable: true
+  property bool libraryOpen: false
+  property bool savingLink: false
+  property string libraryMessage: ""
+  property bool libraryError: false
+  readonly property var youtubeUrl: youtubeLibrary.urlField
+  readonly property var youtubeTitle: youtubeLibrary.titleField
+  readonly property bool youtubeSelected: playerCategory === "youtube"
+  readonly property bool sourceEnded: mainState === "ended"
   property real mainPosition: -1
   property real mainDuration: -1
 
@@ -67,7 +77,7 @@ Panel {
   readonly property real revealStep: 45 * revealSpeed
   readonly property int revealDuration: Math.round(240 * revealSpeed)
 
-  readonly property bool isPlaying: playerRunning && !playerPaused
+  readonly property bool isPlaying: playerRunning && !playerPaused && !sourceEnded
   readonly property bool musicConnecting: mainState === "connecting" || mainState === "reconnecting"
   readonly property bool sessionActive: playerRunning || musicConnecting
   readonly property int enabledNatureCount: natureLayers.filter(function(layer) { return layer.enabled }).length
@@ -75,10 +85,10 @@ Panel {
   property var categories: []
 
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
-  readonly property color contentMuted: bar ? Qt.alpha(bar.foreground, 0.55) : Color.muted
+  readonly property color contentMuted: Qt.alpha(root.contentForeground, 0.65)
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
-  readonly property string heroStatus: root.playerPaused ? "Paused"
+  readonly property string heroStatus: root.sourceEnded ? "Finished" : root.playerPaused ? "Paused"
     : root.musicConnecting ? (root.retryIn > 0 ? "Reconnecting in " + root.retryIn + "s"
       : (root.mainState === "reconnecting" ? "Reconnecting" : "Connecting"))
     : root.playerRunning ? "Playing"
@@ -190,6 +200,8 @@ Panel {
       root.bgVolume = clampVolume(state.bg_volume, 40)
       root.stationIndex = Math.max(0, Math.round(Number(state.index === undefined ? 0 : state.index)) || 0)
       root.stationCount = Math.max(0, Math.round(Number(state.count === undefined ? 0 : state.count)) || 0)
+      root.youtubeEntries = Array.isArray(state.youtube_entries) ? state.youtube_entries : []
+      root.youtubeAvailable = state.youtube_available !== false
       root.mainTitle = String(state.main_title || "").replace(/[\r\n\t]+/g, " ").slice(0, 200)
       root.mainPosition = typeof state.main_position === "number" ? state.main_position : -1
       root.mainDuration = typeof state.main_duration === "number" ? state.main_duration : -1
@@ -215,6 +227,25 @@ Panel {
       root.categories = Array.isArray(data.categories) ? data.categories : []
     } catch (error) {
       root.categories = []
+    }
+  }
+
+  function saveYoutube() {
+    if (savingLink || !youtubeUrl.text.trim()) return
+    savingLink = true
+    libraryMessage = ""
+    runAction(["youtube-add", youtubeUrl.text.trim(), youtubeTitle.text.trim()])
+  }
+
+  function youtubeResult(args, code, message) {
+    if (args[0] === "youtube-add") {
+      savingLink = false
+      libraryError = code !== 0
+      libraryMessage = code === 0 ? "Saved to your library." : (message || "Could not save this link.")
+      if (code === 0) { youtubeUrl.text = ""; youtubeTitle.text = ""; youtubeLibrary.addingLink = false }
+    } else if (code !== 0) {
+      libraryError = true
+      libraryMessage = message || "Could not complete that action."
     }
   }
 
@@ -303,6 +334,7 @@ Panel {
   Connections {
     target: root.hostWidget
     function onStatusJsonChanged() { root.applyStatus(root.hostWidget.statusJson) }
+    function onActionFinished(arguments, exitCode, message) { root.youtubeResult(arguments, exitCode, message) }
   }
 
   onOpenedChanged: {
@@ -327,14 +359,14 @@ Panel {
     open: root.opened
     centerOnBar: true
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(380))
+    contentWidth: panel.fittedContentWidth(Style.space(420))
     contentHeight: panel.fittedContentHeight(
       Math.min(root.settingsOpen ? settingsColumn.implicitHeight : contentColumn.implicitHeight, Style.space(620)))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: voicePicker.popupOpen || naturePicker.popupOpen
+      blocked: voicePicker.popupOpen || naturePicker.popupOpen || youtubeUrl.activeFocus || youtubeTitle.activeFocus
       onCloseRequested: root.close()
     }
 
@@ -349,16 +381,17 @@ Panel {
 
       Column {
         id: contentColumn
+        objectName: "focusContent"
         width: parent.width
-        spacing: Style.space(10)
+        spacing: Style.space(14)
 
         PanelHero {
           width: parent.width
           foreground: root.contentForeground
           fontFamily: root.contentFontFamily
-          title: root.heroTitle
-          meta: root.heroMeta
-          detail: root.stationCount > 0 ? (root.stationIndex + 1) + "/" + root.stationCount : ""
+          title: "Lofi Focus"
+          meta: "A little space to listen."
+          detail: root.heroStatus
           iconOpacity: root.isPlaying ? 1.0 : 0.75
           iconComponent: Component {
             Item {
@@ -449,8 +482,8 @@ Panel {
               spacing: Style.space(6)
               Button {
                 id: playButton
-                iconText: root.sessionActive && !root.playerPaused ? "\uf04c" : "\uf04b"
-                tooltipText: root.playerPaused ? "Resume" : (root.sessionActive ? "Pause" : "Play")
+                iconText: root.sessionActive && !root.playerPaused && !root.sourceEnded ? "\uf04c" : "\uf04b"
+                tooltipText: root.sourceEnded ? "Replay" : root.playerPaused ? "Resume" : (root.sessionActive ? "Pause" : "Play")
                 foreground: root.contentForeground
                 focusable: true
                 onClicked: root.runAction(["toggle"])
@@ -472,10 +505,10 @@ Panel {
         BorderSurface {
           id: nowPlaying
           width: parent.width
-          implicitHeight: nowPlayingContent.implicitHeight + Style.space(12)
+          implicitHeight: nowPlayingContent.implicitHeight + Style.space(24)
           height: implicitHeight
           radius: Style.cornerRadius
-          color: "transparent"
+          color: Qt.alpha(Color.accent, 0.045)
           borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
 
           Column {
@@ -485,7 +518,16 @@ Panel {
             anchors.verticalCenter: parent.verticalCenter
             anchors.leftMargin: Style.space(10)
             anchors.rightMargin: Style.space(10)
-            spacing: Style.space(6)
+            spacing: Style.space(8)
+
+            Text {
+              text: root.youtubeSelected ? "YOUTUBE · AUDIO" : "LIVE RADIO"
+              textFormat: Text.PlainText
+              color: root.contentMuted
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+              font.letterSpacing: 1
+            }
 
             Row {
               width: parent.width
@@ -510,17 +552,17 @@ Panel {
 
                 Button {
                   iconText: "\uf048"
-                  tooltipText: "Previous station"
+                  tooltipText: root.youtubeSelected && root.hasProgress ? "Back 15 seconds" : "Previous source"
                   foreground: root.contentForeground
                   focusable: true
-                  onClicked: root.runAction(["prev"])
+                  onClicked: root.runAction(root.youtubeSelected && root.hasProgress ? ["seek", String(Math.max(0, root.mainPosition - 15))] : ["prev"])
                 }
                 Button {
                   iconText: "\uf051"
-                  tooltipText: "Next station"
+                  tooltipText: root.youtubeSelected && root.hasProgress ? "Forward 15 seconds" : "Next source"
                   foreground: root.contentForeground
                   focusable: true
-                  onClicked: root.runAction(["next"])
+                  onClicked: root.runAction(root.youtubeSelected && root.hasProgress ? ["seek", String(root.mainPosition + 15)] : ["next"])
                 }
               }
             }
@@ -542,19 +584,29 @@ Panel {
 
               Item {
                 width: parent.width - elapsed.width - remaining.width - parent.spacing * 2
-                height: Style.space(6)
+                height: Style.space(16)
                 anchors.verticalCenter: parent.verticalCenter
 
-                Rectangle {
+                MouseArea {
                   anchors.fill: parent
+                  enabled: root.hasProgress
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: function(mouse) { root.runAction(["seek", String(mouse.x / width * root.mainDuration)]) }
+                }
+
+                Rectangle {
+                  width: parent.width
+                  height: Style.space(4)
+                  anchors.verticalCenter: parent.verticalCenter
                   radius: height / 2
-                  color: Qt.alpha(root.contentForeground, 0.18)
+                  color: Qt.alpha(root.contentForeground, 0.14)
                 }
                 Rectangle {
                   width: parent.width * root.progressFraction
-                  height: parent.height
+                  height: Style.space(4)
+                  anchors.verticalCenter: parent.verticalCenter
                   radius: height / 2
-                  color: root.contentForeground
+                  color: Color.accent
                   Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                 }
               }
@@ -572,7 +624,7 @@ Panel {
 
             Text {
               visible: !root.hasProgress
-              text: root.playerCategoryName
+              text: root.musicConnecting ? (root.youtubeSelected ? "Preparing audio…" : "Connecting…") : root.sourceEnded ? "Finished · press play to listen again" : root.playerCategoryName
               textFormat: Text.PlainText
               color: root.contentMuted
               font.family: root.contentFontFamily
@@ -581,6 +633,16 @@ Panel {
               width: parent.width
             }
           }
+        }
+
+        MixerLevel {
+          width: parent.width
+          label: "Audio"
+          value: root.mainVolume
+          bar: root.bar
+          foreground: root.contentForeground
+          fontFamily: root.contentFontFamily
+          onEdited: function(value) { root.setVolume("main", value) }
         }
 
         MixerLevel {
@@ -595,7 +657,74 @@ Panel {
 
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
+        Row {
+          width: parent.width
+          spacing: Style.space(6)
+          Button {
+            width: (parent.width - parent.spacing) / 2
+            text: "Radio"
+            iconText: "\uf001"
+            selected: !root.libraryOpen
+            bordered: true
+            focusable: true
+            foreground: root.contentForeground
+            onClicked: root.libraryOpen = false
+          }
+          Button {
+            width: (parent.width - parent.spacing) / 2
+            text: "YouTube · " + root.youtubeEntries.length
+            iconText: "\uf144"
+            selected: root.libraryOpen
+            bordered: true
+            focusable: true
+            foreground: root.contentForeground
+            onClicked: root.libraryOpen = true
+          }
+        }
+
+        Row {
+          visible: root.mainState === "failed"
+          width: parent.width
+          spacing: Style.space(8)
+          Text {
+            width: parent.width - retryButton.width - parent.spacing
+            text: root.youtubeSelected ? "Could not play this video. Check the link, connection or yt-dlp update." : "Radio unavailable. Try again or choose another station."
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            color: root.contentMuted
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Button {
+            id: retryButton
+            text: "Retry"
+            foreground: root.contentForeground
+            focusable: true
+            onClicked: root.runAction(["start", root.playerStationId])
+          }
+        }
+
+        YoutubeLibrary {
+          id: youtubeLibrary
+          visible: root.libraryOpen
+          width: parent.width
+          entries: root.youtubeEntries
+          selectedId: root.playerStationId
+          playing: root.isPlaying && root.youtubeSelected
+          foreground: root.contentForeground
+          muted: root.contentMuted
+          fontFamily: root.contentFontFamily
+          available: root.youtubeAvailable
+          saving: root.savingLink
+          message: root.libraryMessage
+          failed: root.libraryError
+          onSaveRequested: root.saveYoutube()
+          onPlayRequested: function(id) { root.runAction(["start", id]) }
+          onRemoveRequested: function(id) { root.runAction(["youtube-remove", id]) }
+        }
+
         CollapsibleSection {
+          visible: !root.libraryOpen
           title: "STATIONS"
           sectionKey: "stations"
           summary: root.playerName
@@ -626,44 +755,13 @@ Panel {
             }
           }
 
-          MixerLevel {
-            width: parent.width
-            value: root.mainVolume
-            bar: root.bar
-            foreground: root.contentForeground
-            fontFamily: root.contentFontFamily
-            onEdited: function(value) { root.setVolume("main", value) }
-          }
 
-          Row {
-            visible: root.musicConnecting || root.mainState === "failed"
-            width: parent.width
-            spacing: Style.space(6)
-            Text {
-              width: parent.width - (retryButton.visible ? retryButton.width + parent.spacing : 0)
-              text: root.mainState === "failed" ? "Radio unavailable"
-                : root.retryIn > 0 ? "Reconnecting in " + root.retryIn + "s…" : "Connecting to the radio…"
-              textFormat: Text.PlainText
-              color: root.contentMuted
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              anchors.verticalCenter: parent.verticalCenter
-            }
-            Button {
-              id: retryButton
-              visible: root.mainState === "failed"
-              text: "Retry"
-              fontSize: Style.font.caption
-              foreground: root.contentForeground
-              focusable: true
-              onClicked: root.runAction(["start", root.playerStationId])
-            }
-          }
         }
 
-        PanelSeparator { width: parent.width; foreground: root.contentForeground }
+        PanelSeparator { visible: !root.libraryOpen && !root.youtubeSelected; width: parent.width; foreground: root.contentForeground }
 
         CollapsibleSection {
+          visible: !root.libraryOpen && !root.youtubeSelected
           title: "VOICE"
           sectionKey: "voice"
           summary: root.mixOn && root.bgName ? root.bgName : "Off"
@@ -697,7 +795,7 @@ Panel {
         PanelSeparator { width: parent.width; foreground: root.contentForeground }
 
         CollapsibleSection {
-          title: "NATURE"
+          title: "YOUR ATMOSPHERE"
           sectionKey: "nature"
           summary: root.enabledNatureCount > 0
             ? root.enabledNatureCount + (root.enabledNatureCount === 1 ? " sound" : " sounds")
@@ -710,7 +808,7 @@ Panel {
             Repeater {
               // Stable delegates keep a dragged slider alive across status updates.
               model: root.noiseOptions
-        MixerLevel {
+              MixerLevel {
                 required property var modelData
                 readonly property var soundState: root.natureLayer(modelData.value)
                 visible: soundState.enabled
@@ -747,7 +845,7 @@ Panel {
         }
 
         Button {
-          text: "Settings"
+          text: "Appearance & playback"
           iconText: "\uf013"
           fontSize: Style.font.caption
           foreground: root.contentMuted

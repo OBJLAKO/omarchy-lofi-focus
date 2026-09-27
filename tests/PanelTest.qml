@@ -36,6 +36,34 @@ Window {
       compare(panel.equalizerOn, false)
     }
 
+    function test_libraryStatusAndSaveFeedback() {
+      panel.applyStatus(JSON.stringify({running:false,paused:false,youtube_available:true,
+        youtube_entries:[{id:"youtube-test",name:"Saved conversation",position:30}]}))
+      compare(panel.youtubeEntries.length, 1)
+      panel.youtubeUrl.text = "https://youtu.be/BaW_jenozKc"
+      panel.youtubeTitle.text = "A conversation"
+      panel.savingLink = true
+      panel.youtubeResult(["youtube-add"], 1, "Invalid link")
+      compare(panel.savingLink, false)
+      compare(panel.libraryError, true)
+      compare(panel.youtubeTitle.text, "A conversation")
+      panel.youtubeResult(["youtube-add"], 0, "")
+      compare(panel.youtubeUrl.text, "")
+      compare(panel.libraryError, false)
+    }
+
+    function test_finishedVideoHasReplayState() {
+      panel.applyStatus(JSON.stringify({running:true,paused:false,main_state:"ended",category:"youtube"}))
+      compare(panel.sourceEnded, true)
+      compare(panel.isPlaying, false)
+      compare(panel.heroStatus, "Finished")
+    }
+
+    function test_barWidgetCompiles() {
+      var component = Qt.createComponent("Plugin/BarWidget.qml")
+      compare(component.status, Component.Ready, component.errorString())
+    }
+
     function cleanupTestCase() {
       console.log("PANEL_TEST_RESULT", JSON.stringify({
         passed: qtest_results.passCount,

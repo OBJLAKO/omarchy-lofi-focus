@@ -10,6 +10,7 @@ import math
 import os
 from pathlib import Path
 import signal
+import shutil
 import select
 import socket
 import subprocess
@@ -17,11 +18,12 @@ import sys
 import time
 import tempfile
 
+from lofi_youtube import canonical_url, clean_title, saved_entries, MAX_SAVED
 from lofi_duck import Ducker
 from lofi_feed import resolve as resolve_playlist
 
 ROOT = Path(__file__).resolve().parent
-WORKER_VERSION = hashlib.sha256(Path(__file__).read_bytes() + (ROOT/'lofi_duck.py').read_bytes()).hexdigest()
+WORKER_VERSION = hashlib.sha256(Path(__file__).read_bytes() + (ROOT/'lofi_duck.py').read_bytes() + (ROOT/'lofi_youtube.py').read_bytes()).hexdigest()
 RETRY_DELAYS = (2, 5, 10, 20, 30)
 CONNECT_TIMEOUT = 15
 STABLE_SECONDS = 30
@@ -44,7 +46,7 @@ def read_json(path, fallback):
 
 
 def write_json(path, value):
-    text = json.dumps(value, indent=2) + '\n'
+    text = json.dumps(value, indent=2, ensure_ascii=False) + '\n'
     try:
         if path.read_text() == text:
             return
@@ -133,6 +135,41 @@ class Player:
         self.music = [s for s in self.stations if self.stations[s]['category'] == 'lofi']
         self.nature = [s for s in self.stations if self.stations[s]['category'] == 'ambience']
 
+    def add_saved_sources(self):
+        for entry in self.settings.get('youtube', []):
+            self.stations[entry['id']] = dict(entry, category='youtube', category_name='YouTube')
+        self.music = [s for s in self.stations if self.stations[s]['category'] in ('lofi', 'youtube')]
+
+    def is_youtube(self):
+        return self.stations.get(self.session.get('station'), {}).get('category') == 'youtube'
+
+    def remember_youtube(self, force=False):
+        if not self.is_youtube() or not self.alive('main'):
+            return
+        now = time.monotonic()
+        if not force and now - self.session.get('bookmark_at', 0) < 10:
+            return
+        title = ipc(self.sock('main'), ['get_property', 'media-title'])
+        position = fetch_number(self.sock('main'), 'time-pos')
+        duration = fetch_number(self.sock('main'), 'duration')
+        if position is None:
+            return
+        live = str(ipc(self.sock('main'), ['get_property', 'metadata/by-key/ytdl_is_live'])).lower() in ('true', 'yes', '1')
+        if live:
+            position, duration = 0, 1
+        self.session['bookmark_at'] = now
+        for entry in self.settings['youtube']:
+            if entry['id'] != self.session['station']:
+                continue
+            if isinstance(title, str) and title and not title.startswith(('http:', 'https:')):
+                # An explicit user label stays intact; only fill the generated name.
+                if entry['name'].startswith('YouTube · '):
+                    entry['name'] = clean_title(title)
+                    self.stations[entry['id']]['name'] = entry['name']
+            if position is not None and duration is not None and duration > 0:
+                entry['position'] = round(position, 1) if 0 <= position < duration - 5 else 0
+                self.stations[entry['id']]['position'] = entry['position']
+
     def acquire(self, blocking=True):
         try:
             fcntl.flock(self.lock, fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB))
@@ -151,6 +188,8 @@ class Player:
                                fadeSeconds=3, revealSpeed=1, collapsibleSections=True,
                                duckLevel=35).items():
             self.settings.setdefault(key, value)
+        self.settings['youtube'] = saved_entries(self.settings.get('youtube'))
+        self.add_saved_sources()
         previous_default = self.settings['defaultStation']
         if previous_default not in self.music:
             self.settings['defaultStation'] = self.music[0]
@@ -236,6 +275,84 @@ class Player:
         except ProcessLookupError:
             pass  # The pinned process exited; never follow a reused PID.
 
+    def terminate_audio(self, pid, handle):
+        """Stop mpv and its extractor tree without process-group/PID signals.
+
+        YouTube's synchronous Lua hook can outlive mpv's short shutdown grace.
+        Freeze each pinned parent before discovering children so extraction
+        cannot fork new helpers while the tree is being stopped.
+        """
+        try:
+            argv = Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
+        except OSError:
+            return
+        if b'--ytdl=yes' not in argv:
+            self.terminate(handle)
+            return
+        pinned = []
+        frozen = []
+
+        def freeze(process, descriptor):
+            signal.pidfd_send_signal(descriptor, signal.SIGSTOP)
+            frozen.append(descriptor)
+            poll = select.poll()
+            poll.register(descriptor, select.POLLIN)
+            deadline = time.monotonic() + .3
+            while not poll.poll(0):
+                status = Path(f'/proc/{process}/status').read_text()
+                state = next(line for line in status.splitlines() if line.startswith('State:'))
+                if state.split(':', 1)[1].split()[0] in ('T', 't'):
+                    break
+                if time.monotonic() >= deadline:
+                    raise OSError('Could not suspend the YouTube extractor safely')
+                time.sleep(.005)
+            if poll.poll(0):
+                return
+            children = set()
+            for task in Path(f'/proc/{process}/task').iterdir():
+                try:
+                    children.update(int(n) for n in (task/'children').read_text().split())
+                except FileNotFoundError:
+                    continue
+            for child in children:
+                if len(pinned) >= 64:
+                    raise OSError('Unexpectedly large extractor process tree')
+                try:
+                    child_handle = os.pidfd_open(child)
+                except ProcessLookupError:
+                    continue
+                pinned.append(child_handle)
+                try:
+                    status = Path(f'/proc/{child}/status').read_text()
+                except FileNotFoundError:
+                    continue
+                parent = next(line for line in status.splitlines() if line.startswith('PPid:'))
+                if int(parent.split()[1]) == process and not poll.poll(0):
+                    try:
+                        freeze(child, child_handle)
+                    except (ProcessLookupError, FileNotFoundError):
+                        continue
+
+        try:
+            freeze(pid, handle)
+            for descriptor in reversed(frozen[1:]):
+                try:
+                    signal.pidfd_send_signal(descriptor, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            self.terminate(handle)
+        except ProcessLookupError:
+            pass
+        finally:
+            # On errors, never leave a surviving process suspended.
+            for descriptor in reversed(frozen):
+                try:
+                    signal.pidfd_send_signal(descriptor, signal.SIGCONT)
+                except ProcessLookupError:
+                    pass
+            for descriptor in pinned:
+                os.close(descriptor)
+
     def plugin_pids(self, channel):
         """Yield PIDs whose command line carries this channel's socket marker."""
         try:
@@ -296,7 +413,7 @@ class Player:
                 continue
             try:
                 if self.matches_process(channel, pid):
-                    self.terminate(handle)
+                    self.terminate_audio(pid, handle)
             finally:
                 os.close(handle)
 
@@ -367,7 +484,7 @@ class Player:
             if handle is not None:
                 try:
                     if self.matches_process(channel, pid):
-                        self.terminate(handle)
+                        self.terminate_audio(pid, handle)
                 finally:
                     os.close(handle)
         # The PID file is the fast path, never the only one: reap by socket
@@ -376,7 +493,11 @@ class Player:
         pid_path.unlink(missing_ok=True)
         self.sock(channel).unlink(missing_ok=True)
 
-    def spawn(self, channel, url, volume, loop=False, paused=False, fade_in=False):
+    def spawn(self, channel, url, volume, loop=False, paused=False, fade_in=False, youtube=False, position=0):
+        if youtube:
+            url = canonical_url(str(url))
+            if not shutil.which('yt-dlp'):
+                raise ValueError('YouTube playback needs yt-dlp. Install or update it, then retry.')
         self.stop_channel(channel)
         log = self.runtime/'logs'/f'{channel}.log'
         if log.exists():
@@ -391,6 +512,13 @@ class Player:
                 '--msg-color=no', '--term-status-msg=', '--network-timeout=12',
                 f'--volume={start_volume}', f'--input-ipc-server={self.sock(channel)}',
                 '--user-agent=sky.lofi/1.0 (mpv)']
+        if youtube:
+            args.remove('--ytdl=no')
+            args += ['--ytdl=yes', '--ytdl-format=bestaudio', '--keep-open=yes', '--sid=no',
+                     '--script-opts=ytdl_hook-ytdl_path=' + shutil.which('yt-dlp') + ',ytdl_hook-force_all_formats=no',
+                     '--ytdl-raw-options=ignore-config=,no-plugin-dirs=,no-remote-components=,no-playlist=,socket-timeout=10,retries=1,extractor-retries=1']
+            if position > 0:
+                args.append('--start=' + str(position))
         if loop:
             args.append('--loop-file=inf')
         if paused:
@@ -404,7 +532,7 @@ class Player:
                 break
             time.sleep(.01)
         if fading:
-            self.request_fade(channel, self.fade_in_seconds())
+            self.request_fade(channel, self.fade_in_seconds(), wait_ready=youtube)
 
     def fade_in_seconds(self):
         return level(self.settings.get('fadeSeconds', FADE_IN_SECONDS), FADE_IN_SECONDS)
@@ -428,7 +556,7 @@ class Player:
             return self.settings['bgVolume']
         return self.settings['natureLayers'].get(channel.removeprefix('nature-'), {}).get('volume', 25)
 
-    def request_fade(self, channel, duration, silence=False):
+    def request_fade(self, channel, duration, silence=False, wait_ready=False):
         """Store a gain envelope; ducking and mix levels remain authoritative."""
         if not self.alive(channel):
             return
@@ -440,7 +568,7 @@ class Player:
         try:
             self.fades = read_json(self.fades_path, {})
             self.fades[channel] = dict(gain_from=max(0.0, min(1.0, start)),
-                                       gain_to=target_gain, started=time.monotonic(),
+                                       gain_to=target_gain, started=time.monotonic(), await_ready=wait_ready,
                                        duration=max(0.0, float(duration)) if self.fade_configured() else 0.0)
             write_json(self.fades_path, self.fades)
         finally:
@@ -453,7 +581,7 @@ class Player:
 
     def fade_in_channel(self, channel, duration=FADE_IN_SECONDS):
         if self.alive(channel):
-            self.request_fade(channel, duration)
+            self.request_fade(channel, duration, wait_ready=channel == 'main' and self.is_youtube())
 
     def step_fades(self):
         """Return channel gains, holding silence until Pause/Stop is committed."""
@@ -469,6 +597,11 @@ class Player:
                 if not isinstance(fade, dict) or 'gain_to' not in fade or not self.alive(channel):
                     fades.pop(channel, None)
                     continue
+                if fade.get('await_ready'):
+                    if fetch_number(self.sock(channel), 'time-pos') is None:
+                        gains[channel] = 0.0
+                        continue
+                    fade.update(await_ready=False, started=now)
                 duration = level(fade.get('duration'), 0)
                 started = fade.get('started', now)
                 if not isinstance(started, (int, float)) or not math.isfinite(started):
@@ -488,14 +621,17 @@ class Player:
 
     def start_music(self, reset=True):
         station = self.stations[self.session['station']]
-        self.spawn('main', station['url'], self.effective(self.settings['mainVolume']), fade_in=True)
-        self.session.update(started=time.monotonic(), retry_due=0, playing_since=0, last_position=None, progress_at=time.monotonic())
+        options = dict(fade_in=True)
+        if station['category'] == 'youtube':
+            options.update(youtube=True, position=station.get('position', 0))
+        self.spawn('main', station['url'], self.effective(self.settings['mainVolume']), **options)
+        self.session.update(main_ended=False, started=time.monotonic(), retry_due=0, playing_since=0, last_position=None, progress_at=time.monotonic())
         if reset:
             self.session['attempts'] = 0
 
     def start_bg(self):
         station = self.stations.get(self.settings.get('bgStation'))
-        if not self.settings.get('mix') or not station or station['category'] in ('lofi', 'ambience'):
+        if self.is_youtube() or not self.settings.get('mix') or not station or station['category'] in ('lofi', 'ambience', 'youtube'):
             return
         url = station['url']
         if station.get('kind') == 'podcast':
@@ -537,7 +673,10 @@ class Player:
         (self.runtime/f'{channel}.pid').write_text(str(child.pid) + '\n')
 
     def begin(self, station=None):
+        self.remember_youtube(force=True)
         previous = self.session['mode']
+        if previous == 'paused' and self.is_youtube():
+            self.session['started'] = time.monotonic()
         self.session['mode'] = 'playing'
         self.session['pending'] = None
         self.session['progress_at'] = time.monotonic()
@@ -545,13 +684,17 @@ class Player:
             self.require_station(station, 'lofi')
             self.settings['defaultStation'] = station
             self.session['station'] = station
-        if station or previous == 'stopped' or not self.alive('main'):
+        if station or previous == 'stopped' or self.session.get('main_ended') or not self.alive('main'):
             self.start_music()
         else:
             # Resuming: the stream is still loaded and silent after its fade
             # out, so unpause it and glide back to level.
             self.fade_in_channel('main', self.fade_in_seconds())
-        if not self.alive('bg') and not self.alive('feed'):
+        if self.is_youtube():
+            self.session['feed_token'] = ''
+            self.stop_channel('feed')
+            self.stop_channel('bg')
+        elif not self.alive('bg') and not self.alive('feed'):
             self.start_bg()
         else:
             self.fade_in_channel('bg', self.fade_in_seconds())
@@ -571,6 +714,7 @@ class Player:
         return self.settings.get('fadeEnabled', True) and self.fade_in_seconds() > 0
 
     def pause(self):
+        self.remember_youtube(force=True)
         if self.session['mode'] == 'stopped':
             return
         if not self.fade_configured():
@@ -589,6 +733,7 @@ class Player:
         self.commit_without_worker()
 
     def stop(self):
+        self.remember_youtube(force=True)
         if not self.fade_configured():
             self.session.update(mode='stopped', retry_due=0, attempts=0, playing_since=0, feed_token='', pending=None)
             for channel in self.channels(include_legacy=True) + ['feed', 'volume', 'mpris']:
@@ -652,7 +797,7 @@ class Player:
             cache.with_suffix('.lock').unlink(missing_ok=True)
 
     def require_station(self, id, category):
-        if id not in self.stations or self.stations[id]['category'] != category:
+        if id not in self.stations or self.stations[id]['category'] not in (('lofi', 'youtube') if category == 'lofi' else (category,)):
             raise ValueError(f'Unknown {category} station: {id}')
 
     def maintain(self):
@@ -668,6 +813,22 @@ class Player:
         if self.session['mode'] != 'playing':
             return
         alive = self.alive('main')
+        if self.is_youtube():
+            self.remember_youtube()
+            if alive and ipc(self.sock('main'), ['get_property', 'eof-reached']) is True:
+                self.remember_youtube(force=True)
+                self.session.update(main_ended=True, retry_due=0)
+                return
+            # Extraction can take longer than radio connection. Keep controls
+            # responsive, but stop a stuck extractor instead of retrying forever.
+            if alive and fetch_number(self.sock('main'), 'time-pos') is None:
+                if now - self.session.get('started', now) < 45:
+                    return
+                self.stop_channel('main')
+                alive = False
+            if not alive:
+                self.session.update(attempts=len(RETRY_DELAYS), retry_due=0)
+                return
         position = ipc(self.sock('main'), ['get_property', 'time-pos']) if alive else None
         if isinstance(position, (int, float)):
             # Detect stalls even if mpv remains alive with an exhausted buffer.
@@ -699,11 +860,14 @@ class Player:
         mode = self.session['mode']
         position = ipc(self.sock('main'), ['get_property', 'time-pos']) if main_alive else None
         ready = isinstance(position, (int, float))
+        live = self.is_youtube() and str(ipc(self.sock('main'), ['get_property', 'metadata/by-key/ytdl_is_live'])).lower() in ('true', 'yes', '1')
         retry_in = max(0, math.ceil(self.session.get('retry_due', 0) - time.monotonic()))
         if mode == 'stopped':
             main_state = 'stopped'
         elif mode == 'paused':
             main_state = 'paused'
+        elif self.session.get('main_ended'):
+            main_state = 'ended'
         elif ready:
             main_state = 'playing'
         elif main_alive:
@@ -729,7 +893,8 @@ class Player:
                      main_volume=self.settings['mainVolume'], bg_volume=self.settings['bgVolume'],
                      master_volume=self.settings['masterVolume'], ducking=self.settings['ducking'],
                      bg_station=bg.get('id', ''), bg_name=bg.get('name', ''), bg_running=self.alive('bg'),
-                     mix=self.settings.get('mix', False), nature_layers=layers,
+                     mix=self.settings.get('mix', False) and not self.is_youtube(), nature_layers=layers,
+                     youtube_entries=self.settings.get('youtube', []), youtube_available=bool(shutil.which('yt-dlp')),
                      nature_volume=self.settings['natureVolume'], noise_volume=self.settings['natureVolume'],
                      noise_station=selected[0] if selected else 'off', noise_running=any(s['running'] for s in layers),
                      animations=bool(self.settings.get('animations', True)),
@@ -748,7 +913,7 @@ class Player:
                      # Progress is only meaningful when the stream reports a
                      # duration; live radio leaves it null, podcasts do not.
                      main_position=fetch_number(self.sock('main'), 'time-pos') if ready else None,
-                     main_duration=fetch_number(self.sock('main'), 'duration') if ready else None,
+                     main_duration=fetch_number(self.sock('main'), 'duration') if ready and not live else None,
                      bg_position=fetch_number(self.sock('bg'), 'time-pos') if self.alive('bg') else None,
                      bg_duration=fetch_number(self.sock('bg'), 'duration') if self.alive('bg') else None)
         write_json(self.runtime/'status.json', state)
@@ -768,7 +933,7 @@ class Player:
         elif command in ('play', 'resume'):
             self.begin(args[0] if args else None)
         elif command == 'toggle':
-            self.pause() if self.session['mode'] == 'playing' else self.begin()
+            self.pause() if self.session['mode'] == 'playing' and not self.session.get('main_ended') else self.begin()
         elif command == 'pause':
             self.pause()
         elif command == 'stop':
@@ -796,7 +961,7 @@ class Player:
                 self.settings['natureLayers'].setdefault(channel, {'enabled': False})['volume'] = value
         elif command in ('bg', 'background'):
             id = args[0]
-            if id != 'off' and (id not in self.stations or self.stations[id]['category'] in ('lofi', 'ambience')):
+            if id != 'off' and (id not in self.stations or self.stations[id]['category'] in ('lofi', 'ambience', 'youtube')):
                 raise ValueError('Unknown voice station')
             self.settings.update(bgStation='' if id == 'off' else id, mix=id != 'off')
             self.session['feed_token'] = ''
@@ -837,6 +1002,49 @@ class Player:
                 self.stop_channel('nature-' + sound)
             if id != 'off' and self.session['mode'] != 'stopped':
                 self.start_nature(id)
+        elif command == 'youtube-add':
+            if not 1 <= len(args) <= 2:
+                raise ValueError('Paste a YouTube link and an optional title.')
+            url = canonical_url(args[0])
+            identity = 'youtube-' + url.rsplit('=', 1)[1]
+            existing = next((e for e in self.settings['youtube'] if e['id'] == identity), None)
+            title = clean_title(args[1]) if len(args) == 2 else ''
+            if existing:
+                if title:
+                    existing['name'] = title
+            else:
+                if len(self.settings['youtube']) >= MAX_SAVED:
+                    raise ValueError('Your library is full (40 videos). Remove one before adding another.')
+                self.settings['youtube'].append(dict(id=identity, url=url,
+                    name=title or 'YouTube · ' + url.rsplit('=', 1)[1], position=0))
+            self.add_saved_sources()
+        elif command == 'youtube-remove':
+            identity, = args
+            if not any(e['id'] == identity for e in self.settings['youtube']):
+                raise ValueError('This saved video no longer exists.')
+            if self.session['station'] == identity:
+                self.remember_youtube(force=True)
+                self.stop_channel('main')
+                radio = next(s for s in self.music if self.stations[s]['category'] == 'lofi')
+                # Removing a playing item must not unexpectedly start the radio.
+                self.session.update(station=radio, mode='paused', pending=None, main_ended=False, retry_due=0)
+                self.pause()
+            if self.settings['defaultStation'] == identity:
+                self.settings['defaultStation'] = next(s for s in self.music if self.stations[s]['category'] == 'lofi')
+            self.settings['youtube'] = [e for e in self.settings['youtube'] if e['id'] != identity]
+            self.stations.pop(identity, None)
+            self.music = [s for s in self.music if s != identity]
+        elif command == 'seek':
+            value, = args
+            seconds = float(value)
+            duration = fetch_number(self.sock('main'), 'duration')
+            if not math.isfinite(seconds) or duration is None or duration <= 0 or not self.alive('main'):
+                raise ValueError('Seeking is available once a video is playing.')
+            ipc(self.sock('main'), ['seek', max(0, min(duration - .1, seconds)), 'absolute'])
+            if self.session.get('main_ended') and self.session['mode'] == 'playing':
+                ipc(self.sock('main'), ['set_property', 'pause', False])
+            self.session.update(main_ended=False, progress_at=time.monotonic())
+            self.remember_youtube(force=True)
         elif command == 'ducking':
             if args[0] not in ('on', 'off'):
                 raise ValueError('ducking takes on/off')
@@ -940,7 +1148,7 @@ def resolve_feed(player, id, token):
             signal.alarm(0)
     player.acquire()
     try:
-        if (player.session['mode'] != 'stopped' and player.settings.get('mix')
+        if (player.session['mode'] != 'stopped' and not player.is_youtube() and player.settings.get('mix')
                 and player.settings.get('bgStation') == id and player.session.get('feed_token') == token):
             player.spawn('bg', cache, player.effective(player.settings['bgVolume']),
                          paused=player.session['mode'] == 'paused')
@@ -964,7 +1172,7 @@ def main():
                 command = sys.argv[1] if len(sys.argv) > 1 else 'status'
                 state = player.action(command, sys.argv[2:])
                 if command == 'status':
-                    print(json.dumps(state))
+                    print(json.dumps(state, ensure_ascii=False))
             finally:
                 player.release()
     except (ValueError, IndexError, OSError, subprocess.TimeoutExpired) as error:

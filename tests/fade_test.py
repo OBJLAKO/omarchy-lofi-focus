@@ -61,6 +61,16 @@ class FadeTest(unittest.TestCase):
             self.player.request_fade('main', 1)
         self.assertEqual(self.player.step_fades()['main'], 1)
 
+    def test_youtube_fade_waits_for_decoded_audio(self):
+        with mock.patch.object(backend, 'ipc', return_value=None):
+            self.player.request_fade('main', 2, wait_ready=True)
+            self.now += 30
+            self.assertEqual(self.player.step_fades()['main'], 0)
+        with mock.patch.object(backend, 'ipc', return_value=1):
+            self.assertEqual(self.player.step_fades()['main'], 0)
+            self.now += 1
+            self.assertAlmostEqual(self.player.step_fades()['main'], .5)
+
     def test_corrupt_or_old_fade_is_discarded(self):
         backend.write_json(self.player.fades_path, {'main': {'to': 65}, 'bg': None})
         self.assertEqual(self.player.step_fades(), {})

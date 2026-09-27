@@ -27,6 +27,8 @@ BarWidget {
   property string statusJson: ""
   property int pendingMasterVolume: -1
   property var actionQueue: []
+  property string actionError: ""
+  signal actionFinished(var arguments, int exitCode, string message)
 
   readonly property string playerPath: Qt.resolvedUrl("lofi-player").toString().replace(/^file:\/\//, "")
   readonly property string statusPath: Quickshell.env("XDG_RUNTIME_DIR") + "/sky.lofi/status.json"
@@ -105,6 +107,7 @@ BarWidget {
       root.actionQueue.push(args)
       return
     }
+    root.actionError = ""
     actionProcess.command = [root.playerPath].concat(args)
     actionProcess.running = true
   }
@@ -156,7 +159,12 @@ BarWidget {
   Process {
     id: actionProcess
     command: []
+    stderr: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.actionError = text.replace(/^Lofi Focus:\s*/, "").trim().slice(0, 300)
+    }
     onExited: function(exitCode) {
+      root.actionFinished(actionProcess.command.slice(1), exitCode, root.actionError)
       if (root.actionQueue.length) { var next = root.actionQueue.shift(); Qt.callLater(function() { root.runAction(next) }) }
       if (exitCode === 0) root.statusReady = true
       Qt.callLater(root.refreshStatus)
