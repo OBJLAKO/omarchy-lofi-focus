@@ -14,6 +14,9 @@ const value = name => {
 };
 const scanner = resolve(value('--scanner'));
 const output = resolve(value('--output'));
+const commitIndex = process.argv.indexOf('--scanner-commit');
+const scannerCommit = commitIndex >= 0 ? value('--scanner-commit') : '34cb24a8c543746065982c568e3929c3a0bb9e07';
+if (!/^[0-9a-f]{40}$/.test(scannerCommit)) throw new Error('Scanner commit must be a full SHA');
 const { isSecurityScanPath } = await import(pathToFileURL(join(scanner, 'security-baseline-scope.mjs')));
 const { detectElevatedCapabilities, detectUnsafeRemoteExecution } = await import(pathToFileURL(join(scanner, 'security-baseline-analysis.mjs')));
 const { securityBaselineOutcome, securityBaselineVersion } = await import(pathToFileURL(join(scanner, 'security-baseline-policy.mjs')));
@@ -53,7 +56,7 @@ const findings = detectUnsafeRemoteExecution(files, 'objlako/omarchy-lofi-focus'
 const capabilities = detectElevatedCapabilities(files, 'objlako/omarchy-lofi-focus');
 const report = {
   mode: 'advisory-local-working-tree',
-  scannerSourceCommit: '34cb24a8c543746065982c568e3929c3a0bb9e07',
+  scannerSourceCommit: scannerCommit,
   policyVersion: securityBaselineVersion,
   checkedAt: new Date().toISOString(),
   outcome: securityBaselineOutcome(findings, capabilities), findings, capabilities,

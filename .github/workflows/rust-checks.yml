@@ -1,7 +1,7 @@
-name: Rust experiment checks
+name: Rust backend checks
 on:
   push:
-    branches: [rustTest, dev, main]
+    branches: [rustTest, dev, main, 'release/**']
   pull_request:
     branches: [rustTest, dev, main]
   workflow_dispatch:
@@ -51,3 +51,34 @@ jobs:
           test -x bin/linux-x86_64/skylofi
           sha256sum --check bin/SHA256SUMS
           python3 -c 'import json,pathlib; p=pathlib.Path("."); m=json.loads((p/"manifest.json").read_text()); assert m["id"] == "sky.lofi"; assert all((p/f).is_file() for f in m["entryPoints"].values()); assert not any(f.is_symlink() for f in p.rglob("*") if ".git" not in f.parts)'
+      - name: Record tested build identity
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root = pathlib.Path.cwd()
+          binary = root / 'bin/linux-x86_64/skylofi'
+          sources = sorted((root / 'native/src').glob('*.rs')) + [root / 'native/Cargo.toml', root / 'native/Cargo.lock', root / 'native/rust-toolchain.toml']
+          report = {
+              'version': json.loads((root / 'manifest.json').read_text())['version'],
+              'sourceCommit': os.environ['GITHUB_SHA'],
+              'workflowRun': f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'buildPlatform': 'ubuntu-24.04, x86_64 GNU/Linux',
+              'rustc': subprocess.check_output(['rustc', '--version'], text=True).strip(),
+              'binary': 'bin/linux-x86_64/skylofi',
+              'binarySHA256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+              'binaryBytes': binary.stat().st_size,
+              'sourceFileSHA256': {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
+              'dynamicVersionRequirements': subprocess.check_output(['readelf', '--version-info', str(binary)], text=True),
+          }
+          (root / 'bin/BUILD-IDENTITY.json').write_text(json.dumps(report, indent=2) + '\n')
+          PY
+      - name: Upload tested native bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: skylofi-native-linux-x86_64-${{ github.sha }}
+          path: |
+            bin/linux-x86_64/skylofi
+            bin/SHA256SUMS
+            bin/BUILD-IDENTITY.json
+          if-no-files-found: error
+          retention-days: 30

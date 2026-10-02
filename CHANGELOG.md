@@ -1,3 +1,17 @@
+# 3.0.0 · 2026-10-02
+
+- Replace the Python runtime controller with a persistent Rust backend for
+  settings, stream supervision, source capabilities, fades, ducking and MPRIS.
+- Rebuild Listen, Mix and Settings around stable navigation and a compact
+  playback dock, with accessible forms, source search and independent layers.
+- Remove radio seek/Replay; preserve timelines and position memory for confirmed
+  recordings, and reconnect live streams when transport ends.
+- Refine local motion, keyboard focus, dropdown placement and scrolling; respect
+  the interface-motion preference and custom Omarchy fonts.
+- Preserve the `sky.lofi` ID, existing settings and saved library migration.
+- Bundle the tested Linux x86_64 release executable with locked source,
+  checksums, licenses, performance evidence and six-variant rendered UI review.
+
 # 3.0.0-alpha.2 · design revision
 
 - Keep navigation and compact playback/overall-volume controls stable across tabs.

@@ -4,9 +4,11 @@ A quiet listening space in your Omarchy bar. Pick a soundtrack, build a small
 nature mix, and keep listening while you work. The interface follows your
 Omarchy theme and fonts.
 
-This is the **3.0.0-alpha.2 experiment on `rustTest`**: a redesigned interface and
-a Rust controller. The existing marketplace release remains separate. Measured
-results and their limits are recorded in [the performance report](docs/PERFORMANCE.md).
+**Skylofi 3.0** introduces a redesigned interface and a persistent Rust
+controller. Existing `sky.lofi` settings and saved links migrate automatically.
+Measured results and their limits are recorded in
+[the performance report](docs/PERFORMANCE.md) and
+[the final design measurements](docs/PERFORMANCE-V2.md).
 
 ![Skylofi listening interface](docs/redesign/listen.png)
 
@@ -66,7 +68,7 @@ separated from ordinary media-key controls.
 
 ![Focused playback, dictation and motion settings](docs/redesign/settings.png)
 
-## Native experiment
+## Native backend
 
 The QML interface runs inside Omarchy's Quickshell host. A persistent local
 connection controls a Rust daemon; mpv decodes audio and yt-dlp extracts YouTube
@@ -82,12 +84,14 @@ such as **Deno**. No account or API key is needed. Restricted/private videos are
 not supported. Keep the extractor/runtime current when provider behaviour changes.
 
 Normal Omarchy installation clones repository files and does not build Rust.
-The distribution therefore needs a ready executable at
-`bin/linux-x86_64/skylofi`, alongside its matching source and checksum. The plugin
+The release includes a ready **x86_64 GNU/Linux** executable at
+`bin/linux-x86_64/skylofi`, alongside its matching source and checksum. It is
+built and tested on Ubuntu 24.04; architecture and build evidence are documented
+in [the release notes](docs/RELEASE-3.0.md). The plugin
 never downloads or compiles code at runtime. Other architectures need an explicit
 tested build. See [native distribution and marketplace review](docs/RUST-PUBLISHING.md).
 
-Build this experimental checkout with Rust 1.99.0:
+Build from source with Rust 1.99.0:
 
 ```sh
 scripts/build-native.sh
@@ -144,10 +148,9 @@ Local validation passed **10 Rust unit tests, 53 native integration/QA cases
 and 28 QML component/transport checks**, plus formatting and Clippy with
 warnings rejected. The retained Python reference has separate checks.
 
-The Rust CI workflow builds and tests the experiment with read-only repository
-permissions. It performs no release or marketplace publication. Publication of
-the existing listing needs an exact-commit update request and native-binary
-maintainer review after results and regressions are accepted.
+The Rust CI workflow builds and tests the backend with read-only repository
+permissions and publishes its tested build artifact. Marketplace updates use
+an exact-commit request and native-binary maintainer review.
 
 CLI examples:
 

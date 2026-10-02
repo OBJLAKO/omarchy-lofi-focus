@@ -1,7 +1,8 @@
 # Native Rust and Omarchy publication
 
-Research date: 2026-10-02. Official marketplace source inspected at
-`34cb24a8c543746065982c568e3929c3a0bb9e07`.
+Research date: 2026-10-02. Release policy rechecked against official marketplace
+source `b13d4ffd69a50f44be5d0e563e4eecb4032df7aa`; historical experimental scans
+used `34cb24a8c543746065982c568e3929c3a0bb9e07`.
 
 The Omarchy shell loads the plugin's QML entry point. QML remains the interface;
 Rust can implement an external controller reached through local IPC. This also
@@ -26,19 +27,19 @@ Consequently a source-only repository needs an explicit build/setup step, or a
 ready executable must accompany the QML. Release assets alone are not obtained
 by the ordinary clone command.
 
-For this experiment, build explicitly, then bundle `bin/linux-x86_64/skylofi` with
+For distribution, build explicitly, then bundle `bin/linux-x86_64/skylofi` with
 the source and a checksum file. The runtime performs no downloads or compilation.
 A release build made on a compatible Linux runner is preferable to a binary
 linked against a developer machine's newer libc. Document architecture and
 runtime library requirements; add an ARM build only after it has been tested.
 
-The experimental bundle is an x86_64 GNU/Linux executable, dynamically linked
+The supplied bundle is an x86_64 GNU/Linux executable, dynamically linked
 to `libc.so.6`, `libgcc_s.so.1` and the GNU loader. Its required versioned glibc
 symbols reach 2.34; newer weak symbols are optional. This is not a static or
 cross-platform binary. Local validation uses this Omarchy machine; the Ubuntu
 24.04 CI build is a separate distribution compatibility check.
 
-The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/34cb24a8c543746065982c568e3929c3a0bb9e07/SECURITY.md)
+The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/b13d4ffd69a50f44be5d0e563e4eecb4032df7aa/SECURITY.md)
 does not categorically prohibit Rust. Bundled executable files are classified as
 `bundled-executable-binary`, requiring maintainer review. A build involving remote
 source can also require review. Acceptance is a maintainer decision. Preserve
@@ -53,7 +54,7 @@ matching standard-library license/copyright files when changing the toolchain.
 
 ## Updating the existing listing
 
-Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/34cb24a8c543746065982c568e3929c3a0bb9e07/VERIFICATION.md):
+Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/b13d4ffd69a50f44be5d0e563e4eecb4032df7aa/VERIFICATION.md):
 
 1. Complete native regressions, UI review and controlled Python/Rust measurements.
 2. Finalize a release commit, including the intended distributable executable,
@@ -70,9 +71,10 @@ No marketplace update is performed by this branch's CI.
 
 ## Build and evidence
 
-The native workflow pins Rust 1.99.0 and the checkout action, uses read-only
+The native workflow pins Rust 1.99.0 and the checkout/upload actions, uses read-only
 repository permissions, builds with `--locked --release`, runs format/lint/unit
-and silent real-mpv integration checks, and checks the bundle checksum. Build
+and silent real-mpv integration checks, and checks the bundle checksum. Its
+tested native artifact includes source/binary identity for release packaging. Build
 output is outside the plugin directory. Use `scripts/build-native.sh` for a local
 build and `scripts/package-native.sh` for an explicit bundle.
 
