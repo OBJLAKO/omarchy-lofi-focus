@@ -121,6 +121,83 @@ class NativeStressTest(NativeFixture):
         resume()
         self.wait_prop('main', 'volume', 26)
 
+    def test_cold_mpv_startup_keeps_fade_mix_and_stop_cancels_pending_audio(self):
+        # Run the real decoder after a controlled cold-start delay. The old
+        # two-second IPC deadline killed this healthy child before it could
+        # create its socket, reset music into retries and lost the background.
+        delay = 2.2
+        (self.bin/'mpv').write_text(
+            f'#!{sys.executable}\n'
+            'import os, sys, time\n'
+            f'time.sleep({delay!r})\n'
+            'os.execv("/usr/bin/mpv", ["mpv", "--ao=null", "--loop-file=inf", *sys.argv[1:]])\n'
+        )
+        self.action('play')
+        original = self.pid('main')
+        main = self.pin(int(original))
+        self.action('noise', 'noise-rain')
+        self.action('vol', 'noise', '30')
+        self.action('vol', 'master', '50')
+        self.assertTrue(self.status()['fade_enabled'])
+        self.wait_for(lambda: 0 < self.prop('main', 'volume') < 32)
+        self.assertEqual(self.pid('main'), original, 'healthy cold mpv was replaced during startup')
+        self.wait_prop('main', 'volume', 32.5)
+        self.wait_prop('bg', 'volume', 10)
+        self.wait_prop('noise', 'volume', 15)
+        self.assertEqual(self.pid('main'), original)
+        self.assertFalse(select.select([main], [], [], 0)[0], 'original cold mpv exited')
+        self.assertEqual(self.status()['retry_attempt'], 0)
+
+        # A new delayed launch must remain owned even before IPC exists. Stop
+        # cancels the real children, and their delayed exec cannot start audio.
+        self.action('ui', 'fade', 'off')
+        self.action('stop')
+        self.action('play')
+        pending = [self.pin(int(self.pid(channel))) for channel in ('main', 'bg', 'noise')]
+        sockets = self.base/'runtime/sky.lofi/sockets'
+        self.assertFalse(list(sockets.glob('*.sock')), 'cold-start fixture connected before Stop')
+        self.action('stop')
+        for handle in pending:
+            self.assertTrue(select.select([handle], [], [], 3)[0], 'Stop abandoned a pending decoder')
+        self.action('play')
+        replacement = self.pid('main')
+        self.assertNotEqual(replacement, original)
+        controller = self.controller()
+
+        def cancelled_connectors_released():
+            # Kernel fdinfo records Pid:-1 for an exited pinned process. Old
+            # startup workers must release those identities promptly, rather
+            # than poll for 15s and subscribe to the replacement's reused path.
+            for info in Path(f'/proc/{controller}/fdinfo').iterdir():
+                try:
+                    text = info.read_text()
+                except FileNotFoundError:
+                    continue
+                if any(line.split() == ['Pid:', '-1'] for line in text.splitlines()):
+                    return False
+            return True
+
+        self.wait_for(cancelled_connectors_released, timeout=1)
+        self.wait_prop('main', 'volume', 32.5)
+        self.assertEqual(self.pid('main'), replacement)
+        self.assertEqual(self.status()['retry_attempt'], 0)
+        self.action('stop')
+        # Repeat cancellation without a replacement: even after the delayed
+        # exec time, no detached decoder or socket may appear.
+        self.action('play')
+        final = self.pin(int(self.pid('main')))
+        self.assertFalse(list(sockets.glob('*.sock')), 'cold-start fixture connected before final Stop')
+        self.action('stop')
+        self.assertTrue(select.select([final], [], [], 3)[0], 'final Stop abandoned a pending decoder')
+        self.wait_for(cancelled_connectors_released, timeout=1)
+        time.sleep(delay + .1)
+        self.assertFalse(list(sockets.glob('*.sock')), 'cancelled cold start created late audio IPC')
+        state = self.status()
+        self.assertFalse(state['running'])
+        self.assertFalse(state['main_running'])
+        self.assertFalse(state['bg_running'])
+        self.assertFalse(state['noise_running'])
+
     def test_eleven_channels_keep_independent_mix_under_concurrent_clients(self):
         channels = self.start_all_channels()
         self.assertEqual(len(channels), 11)

@@ -1,4 +1,4 @@
-use crate::Event;
+use crate::{process::Process, Event};
 use serde_json::{json, Value};
 use std::{
     io::{self, BufRead, BufReader, Write},
@@ -71,10 +71,25 @@ fn observed_properties(channel: &str) -> &'static [&'static str] {
         ]
     }
 }
-pub fn connect_mpv(path: PathBuf, channel: String, generation: u64, events: SyncSender<Event>) {
+pub fn connect_mpv(
+    path: PathBuf,
+    channel: String,
+    generation: u64,
+    process: Process,
+    events: SyncSender<Event>,
+) {
     thread::spawn(move || {
-        let deadline = Instant::now() + Duration::from_secs(2);
+        // A live mpv can need more than two seconds to initialize on a cold or
+        // busy machine. Match the engine's existing 15-second startup grace:
+        // this connector runs independently of command handling, and a fast
+        // socket still connects immediately. A duplicated pidfd cancels this
+        // connector when its original child exits, including Stop before IPC.
+        let deadline = Instant::now() + Duration::from_secs(15);
         let stream = loop {
+            if !process.alive() {
+                let _ = events.send(Event::Disconnected(channel, generation));
+                return;
+            }
             match UnixStream::connect(&path) {
                 Ok(stream) => break stream,
                 Err(_) if Instant::now() < deadline => thread::sleep(Duration::from_millis(10)),
@@ -84,6 +99,12 @@ pub fn connect_mpv(path: PathBuf, channel: String, generation: u64, events: Sync
                 }
             }
         };
+        // The path can be reused by a newer channel while connect is in flight.
+        // Never subscribe to that socket after the original pinned child died.
+        if !process.alive() {
+            let _ = events.send(Event::Disconnected(channel, generation));
+            return;
+        }
         let _ = stream.set_write_timeout(Some(Duration::from_millis(100)));
         let Ok(writer) = stream.try_clone() else {
             return;

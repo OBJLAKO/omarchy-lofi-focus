@@ -22,6 +22,14 @@ impl Process {
             fd: unsafe { OwnedFd::from_raw_fd(fd) },
         })
     }
+    pub fn try_clone(&self) -> io::Result<Self> {
+        // Duplicate the pinned kernel identity, never resolve its numeric PID
+        // again: the process may exit and its PID may already be reused.
+        Ok(Self {
+            pid: self.pid,
+            fd: self.fd.try_clone()?,
+        })
+    }
     pub fn alive(&self) -> bool {
         let mut poll = libc::pollfd {
             fd: self.fd.as_raw_fd(),

@@ -392,7 +392,20 @@ impl Engine {
             self.stop_channel(channel);
             return Err(format!("Cannot record playback process: {error}"));
         }
-        transport::connect_mpv(socket, channel.into(), generation, self.events.clone());
+        let connector_process = match self.channels[channel].process.try_clone() {
+            Ok(process) => process,
+            Err(error) => {
+                self.stop_channel(channel);
+                return Err(format!("Cannot track decoder startup: {error}"));
+            }
+        };
+        transport::connect_mpv(
+            socket,
+            channel.into(),
+            generation,
+            connector_process,
+            self.events.clone(),
+        );
         self.changed();
         Ok(())
     }

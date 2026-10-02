@@ -9,6 +9,8 @@
 - Refine local motion, keyboard focus, dropdown placement and scrolling; respect
   the interface-motion preference and custom Omarchy fonts.
 - Preserve the `sky.lofi` ID, existing settings and saved library migration.
+- Keep cold mpv startup within a bounded grace period; cancel pending connections
+  through the original process identity when playback stops or changes.
 - Bundle the tested Linux x86_64 release executable with locked source,
   checksums, licenses, performance evidence and six-variant rendered UI review.
 
