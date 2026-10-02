@@ -15,6 +15,9 @@ test -x "$SOURCE_BINARY" || {
   exit 1
 }
 install -Dm755 -- "$SOURCE_BINARY" "$ROOT/bin/linux-$ARCH/skylofi"
+# A new explicit build invalidates any previously recorded CI provenance.
+# CI writes a fresh identity only after testing the newly packaged executable.
+rm -f -- "$ROOT/bin/BUILD-IDENTITY.json"
 cd -- "$ROOT"
 sha256sum bin/linux-*/skylofi > bin/SHA256SUMS
 printf 'Bundled %s\n' "bin/linux-$ARCH/skylofi"

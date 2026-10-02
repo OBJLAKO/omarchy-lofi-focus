@@ -77,6 +77,9 @@ and silent real-mpv integration checks, and checks the bundle checksum. Its
 tested native artifact includes source/binary identity for release packaging. Build
 output is outside the plugin directory. Use `scripts/build-native.sh` for a local
 build and `scripts/package-native.sh` for an explicit bundle.
+Explicit packaging removes an older CI identity; the CI workflow writes a new
+identity after its tested build. A local rebuild must not retain another
+executable's provenance report.
 
 The performance report must distinguish command acknowledgement from the moment
 audio changes, and distinguish the Rust controller from mpv and the shared

@@ -35,7 +35,8 @@ hashes must still match that release's files. The release tag and marketplace
 request identify the final complete repository commit separately.
 
 The supplied executable is **x86_64 GNU/Linux**, dynamically linked to the GNU
-loader, libc and libgcc. It is not an ARM or static build. Other architectures
+loader, libc (required symbols through glibc 2.34) and libgcc. Newer weak symbols
+are optional. It is not an ARM or static build. Other architectures
 require an explicit tested source build and are not covered by this binary.
 Omarchy's Quickshell, mpv and session D-Bus are required; YouTube is optional and
 also needs yt-dlp plus a supported JavaScript runtime such as Deno.
@@ -57,6 +58,14 @@ integration/QA cases and real Rust/QML transport. The unchanged QML snapshot has
 including custom fonts, compact windows, light palette and reduced motion.
 The marketplace's exact-commit static check and native-binary maintainer review
 remain separate from these tests.
+
+The [distribution CI run](https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37033064212)
+passed all build, native and frozen Python-reference checks. Its exact packaged
+executable was then checked on Omarchy with [53 silent integration/QA cases](../perf-results/release-native-tests.txt)
+and [three real Rust/QML transport cases](../perf-results/release-widget-tests.txt).
+The reviewed QML source hashes still match. The final
+[local marketplace preflight](../perf-results/marketplace-release.json) has zero
+findings and one review-required capability: the bundled executable.
 
 The [original performance comparison](PERFORMANCE.md) and
 [final design measurements](PERFORMANCE-V2.md) preserve their measured alpha
