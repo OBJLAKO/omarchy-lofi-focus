@@ -1,0 +1,55 @@
+{
+  "seconds": 20.023061878000135,
+  "clock_tick_seconds": 0.01,
+  "processes": [
+    {
+      "pid": 1762,
+      "role": "whole_quickshell_host",
+      "cpu_one_core_percent": 6.3426862871326515,
+      "rss_mib_median": 536.3203125,
+      "pss_mib_median": 424.1279296875,
+      "voluntary_context_switches_per_second": 134.74462679278656
+    },
+    {
+      "pid": 25425,
+      "role": "mpv",
+      "cpu_one_core_percent": 1.4982723512911773,
+      "rss_mib_median": 165.390625,
+      "pss_mib_median": 102.3818359375,
+      "voluntary_context_switches_per_second": 25.27086032511119
+    },
+    {
+      "pid": 25444,
+      "role": "mpv",
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 109.5703125,
+      "pss_mib_median": 47.201171875,
+      "voluntary_context_switches_per_second": 0.0
+    },
+    {
+      "pid": 25467,
+      "role": "mpv",
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 108.6875,
+      "pss_mib_median": 46.26171875,
+      "voluntary_context_switches_per_second": 0.0
+    },
+    {
+      "pid": 25488,
+      "role": "controller",
+      "cpu_one_core_percent": 3.745680878227944,
+      "rss_mib_median": 23.64453125,
+      "pss_mib_median": 12.9501953125,
+      "voluntary_context_switches_per_second": 14.28352974897589
+    },
+    {
+      "pid": 25489,
+      "role": "mpris",
+      "cpu_one_core_percent": 0.14982723512911772,
+      "rss_mib_median": 31.984375,
+      "pss_mib_median": 17.3427734375,
+      "voluntary_context_switches_per_second": 1.3983875278717655
+    }
+  ],
+  "note": "Existing processes only; Quickshell is shared by all plugins. No UI or playback changes."
+}

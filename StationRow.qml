@@ -2,113 +2,78 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 
-// One selectable station row, in the style of Omarchy's device rows
-// (shell/plugins/panels/audio/Panel.qml). Visual state comes entirely from
-// `current` (the remembered selection) and `hasCursor` (keyboard/mouse
-// cursor) so a single highlight is ever on screen. A small equalizer marks
-// the station that is actually producing sound.
+// Selection stays visible; hover and keyboard focus are temporary affordances.
 CursorSurface {
   id: root
-
-  property string glyph: ""
+  property string glyph: "\uf001"
   property string name: ""
   property string description: ""
   property bool playing: false
   property bool muted: false
   property bool animate: true
   property string fontFamily: Style.font.family
+  signal activated()
+  implicitHeight: Math.max(Style.space(54), copy.implicitHeight + Style.space(18))
+  activeFocusOnTab: true
+  hasCursor: mouse.containsMouse || activeFocus
+  Accessible.role: Accessible.Button
+  Accessible.name: name
+  Accessible.description: description + (current ? ", selected" : "")
+  Accessible.onPressAction: root.activated()
+  Keys.onReturnPressed: root.activated()
+  Keys.onEnterPressed: root.activated()
+  Keys.onSpacePressed: root.activated()
 
-  implicitHeight: rowInner.implicitHeight + Style.spacing.xl
-
-  Row {
-    id: rowInner
-    anchors.left: parent.left
-    anchors.right: parent.right
+  Rectangle {
+    x: Style.space(10)
     anchors.verticalCenter: parent.verticalCenter
-    anchors.leftMargin: Style.space(6)
-    anchors.rightMargin: Style.space(6)
-    spacing: Style.space(8)
-
-    // Leading glyph, or an animated equalizer when this station is playing.
-    Item {
-      width: Style.space(22)
-      implicitHeight: Math.max(glyphText.implicitHeight, equalizer.implicitHeight)
-      anchors.verticalCenter: parent.verticalCenter
-
-      Text {
-        id: glyphText
-        textFormat: Text.PlainText
-        visible: !root.playing
-        anchors.centerIn: parent
-        text: root.glyph
-        color: Qt.alpha(root.foreground, root.muted ? 0.5 : 1.0)
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.title
-        horizontalAlignment: Text.AlignHCenter
-      }
-
-      Row {
-        id: equalizer
-        visible: root.playing
-        anchors.centerIn: parent
-        spacing: Style.space(2)
-
-        Repeater {
-          model: 3
-
-          Rectangle {
-            required property int index
-            width: Style.space(3)
-            height: Style.space(6)
-            radius: width / 2
-            anchors.verticalCenter: parent.verticalCenter
-            color: root.muted ? Qt.alpha(root.foreground, 0.5) : root.accent
-            transformOrigin: Item.Bottom
-            // A fixed stepped height keeps the equalizer readable when motion
-            // is disabled; the animation overrides scale only while running.
-            readonly property real restingScale: index === 0 ? 1.0 : (index === 1 ? 1.6 : 0.7)
-            scale: root.animate ? 1 : restingScale
-
-            SequentialAnimation on scale {
-              running: root.playing && root.visible && root.animate
-              loops: Animation.Infinite
-              PauseAnimation { duration: index * 140 }
-              NumberAnimation { to: 1.9; duration: 260; easing.type: Easing.InOutSine }
-              NumberAnimation { to: 0.55; duration: 300; easing.type: Easing.InOutSine }
-              NumberAnimation { to: 1.3; duration: 240; easing.type: Easing.InOutSine }
-              NumberAnimation { to: 1.0; duration: 220; easing.type: Easing.InOutSine }
-            }
-          }
-        }
-      }
+    width: Style.space(32); height: width
+    radius: Style.cornerRadius
+    color: Qt.alpha(root.current ? root.accent : root.foreground, 0.08)
+    Text {
+      anchors.centerIn: parent
+      visible: !root.playing
+      text: root.current ? (root.muted ? "\uf04c" : "\uf00c") : root.glyph
+      color: root.current ? root.accent : Qt.alpha(root.foreground, 0.75)
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.body
     }
-
-    Column {
-      width: parent.width - Style.space(22) - parent.spacing
-      spacing: Style.space(1)
-      anchors.verticalCenter: parent.verticalCenter
-
-      Text {
-        textFormat: Text.PlainText
-        text: root.name
-        color: root.foreground
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.body
-        font.bold: root.current
-        elide: Text.ElideRight
-        width: parent.width
-      }
-
-      Text {
-        textFormat: Text.PlainText
-        visible: text !== ""
-        text: root.description
-        color: Qt.alpha(root.foreground, 0.65)
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        elide: Text.ElideRight
-        width: parent.width
-      }
+    PlaybackWave {
+      anchors.centerIn: parent
+      width: Style.space(14); height: Style.space(14)
+      visible: root.playing
+      active: root.playing
+      animate: root.animate
+      ink: root.accent
     }
+  }
+  Column {
+    id: copy
+    x: Style.space(54)
+    width: parent.width - x - Style.space(12)
+    anchors.verticalCenter: parent.verticalCenter
+    spacing: Style.space(3)
+    Text {
+      width: parent.width
+      text: root.name; textFormat: Text.PlainText
+      color: root.foreground
+      font.family: root.fontFamily; font.pixelSize: Style.font.body
+      font.bold: root.current
+      elide: Text.ElideRight
+    }
+    Text {
+      width: parent.width
+      visible: text.length > 0
+      text: root.description; textFormat: Text.PlainText
+      color: Qt.alpha(root.foreground, 0.7)
+      font.family: root.fontFamily; font.pixelSize: Style.font.caption
+      elide: Text.ElideRight
+    }
+  }
+  MouseArea {
+    id: mouse
+    anchors.fill: parent; hoverEnabled: true
+    cursorShape: Qt.PointingHandCursor
+    onClicked: { root.forceActiveFocus(); root.activated() }
   }
 }

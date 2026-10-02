@@ -1,224 +1,165 @@
-# Lofi Focus ☕ · v2
+# Skylofi
 
-**Version 2 is here.** Your favourite audio, with a little rain.
-
-![Lofi Focus v2 — YouTube audio, radio, podcasts and nature in one native Omarchy panel](preview.png)
-
-A personal listening space in your Omarchy bar. Play lo-fi radio or a YouTube
-video, layer in nature sounds, and settle into work. The panel follows your
+A quiet listening space in your Omarchy bar. Pick a soundtrack, build a small
+nature mix, and keep listening while you work. The interface follows your
 Omarchy theme and fonts.
 
-| Listen | Make it yours |
-| --- | --- |
-| **YouTube audio** — save up to 40 links, resume and seek | **Nine offline nature loops** with individual volume |
-| **Lofi Girl** — Study, Synthwave, Jazz and Sleep live radios | **Master volume** and independent audio levels |
-| **Four direct lo-fi stations**, talk radio, ATC and podcasts | **VoxType ducking**, smooth fades and media keys |
-| A saved listening shelf that survives updates | Animated playback, folding sections and motion controls |
+This is the **3.0.0-alpha.1 experiment on `rustTest`**: a redesigned interface and
+a Rust controller. The existing marketplace release remains separate. Measured
+results and their limits are recorded in [the performance report](docs/PERFORMANCE.md).
 
-## See it in action
+![Skylofi listening interface](docs/redesign/listen.png)
 
-**YouTube:** open the tab → paste a link → save → play. Rain keeps playing;
-finite videos remember your position.
+## Your listening space
 
-![Save a YouTube link, play with rain, seek and pause](docs/youtube-guide.gif)
+- **Listen:** choose a radio or search saved YouTube links. Transport and Master
+  volume stay close to what is playing.
+- **Mix:** balance foreground audio, an optional voice and selected nature
+  sounds. Each sound has its own level and removal control.
+- **Settings:** adjust fades, dictation ducking and interface motion.
 
-**Build your atmosphere:** choose music → add rain or a fireplace → balance each
-sound → adjust the whole mix with Master.
+Motion responds to input and explains changes. Steam/glow effects and the busy
+decorative visualizer are replaced with restrained transitions and a compact
+playback indicator. Interface motion can be disabled independently of audio fades.
 
-![Choose radio, add nature sounds and adjust their volume](docs/nature-guide.gif)
-
-These short GIFs are scripted walkthroughs of the actual QML interface with
-sample data. The playback indicator is decorative, not an audio spectrum.
-
-## Install
-
-Add this repository through Omarchy's **Plugin → Add** flow, or run:
-
-```sh
-omarchy plugin add https://github.com/OBJLAKO/omarchy-lofi-focus --enable
-```
-
-Requires the Quickshell-based Omarchy shell with third-party plugin support.
-Uses Omarchy's bundled **mpv, Python, python-gobject, jq and util-linux**.
-YouTube and Lofi Girl stations also need **yt-dlp** and a supported JavaScript runtime (such as **Deno**).
-No API keys or accounts are needed. Radio and bundled nature sounds remain available when yt-dlp is absent.
-The repository root is the plugin; its permanent ID is `sky.lofi`.
-
-```sh
-omarchy plugin update sky.lofi
-```
+![Mix your soundtrack, voice and atmosphere](docs/redesign/mix.png)
 
 ## Controls
 
-- **Left click:** start your remembered selection, or pause/resume every channel.
-- **Right click:** choose music, voice and nature; adjust volume and VoxType ducking.
-- **Middle click:** next music station.
-- **Scroll:** adjust Master volume for music, voice and nature together (5% per step).
-- **Media keys:** control playback through MPRIS.
+- Left-click the bar icon to play or pause the remembered mix.
+- Right-click to open the listening panel.
+- Middle-click for the next source; scroll to change Master by 5%.
+- Use media keys through MPRIS.
+- Use Tab and keyboard controls in the panel; Escape dismisses it.
 
-Switching or reconnecting music leaves the voice and nature layers playing. Settings live outside
-the plugin directory, so changing a station or volume does not reload the shell.
+Choose radio in Listen, or add a public YouTube video to your library. Saved
+finite videos remember playback position and support seeking; live streams open
+at their live position. The library holds 40 entries. Removing an entry requires
+confirmation. YouTube takes the foreground channel and suspends the optional
+voice; nature sounds keep playing.
 
-## YouTube library
+## Sources and atmosphere
 
-Open the panel → **YouTube** → **Add link**. Paste a video link, optionally give
-it a name, and choose **Save to library**. Click a saved entry to listen. Its
-title fills in when playback starts if you did not supply a name. Adding the
-same video again updates its optional name instead of creating a duplicate.
+Four direct lo-fi stations and four Lofi Girl YouTube presets are included.
+Voice choices include talk radio, ATC and publisher-hosted podcasts. Podcasts
+queue up to 12 recent episodes from their RSS feed. Availability depends on the
+publisher and network; see [station sources](STATIONS.md).
 
-![YouTube listening shelf, rendered with sample entries](docs/youtube-preview.png)
+Rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a forest stream,
+birds and crickets are bundled locally. Add sounds from Mix and adjust their
+individual levels. Master scales the complete mix. The audio files retain their
+separate [credits and licenses](SOUNDS-LICENSES.md).
 
-- Public YouTube video, `youtu.be`, Shorts and `/live/` links are accepted.
-  Playlist-only links are not supported; a video link with playlist/tracking
-  parameters saves just that video.
-- YouTube replaces the foreground radio. Your nature sounds keep playing.
-  The additional voice channel is suspended while YouTube is selected; its
-  previous selection returns when you switch back to radio.
-- **Audio** changes the foreground level; **Master** changes the complete mix.
-  VoxType ducking applies to YouTube and nature together.
-- The progress bar seeks within finite videos; its adjacent buttons move
-  backward/forward 15 seconds. Live streams do not show a seek bar.
-- Finite-video position is remembered every ten seconds and on Pause, Stop
-  and source changes. Finished videos replay from the beginning. Live streams
-  are reopened at their live position.
-- Links and positions live in the existing external settings file. The library
-  holds up to 40 entries. Removing an entry requires a second click; removing
-  the active one pauses the mix without unexpectedly starting another source.
+Radio recovery uses bounded connection attempts and retry delays of 2, 5, 10,
+20 and 30 seconds. Pause suspends retries, Stop cancels them, and switching music
+keeps independent voice and nature layers. Retry is available when a source fails.
 
-Requires **yt-dlp** and its normal YouTube runtime dependencies. Keep yt-dlp and its supported JavaScript runtime up to date; radio/nature still work without yt-dlp. Playback uses mpv's built-in extractor integration, selects an audio-only
-format and does not save a video/audio download. It ignores user yt-dlp config
-and plugins, does not read browser cookies, and disables remote component
-installation. Restricted/private videos are not supported. If a public video
-fails, check availability, connection and installed yt-dlp updates, then Retry.
+VoxType ducking reduces the mix while recording, with a configurable retained
+volume (35% by default). Normal volume returns during transcription. Its standard
+state file and a custom state path in the default VoxType configuration are
+supported. With ducking enabled, automatic dictation Pause/Play requests are
+separated from ordinary media-key controls.
 
-Stopping or replacing a source also stops its pinned extractor/helper process
-tree. Network extraction does not hold the controller lock.
+![Focused playback, dictation and motion settings](docs/redesign/settings.png)
 
-[Development notes and next v2 ideas](docs/V2-ROADMAP.md).
+## Native experiment
 
-## Sounds
+The QML interface runs inside Omarchy's Quickshell host. A persistent local
+connection controls a Rust daemon; mpv decodes audio and yt-dlp extracts YouTube
+streams. Rust manages settings, IPC, recovery, fades, ducking, the library and
+MPRIS. Python sources remain as a comparison and regression reference.
 
-**Music:** four direct lo-fi stations: Lilo-Fi Radio (the default), Kalizo Lo-fi,
-Purrple Cat and Lofi Cafe · Chilling. They range from mellow jazz-influenced beats
-to dreamy instrumentals and play directly through mpv without extra packages.
-Their operators describe these direct streams as ad-free. Four additional **Lofi Girl** presets play the official Study beats, Synthwave, Jazz lofi and Sleep & chill YouTube live streams. They need yt-dlp, keep nature layers playing, and suspend the optional voice layer. Live stream IDs can change; see the official [Lofi Girl channel](https://www.youtube.com/@LofiGirl/streams) if a preset becomes unavailable. See [station sources and
-policies](STATIONS.md); external streams and policies can change.
+Runtime requirements: Omarchy's plugin-capable Quickshell shell, **mpv** and the
+session D-Bus. YouTube also needs **yt-dlp** and its supported JavaScript runtime,
+such as **Deno**. No account or API key is needed. Restricted/private videos are
+not supported. Keep the extractor/runtime current when provider behaviour changes.
 
-**Voices:** talk radio, ATC and ongoing developer/Linux podcasts: The Changelog,
-Changelog & Friends, LINUX Unplugged, Talk Python To Me and Linux Matters.
-Podcasts use the publisher's RSS feed and queue up to 12 recent episodes. Feeds
-are cached for up to six hours during a session; Stop clears resolved playlists. A new voice session starts at the latest episode;
-playback position is not saved. Streams depend on broadcaster availability and region.
+Normal Omarchy installation clones repository files and does not build Rust.
+The distribution therefore needs a ready executable at
+`bin/linux-x86_64/skylofi`, alongside its matching source and checksum. The plugin
+never downloads or compiles code at runtime. Other architectures need an explicit
+tested build. See [native distribution and marketplace review](docs/RUST-PUBLISHING.md).
 
-**Nature:** rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a forest
-stream, morning birds and night crickets. Use **+ Add sound** to combine layers. Only selected sounds appear in the panel,
-each with a visible volume slider and a remove button. These are direct levels,
-with no hidden Nature group multiplier. Your selection and levels are remembered.
-
-All nine loops ship locally (~14 MB total), with no further downloads.
-See [audio credits and licenses](SOUNDS-LICENSES.md).
-
-## Radio recovery
-
-If music fails to connect or stops making progress, the player retries the same
-station after 2, 5, 10, 20 and 30 seconds. Connection attempts time out instead
-of hanging indefinitely. The panel distinguishes connecting, reconnecting and
-unavailable music from actual playback. After five unsuccessful retries, use
-**Retry music** to try again or choose another station.
-
-Pause suspends recovery; Stop cancels it. Starting a different station cancels
-pending attempts for the previous one. Voice and nature layers keep their
-positions and volume during music recovery. External radio availability still
-depends on the station and network.
-
-## Quiet while dictating
-
-The **Quiet while dictating · VoxType** switch in **Settings** is enabled by default. While VoxType
-records, every channel smoothly drops to a configurable share of its chosen effective volume (35% by default). Normal volume
-returns when recording ends, including during transcription. With ducking enabled,
-VoxType’s automatic MPRIS Pause/Play requests are ignored so they do not override
-this volume adjustment. Manual media controls still work normally.
-
-No hotkey edits, hooks or system audio changes are needed. The plugin reads
-VoxType's state every 100 ms in the shared playback worker. With no running VoxType or no enabled state file,
-volume is unaffected. Standard `state_file = "auto"` and custom state paths in
-VoxType's default config are supported. A daemon using a separate config is not
-auto-discovered. The switch and retained-volume slider are accessible under Settings.
-
-## Remove
-
-Stop the player before removing its files:
+Build this experimental checkout with Rust 1.99.0:
 
 ```sh
-"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/sky.lofi/lofi-player" stop
-omarchy plugin remove sky.lofi
-```
-
-Your saved preferences remain in `~/.local/state/sky.lofi/` unless removed manually.
-
-## Storage and development
-
-Settings: `$XDG_STATE_HOME/sky.lofi/settings.json` (default
-`~/.local/state/sky.lofi/settings.json`). Runtime sockets, status, podcast playlists
-and logs: `$XDG_RUNTIME_DIR/sky.lofi/`. Legacy in-plugin settings migrate once.
-Playback never writes to the watched plugin directory.
-`logs/control.log` records transport commands and their source process, rotating
-at 64 KB. It contains no audio or dictated text and helps distinguish an external
-media-key pause from a radio disconnection.
-
-```sh
+scripts/build-native.sh
+scripts/package-native.sh
+sha256sum --check bin/SHA256SUMS
 omarchy plugin validate .
-dbus-run-session --config-file tests/dbus-no-activation.conf -- python -B -m unittest discover -s tests -p '*_test.py'
 ```
 
-YouTube integration tests use real mpv with a deterministic local HTTP audio
-server and a fake extractor, including seeking, EOF/replay and helper-process
-cancellation. A separate real public YouTube audio smoke test was also run.
-Integration tests use real mpv with silent local audio and isolated settings,
-runtime and D-Bus. They cover playback, concurrent settings, layered volume,
-VoxType transitions, competing MPRIS ownership, worker recovery and cancelled
-radio retries. D-Bus tests also cover VoxType auto-pause and ordinary media
-controls; Qt interaction tests cover dropdown clicks, search and keyboard input.
-Playback control uses a single serialized Python controller;
-network feed loading runs outside its control lock. Process termination uses
-Linux pidfds to avoid signalling an unrelated process after PID reuse. The feed
-resolver has a 12-second deadline and performs its own fetch without a child
-process group. An updated controller replaces its old worker automatically
-without restarting the audio layers.
+Build output lives outside the plugin's watched directory. The launcher uses
+the bundled executable; `SKYLOFI_NATIVE` can explicitly select a developer build.
+Isolated tests do not install or replace the current desktop plugin.
 
-Development happens on `dev`; `main` and release tags carry published versions.
-See the [v2 security and release review](docs/V2-SECURITY.md) and the
-[earlier development audit](DEV-AUDIT.md). Marketplace verification applies to
-an exact commit and requires a separate update review; a release does not
-automatically inherit the previous version’s Verified status.
+## Storage and testing
 
-The `Release checks` workflow runs backend integration tests and Bandit on pushes
-and pull requests targeting `dev` and `main`. It has read-only repository permissions.
-Native panel tests require an Omarchy Wayland session and run locally; the
-workflow does not claim to validate desktop rendering.
+Preferences and the library live in `$XDG_STATE_HOME/sky.lofi/settings.json`
+(normally `~/.local/state/sky.lofi/`). Runtime sockets, status and logs live in
+`$XDG_RUNTIME_DIR/sky.lofi/`. The plugin ID remains `sky.lofi` and existing
+preferences migrate without changing audio-layer balances.
+
+Use the silent, private D-Bus fixture for tests. It has no desktop-service
+activation directories and does not use the installed plugin's state or audio.
+
+```sh
+cargo fmt --manifest-path native/Cargo.toml -- --check
+cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings
+cargo test --locked --manifest-path native/Cargo.toml
+LOFI_TEST_BACKEND=rust SKYLOFI_NATIVE="$HOME/.cache/skylofi-rust-target/release/skylofi" \
+  PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- \
+  python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test
+```
+
+The performance harness uses real mpv with a silent output, local audio,
+isolated settings and 0/1/3/11-channel workloads. It records command timings,
+CPU and proportional memory. A resident Python adapter measures how much comes
+from removing process startup; Rust also changes caching and event handling, so
+the remaining difference cannot be attributed solely to the language.
+Reproduction commands and raw evidence are in [PERFORMANCE.md](docs/PERFORMANCE.md).
+
+In the silent three-channel fixture, control PSS fell from 29.4 to 4.9 MiB.
+A volume change reached mpv in a median 0.82 ms through the new persistent
+connection, versus 154.5 ms through the previous CLI. This measures local
+control, not speaker latency. Whole-audio CPU results vary with workload;
+mpv remains the largest memory cost.
+
+Local validation passed **9 Rust unit tests, 50 native integration/QA cases
+and 28 QML component/transport checks**, plus formatting and Clippy with
+warnings rejected. The retained Python reference has separate checks.
+
+The Rust CI workflow builds and tests the experiment with read-only repository
+permissions. It performs no release or marketplace publication. Publication of
+the existing listing needs an exact-commit update request and native-binary
+maintainer review after results and regressions are accepted.
 
 CLI examples:
 
 ```sh
 ./lofi-player toggle
 ./lofi-player vol master 50
+./lofi-player nature noise-rain on
+./lofi-player vol noise-rain 35
 ./lofi-player ducking off
-./lofi-player nature noise-tent-rain on
-./lofi-player nature noise-wind on
-./lofi-player vol noise-wind 40
-./lofi-player vol noise-tent-rain 35
 ./lofi-player stop
 ```
 
-## Credits and license
+Before uninstalling a deployed version, stop its player, then remove `sky.lofi`
+through Omarchy. Saved preferences remain outside the plugin directory.
 
-Plugin code: [MIT](LICENSE). Derived from
+## Credits
+
+Code: [MIT](LICENSE). Derived from
 [omarchy-lofiatc](https://github.com/dmltallen/omarchy-lofiatc) by dmltallen;
 upstream attribution is preserved. Maintained by [OBJLAKO](https://github.com/OBJLAKO).
 
-Radio and podcast audio are streamed from their publishers, not bundled or
-rehosted. Music sources are Lilo-Fi Radio, Kalizo Radio, Purrple Cat and Lofi Cafe;
-links and stream policies are in [STATIONS.md](STATIONS.md). Voice sources include
-[The Changelog](https://changelog.com/podcast) and the broadcasters listed in
-`stations.json`. Bundled nature recordings retain their separate licenses and
-attribution in [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md). The cover uses the native interface with sample listening entries.
+Radio and podcasts stream from their publishers. Nature recordings retain their
+individual attribution in [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md). Previews use
+sample listening data.
+
+The native executable includes dependency code under its original licenses;
+see [dependency notices](docs/native/THIRD-PARTY-NOTICES.txt) and the Rust standard
+library [copyright notices](docs/native/RUST-COPYRIGHT-library.html),
+[MIT license](docs/native/RUST-LICENSE-MIT) and
+[Apache license](docs/native/RUST-LICENSE-APACHE).

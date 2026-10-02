@@ -1,0 +1,53 @@
+name: Rust experiment checks
+on:
+  push:
+    branches: [rustTest, dev, main]
+  pull_request:
+    branches: [rustTest, dev, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rust-checks-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CARGO_TARGET_DIR: ${{ github.workspace }}/../skylofi-rust-target
+  RUST_BACKTRACE: '1'
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install build and silent integration dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mpv dbus python3-gi openssl build-essential pkg-config
+          rustup toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy
+          rustup override set 1.99.0
+      - name: Format, lint and unit tests
+        run: |
+          cargo fmt --manifest-path native/Cargo.toml -- --check
+          cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings
+          cargo test --locked --manifest-path native/Cargo.toml
+      - name: Build optimized native executable
+        run: cargo build --locked --release --manifest-path native/Cargo.toml
+      - name: Rust backend integration
+        env:
+          LOFI_TEST_BACKEND: rust
+          SKYLOFI_NATIVE: ${{ github.workspace }}/../skylofi-rust-target/release/skylofi
+        run: |
+          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test
+      - name: Python reference regressions
+        env:
+          LOFI_TEST_BACKEND: python
+        run: |
+          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v fade_test feed_test media_test mpris_test process_test recovery_test config_test youtube_test.YoutubeURLTest
+      - name: Check distribution layout and manifest
+        run: |
+          scripts/package-native.sh
+          test -x bin/linux-x86_64/skylofi
+          sha256sum --check bin/SHA256SUMS
+          python3 -c 'import json,pathlib; p=pathlib.Path("."); m=json.loads((p/"manifest.json").read_text()); assert m["id"] == "sky.lofi"; assert all((p/f).is_file() for f in m["entryPoints"].values()); assert not any(f.is_symlink() for f in p.rglob("*") if ".git" not in f.parts)'

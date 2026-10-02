@@ -10,6 +10,13 @@ Window {
   visible: false
 
   Lofi.Panel { id: panel }
+  QtObject {
+    id: voiceHost
+    property string statusJson: ""
+    property var lastArguments: []
+    signal actionFinished(var arguments, int exitCode, string message)
+    function runAction(args) { lastArguments = args }
+  }
 
   TestCase {
     name: "FocusPanel"
@@ -57,6 +64,38 @@ Window {
       compare(panel.sourceEnded, true)
       compare(panel.isPlaying, false)
       compare(panel.heroStatus, "Finished")
+    }
+
+    function test_voiceLoadingFailureAndRetryAreVisibleWithoutMixingSourceErrors() {
+      panel.showView(1)
+      panel.hostWidget = voiceHost
+      panel.applyStatus(JSON.stringify({running:true,paused:false,mix:true,
+        bg_station:"voice-test",bg_state:"loading",main_state:"playing"}))
+      compare(panel.voiceLoading, true)
+      compare(panel.voiceMessage, "Loading podcast…")
+      var status = findChild(panel, "voiceStatus")
+      verify(status !== null)
+      compare(status.text, "Loading podcast…")
+      panel.applyStatus(JSON.stringify({running:true,paused:false,mix:true,
+        bg_station:"voice-test",bg_state:"stopped",main_state:"playing",
+        bg_error:"Podcast unavailable: connection\nfailed"}))
+      compare(panel.voiceFailed, true)
+      compare(status.text, "Podcast unavailable: connection failed")
+      var retry = findChild(panel, "voiceRetry")
+      verify(retry !== null)
+      verify(retry.visible)
+      retry.clicked()
+      compare(voiceHost.lastArguments, ["bg", "voice-test"])
+      panel.applyStatus(JSON.stringify({running:true,paused:false,mix:true,
+        bg_station:"voice-test",bg_state:"stopped",main_state:"failed",
+        error:"Soundtrack connection failed"}))
+      compare(panel.voiceFailed, false)
+      compare(status.text, "")
+      panel.applyStatus(JSON.stringify({running:true,paused:false,mix:true,
+        bg_station:"voice-test",bg_state:"playing",main_state:"playing",
+        error:"Podcast unavailable: old failure"}))
+      compare(panel.voiceFailed, false)
+      panel.hostWidget = null
     }
 
     function test_closedPanelStopsDecorativeMotion() {

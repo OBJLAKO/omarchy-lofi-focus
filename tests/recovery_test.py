@@ -31,13 +31,21 @@ class RecoveryIntegrationTest(unittest.TestCase):
     def wait_for(self, predicate, timeout=7):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if predicate():
-                return
+            try:
+                if predicate():
+                    return
+            except player_test.PlaybackNotReady:
+                pass
             time.sleep(.05)
-        self.assertTrue(predicate(), 'Playback did not reach the expected state')
+        self.fail('Playback did not reach the expected state before the deadline')
 
     def wait_volume(self, channel, expected):
-        self.wait_for(lambda: abs(self.prop(channel, 'volume') - expected) < .1, 3)
+        state = self.status()
+        # A native command acknowledges asynchronous startup immediately. The
+        # configured fade can be 3 seconds, so its completion deadline must
+        # include that duration plus one scheduling/IPC margin.
+        fade = state['fade_seconds'] if state['fade_enabled'] else 0
+        self.wait_for(lambda: abs(self.prop(channel, 'volume') - expected) < .1, max(3, fade + .75))
 
     def wait_retry(self):
         self.wait_for(lambda: self.status()['retry_in'] > 0)

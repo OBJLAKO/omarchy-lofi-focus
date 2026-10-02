@@ -1,4 +1,4 @@
-name: Release checks
+name: Python reference checks
 on:
   push:
     branches: [dev, main]
@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  LOFI_TEST_BACKEND: python
+  LOFI_BACKEND: python
 jobs:
   backend:
     runs-on: ubuntu-24.04
@@ -26,5 +29,5 @@ jobs:
         run: |
           /usr/bin/python3 -m venv /tmp/lofi-bandit
           /tmp/lofi-bandit/bin/pip install bandit==1.9.4
-          /tmp/lofi-bandit/bin/bandit -ll -f json -o /tmp/bandit.json lofi_backend.py lofi_config.py lofi_youtube.py lofi_duck.py lofi_feed.py lofi_media.py lofi-player lofi-mpris lofi-feed lofi-ipc
+          /tmp/lofi-bandit/bin/bandit -ll -f json -o /tmp/bandit.json lofi_backend.py lofi_config.py lofi_youtube.py lofi_duck.py lofi_feed.py lofi_media.py lofi-mpris lofi-feed lofi-ipc
           /usr/bin/python3 -c 'import json; r=json.load(open("/tmp/bandit.json")); assert not r["errors"], r["errors"]'

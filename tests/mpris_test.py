@@ -66,7 +66,7 @@ class MprisIntegrationTest(unittest.TestCase):
                         PATH=str(self.bin) + ':' + os.environ['PATH'],
                         PYTHONHOME=sys.base_prefix,
                         TEST_ACTION_LOG=str(self.actions))
-        self.bus = self.start(['dbus-daemon', '--session', '--nofork', '--print-address=1'])
+        self.bus = self.start(['dbus-daemon', '--config-file=' + str(SOURCE/'tests/dbus-no-activation.conf'), '--nofork', '--print-address=1'])
         self.env['DBUS_SESSION_BUS_ADDRESS'] = self.read_line(self.bus).strip()
         self.bridge = self.start([sys.executable, str(SOURCE / 'lofi-mpris'), str(player)])
         deadline = time.monotonic() + 3

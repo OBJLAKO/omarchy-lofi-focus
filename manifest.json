@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "id": "sky.lofi",
-  "name": "Lofi Focus",
-  "version": "2.0.0",
+  "name": "Skylofi",
+  "version": "3.0.0-alpha.1",
   "author": "OBJLAKO",
   "license": "MIT",
-  "description": "v2: YouTube audio, Lofi Girl radios, podcasts and nine nature sounds. Save links, resume listening and build your own focus mix.",
+  "description": "A quiet listening space: radio, saved YouTube audio and a personal nature mix, with a native Rust controller.",
   "keywords": [
     "lofi",
     "youtube",
@@ -24,8 +24,8 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Lofi Focus",
-    "description": "v2: YouTube audio, Lofi Girl radios, podcasts and nine nature sounds. Save links, resume listening and build your own focus mix.",
+    "displayName": "Skylofi",
+    "description": "Radio, saved YouTube audio and a personal nature mix.",
     "category": "Media",
     "allowMultiple": false,
     "defaultSection": "right"

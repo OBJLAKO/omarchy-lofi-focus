@@ -58,7 +58,7 @@ Item {
     if not match:
         raise SystemExit(output or "Panel tests did not report results")
     totals = json.loads(match.group(1))
-    # Seven tests and initTestCase must finish before cleanupTestCase reports.
-    if result.returncode or totals != {"passed": 2, "failed": 0}:
+    # Five real layout/keyboard tests plus initTestCase must finish.
+    if result.returncode or totals != {"passed": 6, "failed": 0}:
         raise SystemExit(output)
-    print("1 rendered layout regression passed")
+    print("5 rendered layout and keyboard regressions passed")

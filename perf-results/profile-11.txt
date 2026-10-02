@@ -1,0 +1,43 @@
+Fri Oct  2 19:17:16 2026    perf-results/profile-11.pstats
+
+         71807 function calls (70358 primitive calls) in 0.158 seconds
+
+   Ordered by: cumulative time
+   List reduced from 863 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     72/1    0.001    0.000    0.158    0.158 {built-in method builtins.exec}
+        1    0.000    0.000    0.158    0.158 lofi-player:1(<module>)
+    105/1    0.001    0.000    0.152    0.152 <frozen importlib._bootstrap>:1360(_find_and_load)
+    105/1    0.001    0.000    0.152    0.152 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
+     95/1    0.001    0.000    0.152    0.152 <frozen importlib._bootstrap>:914(_load_unlocked)
+     70/1    0.000    0.000    0.151    0.151 <frozen importlib._bootstrap_external>:753(exec_module)
+    244/3    0.001    0.000    0.151    0.050 <frozen importlib._bootstrap>:483(_call_with_frames_removed)
+        1    0.000    0.000    0.115    0.115 lofi_backend.py:1(<module>)
+       70    0.001    0.000    0.062    0.001 <frozen importlib._bootstrap_external>:826(get_code)
+        5    0.000    0.000    0.041    0.008 <frozen importlib._bootstrap_external>:818(source_to_code)
+        5    0.041    0.008    0.041    0.008 {built-in method builtins.compile}
+       12    0.000    0.000    0.039    0.003 __init__.py:1(<module>)
+        1    0.000    0.000    0.020    0.020 lofi_feed.py:1(<module>)
+      105    0.001    0.000    0.018    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
+    19/15    0.000    0.000    0.018    0.001 {built-in method builtins.__import__}
+        1    0.000    0.000    0.017    0.017 request.py:1(<module>)
+      100    0.000    0.000    0.016    0.000 <frozen importlib._bootstrap_external>:1284(find_spec)
+      100    0.001    0.000    0.015    0.000 <frozen importlib._bootstrap_external>:1255(_get_spec)
+        1    0.000    0.000    0.013    0.013 shutil.py:1(<module>)
+      253    0.005    0.000    0.013    0.000 {built-in method builtins.__build_class__}
+      266    0.004    0.000    0.013    0.000 <frozen importlib._bootstrap_external>:1357(find_spec)
+       65    0.002    0.000    0.013    0.000 <frozen importlib._bootstrap_external>:509(_compile_bytecode)
+    25/21    0.000    0.000    0.013    0.001 <frozen importlib._bootstrap>:1409(_handle_fromlist)
+       38    0.000    0.000    0.012    0.000 __init__.py:287(compile)
+       38    0.000    0.000    0.012    0.000 __init__.py:330(_compile)
+       65    0.011    0.000    0.011    0.000 {built-in method marshal.loads}
+       37    0.000    0.000    0.011    0.000 _compiler.py:757(compile)
+       13    0.002    0.000    0.010    0.001 enum.py:881(_convert_)
+        1    0.000    0.000    0.010    0.010 client.py:1(<module>)
+       95    0.000    0.000    0.010    0.000 <frozen importlib._bootstrap>:809(module_from_spec)
+       19    0.003    0.000    0.009    0.000 enum.py:1741(convert_class)
+        1    0.000    0.000    0.009    0.009 socket.py:1(<module>)
+        1    0.000    0.000    0.007    0.007 glob.py:1(<module>)
+        1    0.000    0.000    0.007    0.007 subprocess.py:1(<module>)
+       20    0.000    0.000    0.006    0.000 <frozen importlib._bootstrap_external>:1051(create_module)

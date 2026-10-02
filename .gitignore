@@ -1,3 +1,5 @@
 __pycache__/
+native/target/
+perf-results/*.pstats
 *.pyc
 settings.json

@@ -3,20 +3,25 @@ import json
 import os
 from pathlib import Path
 import shutil
+import socket
 import subprocess
 import tempfile
 import time
 import unittest
 import wave
+from backend_fixture import SOURCE, prepare_backend
 
-SOURCE = Path(__file__).resolve().parents[1]
+
+class PlaybackNotReady(Exception):
+    """Audio IPC exists only after an asynchronous native spawn completes."""
+
 
 class PlayerTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.base = Path(self.temp.name)
         self.plugin = self.base / 'plugin'
-        shutil.copytree(SOURCE, self.plugin, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+        shutil.copytree(SOURCE, self.plugin, ignore=shutil.ignore_patterns('.git', '__pycache__', 'target', 'perf-results'))
         self.bin = self.base / 'bin'; self.bin.mkdir()
         (self.bin / 'mpv').write_text('#!/bin/sh\nexec /usr/bin/mpv --ao=null --loop-file=inf "$@"\n')
         (self.bin / 'mpv').chmod(0o755)
@@ -31,19 +36,28 @@ class PlayerTest(unittest.TestCase):
                 st['url'] = str(wav); st.pop('kind', None)
         (self.plugin / 'stations.json').write_text(json.dumps(catalog))
         runtime = self.base / 'runtime'; runtime.mkdir()
-        self.env = dict(os.environ, XDG_RUNTIME_DIR=str(runtime), XDG_STATE_HOME=str(self.base/'state'), PATH=str(self.bin)+':'+os.environ['PATH'])
+        self.env = dict(os.environ, XDG_RUNTIME_DIR=str(runtime), XDG_STATE_HOME=str(self.base/'state'), XDG_CONFIG_HOME=str(self.base/'config'), PATH=str(self.bin)+':'+os.environ['PATH'])
+        self.backend = prepare_backend(self.plugin, self.env)
         self.before = {str(p.relative_to(self.plugin)): p.read_bytes() for p in self.plugin.rglob("*") if p.is_file()}
 
     def action(self, *args, check=True):
-        return subprocess.run([str(self.plugin/'lofi-player'), *args], env=self.env, capture_output=True, text=True, timeout=20, check=check)
+        result = subprocess.run([str(self.plugin/'lofi-player'), *args], env=self.env, capture_output=True, text=True, timeout=20)
+        if check and result.returncode:
+            error = subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+            error.add_note('Backend stderr: ' + result.stderr)
+            raise error
+        return result
 
     def wait_for(self, predicate, timeout=6):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if predicate():
-                return
+            try:
+                if predicate():
+                    return
+            except PlaybackNotReady:
+                pass
             time.sleep(.05)
-        self.assertTrue(predicate(), 'Playback did not reach the expected state')
+        self.fail('Playback did not reach the expected state before the deadline')
 
     def wait_prop(self, channel, name, expected):
         self.wait_for(lambda: abs(self.prop(channel, name) - expected) < .1)
@@ -57,12 +71,31 @@ class PlayerTest(unittest.TestCase):
 
     def pid(self, channel): return (self.base/'runtime/sky.lofi'/f'{self.channel(channel)}.pid').read_text()
     def prop(self, channel, name):
-        out = subprocess.check_output([str(self.plugin/'lofi-ipc'),str(self.base/'runtime/sky.lofi/sockets'/f'{self.channel(channel)}.sock'),json.dumps({'command':['get_property',name]})],text=True)
-        return json.loads(out)['data']
+        path = self.base/'runtime/sky.lofi/sockets'/f'{self.channel(channel)}.sock'
+        try:
+            with socket.socket(socket.AF_UNIX) as client:
+                client.settimeout(.3)
+                client.connect(str(path))
+                client.sendall((json.dumps({'command':['get_property',name], 'request_id':73}) + '\n').encode())
+                with client.makefile() as replies:
+                    for _ in range(64):
+                        raw = replies.readline(1024 * 1024 + 1)
+                        if not raw or len(raw) > 1024 * 1024:
+                            raise PlaybackNotReady('audio IPC disconnected')
+                        reply = json.loads(raw)
+                        if reply.get('request_id') == 73:
+                            if reply.get('error') != 'success' or reply.get('data') is None:
+                                raise PlaybackNotReady('audio property not decoded yet: ' + name)
+                            return reply['data']
+        except (FileNotFoundError, ConnectionRefusedError, TimeoutError) as error:
+            raise PlaybackNotReady(str(error)) from error
+        raise PlaybackNotReady('audio IPC returned no matching reply')
 
     def tearDown(self):
         self.action('ui', 'fade', 'off', check=False)
         self.action('stop', check=False)
+        if self.backend == 'rust':
+            self.action('shutdown', check=False)
         self.temp.cleanup()
 
     def test_lifecycle_and_settings(self):
@@ -99,11 +132,7 @@ class PlayerTest(unittest.TestCase):
         self.action('ui', 'duckLevel', '20')
         self.action('ui', 'fade', 'off')
         def wait_volume(channel, expected):
-            deadline = time.monotonic() + 3
-            while time.monotonic() < deadline:
-                if abs(self.prop(channel, 'volume') - expected) < 0.1: return
-                time.sleep(0.05)
-            self.assertAlmostEqual(self.prop(channel, 'volume'), expected, places=1)
+            self.wait_for(lambda: abs(self.prop(channel, 'volume') - expected) < .1, timeout=3)
         state.write_text('recording')
         wait_volume('main', 13); wait_volume('bg', 4)
         self.assertEqual(self.status()['main_volume'], 65)
@@ -129,8 +158,9 @@ class PlayerTest(unittest.TestCase):
 
     def test_ambience_and_missing_media_bridge(self):
         self.action('play')
-        bridge = int(self.pid('mpris'))
-        os.kill(bridge, 15)
+        if self.backend == 'python':
+            bridge = int(self.pid('mpris'))
+            os.kill(bridge, 15)
         self.action('noise', 'noise-rain')
         self.action('vol', 'noise', '30')
         self.action('vol', 'master', '50')
@@ -150,11 +180,13 @@ class PlayerTest(unittest.TestCase):
         self.assertTrue(self.status()['noise_running'])
         self.assertEqual(self.status()['noise_station'], 'noise-wind')
         # Killing the volume worker must not break the next master adjustment.
-        worker = int(self.pid('volume')); os.kill(worker, 15); time.sleep(0.1)
+        if self.backend == 'python':
+            worker = int(self.pid('volume')); os.kill(worker, 15); time.sleep(0.1)
         self.action('vol', 'master', '0')
         self.wait_prop('main', 'volume', 0)
         self.wait_prop('noise', 'volume', 0)
-        self.assertNotEqual(self.pid('volume'), str(worker) + '\n')
+        if self.backend == 'python':
+            self.assertNotEqual(self.pid('volume'), str(worker) + '\n')
 
     def test_existing_mpris_owner_does_not_disable_volume(self):
         owner = subprocess.Popen(['python3', str(self.plugin/'lofi-mpris'), '/bin/true'], env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

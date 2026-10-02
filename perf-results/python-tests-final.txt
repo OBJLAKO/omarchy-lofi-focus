@@ -1,0 +1,104 @@
+test_completed_fade_does_not_restore_cached_old_volume (fade_test.FadeTest.test_completed_fade_does_not_restore_cached_old_volume) ... ok
+test_completed_pause_holds_silence_until_transport_commits (fade_test.FadeTest.test_completed_pause_holds_silence_until_transport_commits) ... ok
+test_corrupt_or_old_fade_is_discarded (fade_test.FadeTest.test_corrupt_or_old_fade_is_discarded) ... ok
+test_resume_with_fades_disabled_releases_silent_hold (fade_test.FadeTest.test_resume_with_fades_disabled_releases_silent_hold) ... ok
+test_start_muted_can_be_unmuted_after_fade (fade_test.FadeTest.test_start_muted_can_be_unmuted_after_fade) ... ok
+test_youtube_fade_waits_for_decoded_audio (fade_test.FadeTest.test_youtube_fade_waits_for_decoded_audio) ... ok
+test_existing_temporary_symlink_is_not_followed (fade_test.StorageTest.test_existing_temporary_symlink_is_not_followed) ... ok
+test_failed_save_is_reported (fade_test.StorageTest.test_failed_save_is_reported) ... ok
+test_dtd_and_entities_are_rejected_in_utf8_and_utf16 (feed_test.FeedTest.test_dtd_and_entities_are_rejected_in_utf8_and_utf16) ... ok
+test_feed_filters_enclosures_and_caps_playlist (feed_test.FeedTest.test_feed_filters_enclosures_and_caps_playlist) ... ok
+test_feed_url_and_redirect_reject_unsafe_schemes (feed_test.FeedTest.test_feed_url_and_redirect_reject_unsafe_schemes) ... ok
+test_oversized_feed_is_rejected (feed_test.FeedTest.test_oversized_feed_is_rejected) ... ok
+test_unavailable_feed_uses_existing_stale_cache (feed_test.FeedTest.test_unavailable_feed_uses_existing_stale_cache) ... ok
+test_unavailable_feed_without_cache_fails (feed_test.FeedTest.test_unavailable_feed_without_cache_fails) ... ok
+test_dictation_pause_and_resume_leave_playback_unchanged (media_test.DictationTransportTest.test_dictation_pause_and_resume_leave_playback_unchanged) ... ok
+test_ducking_disabled_preserves_voxtype_media_control (media_test.DictationTransportTest.test_ducking_disabled_preserves_voxtype_media_control) ... ok
+test_manual_controls_still_work_during_dictation (media_test.DictationTransportTest.test_manual_controls_still_work_during_dictation) ... ok
+test_voxtype_symlink_variant_and_other_executable (media_test.DictationTransportTest.test_voxtype_symlink_variant_and_other_executable) ... ok
+test_paired_resume_keeps_manual_stop_after_ducking_disabled (mpris_test.MprisIntegrationTest.test_paired_resume_keeps_manual_stop_after_ducking_disabled) ... ok
+test_regular_transport_works_during_dictation (mpris_test.MprisIntegrationTest.test_regular_transport_works_during_dictation) ... ok
+test_voxtype_pause_before_state_write_and_resume_on_new_connection (mpris_test.MprisIntegrationTest.test_voxtype_pause_before_state_write_and_resume_on_new_connection) ... ok
+test_voxtype_transport_works_with_ducking_disabled (mpris_test.MprisIntegrationTest.test_voxtype_transport_works_with_ducking_disabled) ... ok
+test_ambience_and_missing_media_bridge (player_test.PlayerTest.test_ambience_and_missing_media_bridge) ... ok
+test_concurrent_updates (player_test.PlayerTest.test_concurrent_updates) ... ok
+test_dictation_during_fade_still_ducks_audio (player_test.PlayerTest.test_dictation_during_fade_still_ducks_audio) ... ok
+test_existing_mpris_owner_does_not_disable_volume (player_test.PlayerTest.test_existing_mpris_owner_does_not_disable_volume) ... ok
+test_lifecycle_and_settings (player_test.PlayerTest.test_lifecycle_and_settings) ... ok
+test_music_disconnect_keeps_background_controllable (player_test.PlayerTest.test_music_disconnect_keeps_background_controllable) ... ok
+test_mute_during_fade_is_immediate_and_stays_muted (player_test.PlayerTest.test_mute_during_fade_is_immediate_and_stays_muted) ... ok
+test_nature_alone_can_pause_and_resume (player_test.PlayerTest.test_nature_alone_can_pause_and_resume) ... ok
+test_volume_after_completed_resume_uses_latest_mix (player_test.PlayerTest.test_volume_after_completed_resume_uses_latest_mix) ... ok
+test_voxtype_ducking (player_test.PlayerTest.test_voxtype_ducking) ... ok
+test_deleted_foreign_runtime_is_not_reaped (process_test.ProcessTerminationTest.test_deleted_foreign_runtime_is_not_reaped) ... ok
+test_exit_between_verification_and_signal_is_harmless (process_test.ProcessTerminationTest.test_exit_between_verification_and_signal_is_harmless) ... ok
+test_lost_pid_file_still_reaps_orphaned_audio (process_test.ProcessTerminationTest.test_lost_pid_file_still_reaps_orphaned_audio) ... ok
+test_normal_stop_signals_only_verified_process (process_test.ProcessTerminationTest.test_normal_stop_signals_only_verified_process) ... ok
+test_pid_file_replacement_after_identity_check_does_not_redirect_signal (process_test.ProcessTerminationTest.test_pid_file_replacement_after_identity_check_does_not_redirect_signal) ... ok
+test_pidfd_failure_never_falls_back_to_numeric_signals (process_test.ProcessTerminationTest.test_pidfd_failure_never_falls_back_to_numeric_signals) ... ok
+test_process_exit_during_pidfd_open (process_test.ProcessTerminationTest.test_process_exit_during_pidfd_open) ... ok
+test_reap_verifies_identity_before_signalling (process_test.ProcessTerminationTest.test_reap_verifies_identity_before_signalling) ... ok
+test_reused_pid_already_belongs_to_unrelated_process (process_test.ProcessTerminationTest.test_reused_pid_already_belongs_to_unrelated_process) ... ok
+test_sigkill_uses_same_handle_after_pid_file_replacement (process_test.ProcessTerminationTest.test_sigkill_uses_same_handle_after_pid_file_replacement) ... ok
+test_socket_marker_rejects_foreign_runtime_directory (process_test.ProcessTerminationTest.test_socket_marker_rejects_foreign_runtime_directory) ... ok
+test_layered_settings_migrate_without_changing_active_or_saved_loudness (recovery_test.RecoveryIntegrationTest.test_layered_settings_migrate_without_changing_active_or_saved_loudness) ... ok
+test_layers_keep_individual_balance_under_master_and_voxtype (recovery_test.RecoveryIntegrationTest.test_layers_keep_individual_balance_under_master_and_voxtype) ... ok
+test_legacy_nature_selection_migrates_once_with_same_volume (recovery_test.RecoveryIntegrationTest.test_legacy_nature_selection_migrates_once_with_same_volume) ... ok
+test_legacy_nature_volume_command_sets_only_enabled_layers_directly (recovery_test.RecoveryIntegrationTest.test_legacy_nature_volume_command_sets_only_enabled_layers_directly) ... ok
+test_new_station_replaces_pending_retry (recovery_test.RecoveryIntegrationTest.test_new_station_replaces_pending_retry) ... ok
+test_pause_cancels_retry_even_without_other_channels (recovery_test.RecoveryIntegrationTest.test_pause_cancels_retry_even_without_other_channels) ... ok
+test_reconnect_preserves_voice_and_each_nature_process (recovery_test.RecoveryIntegrationTest.test_reconnect_preserves_voice_and_each_nature_process) ... ok
+test_removed_paused_station_waits_for_resume_and_keeps_valid_default (recovery_test.RecoveryIntegrationTest.test_removed_paused_station_waits_for_resume_and_keeps_valid_default) ... ok
+test_removed_playing_station_replaces_audio_without_restarting_other_layers (recovery_test.RecoveryIntegrationTest.test_removed_playing_station_replaces_audio_without_restarting_other_layers) ... ok
+test_removed_stopped_station_does_not_start_audio (recovery_test.RecoveryIntegrationTest.test_removed_stopped_station_does_not_start_audio) ... ok
+test_slow_podcast_fetch_does_not_block_pause_or_stop (recovery_test.RecoveryIntegrationTest.test_slow_podcast_fetch_does_not_block_pause_or_stop) ... ok
+test_stop_cancels_retry_and_does_not_restart_from_status (recovery_test.RecoveryIntegrationTest.test_stop_cancels_retry_and_does_not_restart_from_status) ... ok
+test_update_replaces_old_worker_without_restarting_audio (recovery_test.RecoveryIntegrationTest.test_update_replaces_old_worker_without_restarting_audio) ... ok
+test_connecting_process_times_out_and_schedules_retry (recovery_test.RecoveryScheduleTest.test_connecting_process_times_out_and_schedules_retry) ... ok
+test_exhausted_retries_follow_backoff_and_do_not_restart_forever (recovery_test.RecoveryScheduleTest.test_exhausted_retries_follow_backoff_and_do_not_restart_forever) ... ok
+test_explicit_empty_layers_do_not_migrate_legacy_selection_again (recovery_test.RecoveryScheduleTest.test_explicit_empty_layers_do_not_migrate_legacy_selection_again) ... ok
+test_late_feed_result_cannot_override_stop_or_new_voice_choice (recovery_test.RecoveryScheduleTest.test_late_feed_result_cannot_override_stop_or_new_voice_choice) ... ok
+test_new_attempt_does_not_inherit_previous_stall_timestamp (recovery_test.RecoveryScheduleTest.test_new_attempt_does_not_inherit_previous_stall_timestamp) ... ok
+test_retry_budget_resets_only_after_stable_playback (recovery_test.RecoveryScheduleTest.test_retry_budget_resets_only_after_stable_playback) ... ok
+test_worker_refreshes_catalog_before_retry (recovery_test.RecoveryScheduleTest.test_worker_refreshes_catalog_before_retry) ... ok
+test_audio_resume_seek_and_nature_are_independent (youtube_test.YoutubeIntegrationTest.test_audio_resume_seek_and_nature_are_independent) ... ok
+test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature (youtube_test.YoutubeIntegrationTest.test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature) ... ok
+test_end_does_not_trigger_radio_recovery_and_can_replay (youtube_test.YoutubeIntegrationTest.test_end_does_not_trigger_radio_recovery_and_can_replay) ... ok
+test_remove_current_video_does_not_start_radio (youtube_test.YoutubeIntegrationTest.test_remove_current_video_does_not_start_radio) ... ok
+test_save_reopen_deduplicate_and_remove_without_playback (youtube_test.YoutubeIntegrationTest.test_save_reopen_deduplicate_and_remove_without_playback) ... ok
+test_seek_from_end_resumes_playback (youtube_test.YoutubeIntegrationTest.test_seek_from_end_resumes_playback) ... ok
+test_stop_cancels_slow_extraction (youtube_test.YoutubeIntegrationTest.test_stop_cancels_slow_extraction) ... ok
+test_rejects_other_hosts_schemes_playlist_and_option_injection (youtube_test.YoutubeURLTest.test_rejects_other_hosts_schemes_playlist_and_option_injection) ... ok
+test_saved_data_is_revalidated_deduplicated_and_bounded (youtube_test.YoutubeURLTest.test_saved_data_is_revalidated_deduplicated_and_bounded) ... ok
+test_supported_links_are_canonical_and_tracking_is_removed (youtube_test.YoutubeURLTest.test_supported_links_are_canonical_and_tracking_is_removed) ... ok
+test_corrupt_preferences_and_empty_catalog_leave_stop_usable (config_test.ConfigRecoveryTest.test_corrupt_preferences_and_empty_catalog_leave_stop_usable) ... ok
+test_bounded_and_typed_json (config_test.ConfigTest.test_bounded_and_typed_json) ... /usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpqgb_v32h/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpfh4gomql/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpigpu0y8o/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmptqot45_i/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpyvkzjkli/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpd4y74bld/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/usr/lib/python3.14/json/decoder.py:31: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpgyy3gjzi/runtime/sky.lofi/fades.lock' mode='w' encoding='UTF-8'>
+  def __init__(self, msg, doc, pos):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_ipc_rejects_excessive_or_non_object_responses (config_test.ConfigTest.test_ipc_rejects_excessive_or_non_object_responses) ... ok
+test_nested_preferences (config_test.ConfigTest.test_nested_preferences) ... ok
+test_transient_state_types (config_test.ConfigTest.test_transient_state_types) ... ok
+
+----------------------------------------------------------------------
+Ran 78 tests in 181.395s
+
+OK

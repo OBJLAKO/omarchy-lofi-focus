@@ -10,6 +10,7 @@ import subprocess
 import time
 import unittest
 import wave
+import signal
 
 import player_test
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -96,11 +97,19 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.extractor_log = self.base/'extractor-args.json'
         self.extractor_pid = self.base/'extractor.pid'
         self.helper_pid = self.base/'helper.pid'
+        self.tree_pids = self.base/'extractor-tree'
+        helper_code = (
+            'import os,sys,time,subprocess\nfrom pathlib import Path\n'
+            'depth=int(sys.argv[1]); directory=Path(sys.argv[2]); directory.mkdir(exist_ok=True)\n'
+            '(directory/str(depth)).write_text(str(os.getpid()))\n'
+            'if depth>0: subprocess.Popen([sys.executable,"-c",sys.argv[3],str(depth-1),str(directory),sys.argv[3]])\n'
+            'time.sleep(30)\n')
         script = ('#!/usr/bin/env python3\nimport json,os,sys,time,subprocess\nfrom pathlib import Path\n'
                   f'Path({str(self.extractor_log)!r}).write_text(json.dumps(sys.argv[1:]))\n'
                   f'Path({str(self.extractor_pid)!r}).write_text(str(os.getpid()))\n'
                   'if os.environ.get("LOFI_TEST_EXTRACTOR_DELAY"):\n'
-                  '    helper = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])\n'
+                  f'    code = {helper_code!r}\n'
+                  f'    helper = subprocess.Popen([sys.executable, "-c", code, os.environ.get("LOFI_TEST_EXTRACTOR_TREE", "0"), {str(self.tree_pids)!r}, code])\n'
                   f'    Path({str(self.helper_pid)!r}).write_text(str(helper.pid))\n'
                   'time.sleep(float(os.environ.get("LOFI_TEST_EXTRACTOR_DELAY", "0")))\n'
                   f'print({json.dumps(payload)!r})\n')
@@ -186,13 +195,25 @@ class YoutubeIntegrationTest(unittest.TestCase):
 
     def test_stop_cancels_slow_extraction(self):
         self.env['LOFI_TEST_EXTRACTOR_DELAY'] = '30'
+        self.env['LOFI_TEST_EXTRACTOR_TREE'] = '3'
+        if self.backend == 'rust':
+            self.action('shutdown')
         self.action('youtube-add', URL)
         before = time.monotonic()
         self.action('start', ID)
         self.assertLess(time.monotonic() - before, 2)
-        self.wait_for(self.helper_pid.exists)
+        self.wait_for(lambda: self.helper_pid.exists() and (self.tree_pids/'0').exists())
         helper_handle = os.pidfd_open(int(self.helper_pid.read_text()))
         self.addCleanup(os.close, helper_handle)
+        descendants = []
+        for path in self.tree_pids.iterdir():
+            descriptor = os.pidfd_open(int(path.read_text()))
+            descendants.append(descriptor)
+            def cleanup(handle=descriptor):
+                if not __import__('select').select([handle], [], [], 0)[0]:
+                    signal.pidfd_send_signal(handle, signal.SIGKILL)
+                os.close(handle)
+            self.addCleanup(cleanup)
         decoy = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
         self.addCleanup(lambda: (decoy.kill() if decoy.poll() is None else None, decoy.wait()))
         pid = int(self.extractor_pid.read_text())
@@ -204,6 +225,8 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.assertLess(time.monotonic() - before, 2)
         self.assertTrue(select.select([handle], [], [], 3)[0], 'Extractor survived Stop')
         self.assertTrue(select.select([helper_handle], [], [], 3)[0], 'Extractor helper survived Stop')
+        for descriptor in descendants:
+            self.assertTrue(select.select([descriptor], [], [], 3)[0], 'Nested extractor descendant survived Stop')
         self.assertIsNone(decoy.poll(), 'Unrelated process was terminated')
 
     def test_remove_current_video_does_not_start_radio(self):

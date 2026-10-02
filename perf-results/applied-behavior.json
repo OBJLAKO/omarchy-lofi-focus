@@ -1,0 +1,342 @@
+{
+  "native_binary_sha256": "c4faaebe80313affb9a6fac33cf99a9daab07d282870b264e450266b52a5bba2",
+  "method": "Same isolated local audio fixtures as perf_baseline; 3 actual mpv channels; VoxType idle/recording via fixture state; configured20% duck, master100, music65/voice20/rain25; physical properties within0.1; no command in timed duck path; configuredfade1s in,0.6s out; pause acknowledgement separate from committed pause, silence required on all channels.",
+  "cases": [
+    {
+      "backend": "python",
+      "host_before": {
+        "utc": "2026-10-02T14:23:25Z",
+        "loadavg": "7.47 6.13 5.72 2/2171 694531",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          982.373,
+          900.0,
+          900.039,
+          994.616,
+          899.967,
+          901.06,
+          624.088,
+          871.881,
+          900.002,
+          900.031,
+          900.082,
+          900.067
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "duck_down_applied": {
+        "n": 5,
+        "median_ms": 2304.294858,
+        "p95_ms": 2312.594718,
+        "min_ms": 2238.5153,
+        "max_ms": 2312.594718,
+        "raw_ms": [
+          2238.5153,
+          2304.294858,
+          2310.361649,
+          2298.012884,
+          2312.594718
+        ]
+      },
+      "duck_up_applied": {
+        "n": 5,
+        "median_ms": 2315.212806,
+        "p95_ms": 2327.35698,
+        "min_ms": 2298.339617,
+        "max_ms": 2327.35698,
+        "raw_ms": [
+          2313.823561,
+          2315.212806,
+          2327.35698,
+          2322.089053,
+          2298.339617
+        ]
+      },
+      "fade_pause_acknowledged": {
+        "n": 5,
+        "median_ms": 152.519853,
+        "p95_ms": 171.783595,
+        "min_ms": 139.210502,
+        "max_ms": 171.783595,
+        "raw_ms": [
+          139.210502,
+          139.833905,
+          170.714617,
+          171.783595,
+          152.519853
+        ]
+      },
+      "fade_pause_applied": {
+        "n": 5,
+        "median_ms": 932.440429,
+        "p95_ms": 934.44918,
+        "min_ms": 881.164057,
+        "max_ms": 934.44918,
+        "raw_ms": [
+          881.164057,
+          932.440429,
+          932.533096,
+          931.042933,
+          934.44918
+        ]
+      },
+      "fade_resume_applied": {
+        "n": 5,
+        "median_ms": 1177.284034,
+        "p95_ms": 1385.16242,
+        "min_ms": 1135.406872,
+        "max_ms": 1385.16242,
+        "raw_ms": [
+          1189.235203,
+          1177.284034,
+          1135.406872,
+          1172.64832,
+          1385.16242
+        ]
+      },
+      "volume_at_committed_pause": [
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        }
+      ],
+      "host_after": {
+        "utc": "2026-10-02T14:23:59Z",
+        "loadavg": "6.92 6.14 5.73 7/2209 705651",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1500.0,
+          1499.968,
+          1499.879,
+          1500.0,
+          1501.206,
+          1500.0,
+          1500.0,
+          1499.984,
+          1100.043,
+          1100.036,
+          1099.97,
+          1099.93
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      }
+    },
+    {
+      "backend": "rust",
+      "host_before": {
+        "utc": "2026-10-02T14:24:00Z",
+        "loadavg": "6.69 6.10 5.72 9/2216 705816",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          399.493,
+          789.076,
+          1261.53,
+          887.1,
+          4103.456,
+          4099.958,
+          4100.0,
+          4099.958,
+          3300.588,
+          3299.837,
+          3299.983,
+          3299.947
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "duck_down_applied": {
+        "n": 5,
+        "median_ms": 260.965969,
+        "p95_ms": 285.320649,
+        "min_ms": 253.323486,
+        "max_ms": 285.320649,
+        "raw_ms": [
+          285.320649,
+          253.323486,
+          273.233547,
+          260.230734,
+          260.965969
+        ]
+      },
+      "duck_up_applied": {
+        "n": 5,
+        "median_ms": 266.746657,
+        "p95_ms": 281.879662,
+        "min_ms": 255.678504,
+        "max_ms": 281.879662,
+        "raw_ms": [
+          269.689493,
+          266.746657,
+          266.089373,
+          281.879662,
+          255.678504
+        ]
+      },
+      "fade_pause_acknowledged": {
+        "n": 5,
+        "median_ms": 23.154205,
+        "p95_ms": 28.108917,
+        "min_ms": 17.63103,
+        "max_ms": 28.108917,
+        "raw_ms": [
+          23.154205,
+          24.42244,
+          28.108917,
+          17.63103,
+          22.008966
+        ]
+      },
+      "fade_pause_applied": {
+        "n": 5,
+        "median_ms": 626.535643,
+        "p95_ms": 635.016049,
+        "min_ms": 622.176065,
+        "max_ms": 635.016049,
+        "raw_ms": [
+          624.900439,
+          626.535643,
+          631.620773,
+          622.176065,
+          635.016049
+        ]
+      },
+      "fade_resume_applied": {
+        "n": 5,
+        "median_ms": 1034.503217,
+        "p95_ms": 1036.463977,
+        "min_ms": 1010.236672,
+        "max_ms": 1036.463977,
+        "raw_ms": [
+          1012.774574,
+          1036.463977,
+          1010.236672,
+          1036.185306,
+          1034.503217
+        ]
+      },
+      "volume_at_committed_pause": [
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.01296,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        },
+        {
+          "main": 0.0,
+          "bg": 0.0,
+          "nature-noise-rain": 0.0
+        }
+      ],
+      "host_after": {
+        "utc": "2026-10-02T14:24:11Z",
+        "loadavg": "6.42 6.06 5.72 5/2222 709171",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1299.107,
+          1298.781,
+          1119.248,
+          859.991,
+          1293.254,
+          1276.088,
+          1293.707,
+          1140.49,
+          1297.473,
+          1259.494,
+          1286.619,
+          1295.627
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[package]
+name = "skylofi"
+version = "3.0.0-alpha.1"
+edition = "2021"
+rust-version = "1.99"
+license = "MIT"
+description = "Event-driven Skylofi controller for the Omarchy shell"
+
+[dependencies]
+libc = "0.2"
+notify = "7.0"
+quick-xml = "0.37"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots"] }
+serde_json = "1.0"
+signal-hook = "0.3"
+toml = "0.8"
+url = "2.5"
+zbus = "4.4"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

@@ -1,0 +1,2 @@
+# Keep upstream license and copyright texts byte-for-byte, including formatting.
+docs/native/** -whitespace

@@ -59,6 +59,8 @@ Item {
   property int popupRowHeight: Style.spacing.popupRowHeight
   property int popupMinHeight: Style.spacing.searchablePopupMinHeight
   property bool showLabel: true
+  property bool showDescriptions: true
+  property bool animate: true
 
   // Panel-cursor flag. When true, the trigger renders the shared
   // hover-cursor state. Active Qt focus defaults to the same visuals.
@@ -96,7 +98,7 @@ Item {
 
   property var filtered: options
   function recomputeFiltered() {
-    var q = searchField.text.toLowerCase()
+    var q = searchField.text.trim().toLowerCase()
     if (!q) { filtered = options; return }
     var out = []
     for (var i = 0; i < options.length; i++) {
@@ -140,6 +142,8 @@ Item {
       borderSpec: _borderSpec
 
       activeFocusOnTab: true
+      Accessible.role: Accessible.ComboBox
+      Accessible.name: root.label || root.triggerLabel || root.currentLabel() || root.placeholderText
 
       HoverHandler {
         id: triggerHover
@@ -214,13 +218,18 @@ Item {
           borderSpec: root.popupBorderSpec
           radius: Style.cornerRadius
         }
+        enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: root.animate ? 110 : 0; easing.type: Easing.OutCubic } }
+        exit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: root.animate ? 80 : 0 } }
 
         onOpened: {
           searchField.text = ""
           root.recomputeFiltered()
           Qt.callLater(function() { searchField.forceActiveFocus() })
         }
-        onClosed: searchField.text = ""
+        onClosed: {
+          searchField.text = ""
+          if (root.visible) trigger.forceActiveFocus()
+        }
 
         contentItem: Column {
           spacing: 0
@@ -296,6 +305,7 @@ Item {
               model: root.filtered
               currentIndex: -1
               keyNavigationEnabled: false
+              onCurrentIndexChanged: if (currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
 
               function selectCurrent() {
                 if (currentIndex < 0 || currentIndex >= root.filtered.length) return
@@ -356,7 +366,7 @@ Item {
                   }
                   Text {
                     textFormat: Text.PlainText
-                    visible: text !== ""
+                    visible: root.showDescriptions && text !== ""
                     text: root.optionDescription(modelData)
                     color: Qt.darker(root.foreground, 1.5)
                     font.family: root.fontFamily

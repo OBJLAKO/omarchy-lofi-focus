@@ -1,3 +1,13 @@
+# 3.0.0-alpha.1 · rustTest experiment
+
+- Redesign listening around Listen, Mix and Settings, with clear layer controls,
+  searchable sources and keyboard access.
+- Replace decorative motion with focused transitions and an independent motion setting.
+- Move playback supervision and media integration into a persistent Rust controller.
+- Keep native QML, mpv audio and the existing `sky.lofi` preferences and library format.
+- Add controlled performance comparisons, actual native integration tests and an
+  explicit build/bundle workflow. Marketplace publication remains separate.
+
 # 2.0.0 — 2026-09-27
 
 - Four official Lofi Girl live presets: Study beats, Synthwave, Jazz lofi and Sleep & chill.

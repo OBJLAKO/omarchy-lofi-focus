@@ -1,0 +1,629 @@
+{
+  "method": "Actual QML; fixture playing state and animations on; offscreen Qt renderer, 478x696 viewport; disposable Quickshell process per scenario; installed Omarchy UI types and user theme; layer-shell plumbing replaced by visible/open Item; no backend, audio or BarWidget; private no-activation bus; two seconds settling. This measures process CPU and memory, not GPU, FPS or shared desktop shell memory.",
+  "cases": [
+    {
+      "phase": "closed",
+      "seconds": 1.0045009979999122,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 125.23046875,
+      "pss_mib_median": 57.03125,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 404844,
+          "cpu_ticks": 22,
+          "rss_kib": 128236,
+          "pss_kib": 58400,
+          "voluntary": 90,
+          "involuntary": 14
+        },
+        {
+          "start": 404844,
+          "cpu_ticks": 22,
+          "rss_kib": 128236,
+          "pss_kib": 58400,
+          "voluntary": 90,
+          "involuntary": 14
+        },
+        {
+          "start": 404844,
+          "cpu_ticks": 22,
+          "rss_kib": 128236,
+          "pss_kib": 58400,
+          "voluntary": 90,
+          "involuntary": 14
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T13:37:49Z",
+        "loadavg": "5.20 5.06 5.00 5/2017 411091",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1038.563,
+          816.786,
+          1078.105,
+          1081.937,
+          1034.583,
+          1030.218,
+          1063.906,
+          1024.685,
+          1051.204,
+          1070.092,
+          1066.799,
+          1066.92
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T13:37:50Z",
+        "loadavg": "5.19 5.06 5.00 4/2016 411151",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          822.264,
+          877.113,
+          873.262,
+          996.269,
+          916.963,
+          876.886,
+          769.755,
+          1299.737,
+          573.039,
+          1199.918,
+          675.685,
+          761.116
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-kv19_3mi/shell.qml\"\n  INFO: Shell ID: \"aa8afbd58602bef481c1198e37851d0f\" Path ID \"aa8afbd58602bef481c1198e37851d0f\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-kv19_3mi/runtime/quickshell/by-id/e2t8zi8amt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "python_original_qml"
+    },
+    {
+      "phase": "closed",
+      "seconds": 1.0036419159996512,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 124.375,
+      "pss_mib_median": 56.435546875,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 405174,
+          "cpu_ticks": 38,
+          "rss_kib": 127360,
+          "pss_kib": 57787,
+          "voluntary": 73,
+          "involuntary": 15
+        },
+        {
+          "start": 405174,
+          "cpu_ticks": 38,
+          "rss_kib": 127360,
+          "pss_kib": 57790,
+          "voluntary": 73,
+          "involuntary": 15
+        },
+        {
+          "start": 405174,
+          "cpu_ticks": 38,
+          "rss_kib": 127360,
+          "pss_kib": 57790,
+          "voluntary": 73,
+          "involuntary": 15
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T13:37:52Z",
+        "loadavg": "5.19 5.06 5.00 2/2034 411335",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1066.01,
+          951.688,
+          925.117,
+          976.164,
+          991.155,
+          952.704,
+          980.46,
+          1070.577,
+          799.768,
+          799.807,
+          800.076,
+          864.86
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T13:37:53Z",
+        "loadavg": "5.19 5.06 5.00 6/2023 411427",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1299.92,
+          1300.026,
+          1300.24,
+          1300.013,
+          1299.985,
+          1300.015,
+          1299.718,
+          1299.973,
+          1188.393,
+          1194.624,
+          1199.561,
+          1223.138
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-xdxyz6r9/shell.qml\"\n  INFO: Shell ID: \"42696dd22d30b98305db3eaf14bf695f\" Path ID \"42696dd22d30b98305db3eaf14bf695f\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-xdxyz6r9/runtime/quickshell/by-id/z8t82j8amt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "rust_redesign_qml"
+    },
+    {
+      "phase": "listening",
+      "seconds": 1.0049770890000218,
+      "cpu_one_core_percent": 19.900951194718797,
+      "rss_mib_median": 129.6640625,
+      "pss_mib_median": 61.0361328125,
+      "voluntary_context_switches_per_second": 219.90551070164267,
+      "samples": [
+        {
+          "start": 405520,
+          "cpu_ticks": 71,
+          "rss_kib": 132764,
+          "pss_kib": 62489,
+          "voluntary": 557,
+          "involuntary": 122
+        },
+        {
+          "start": 405520,
+          "cpu_ticks": 82,
+          "rss_kib": 132776,
+          "pss_kib": 62501,
+          "voluntary": 669,
+          "involuntary": 151
+        },
+        {
+          "start": 405520,
+          "cpu_ticks": 91,
+          "rss_kib": 132788,
+          "pss_kib": 62513,
+          "voluntary": 778,
+          "involuntary": 162
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T13:37:56Z",
+        "loadavg": "5.41 5.11 5.01 4/2048 411628",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          734.126,
+          870.856,
+          899.877,
+          899.981,
+          883.009,
+          920.424,
+          900.0,
+          900.0,
+          685.85,
+          776.551,
+          746.484,
+          699.97
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T13:37:57Z",
+        "loadavg": "5.41 5.11 5.01 6/2042 411681",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          725.176,
+          747.083,
+          707.052,
+          466.869,
+          723.509,
+          711.459,
+          796.454,
+          725.163,
+          709.358,
+          773.924,
+          817.242,
+          737.658
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-tmh2yhwb/shell.qml\"\n  INFO: Shell ID: \"017f749f0bb7610b3fec0cec2f8807e5\" Path ID \"017f749f0bb7610b3fec0cec2f8807e5\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-tmh2yhwb/runtime/quickshell/by-id/ngt85j8amt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "python_original_qml"
+    },
+    {
+      "phase": "listening",
+      "seconds": 1.0036652220001088,
+      "cpu_one_core_percent": 4.9817408139697985,
+      "rss_mib_median": 129.90625,
+      "pss_mib_median": 61.5087890625,
+      "voluntary_context_switches_per_second": 124.54352034924496,
+      "samples": [
+        {
+          "start": 405872,
+          "cpu_ticks": 35,
+          "rss_kib": 133024,
+          "pss_kib": 62985,
+          "voluntary": 356,
+          "involuntary": 31
+        },
+        {
+          "start": 405872,
+          "cpu_ticks": 38,
+          "rss_kib": 133024,
+          "pss_kib": 62985,
+          "voluntary": 419,
+          "involuntary": 35
+        },
+        {
+          "start": 405872,
+          "cpu_ticks": 40,
+          "rss_kib": 133024,
+          "pss_kib": 62985,
+          "voluntary": 481,
+          "involuntary": 40
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T13:37:59Z",
+        "loadavg": "5.30 5.09 5.01 5/2040 411833",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1689.904,
+          1623.545,
+          1605.563,
+          1633.078,
+          1628.126,
+          1654.49,
+          1629.677,
+          1615.228,
+          1250.218,
+          1215.456,
+          1286.854,
+          1235.343
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T13:38:00Z",
+        "loadavg": "5.30 5.09 5.01 2/2041 411892",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          919.477,
+          988.135,
+          915.973,
+          919.438,
+          999.01,
+          889.679,
+          820.559,
+          1100.064,
+          1031.563,
+          965.454,
+          958.906,
+          865.912
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-ssk_c0hg/shell.qml\"\n  INFO: Shell ID: \"3eb71873c1204f2fbcb036f98f4a90b6\" Path ID \"3eb71873c1204f2fbcb036f98f4a90b6\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-ssk_c0hg/runtime/quickshell/by-id/qnt89j8amt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "rust_redesign_qml"
+    },
+    {
+      "phase": "settings",
+      "seconds": 1.0055804720000197,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 127.40625,
+      "pss_mib_median": 59.099609375,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 406209,
+          "cpu_ticks": 48,
+          "rss_kib": 130464,
+          "pss_kib": 60518,
+          "voluntary": 59,
+          "involuntary": 54
+        },
+        {
+          "start": 406209,
+          "cpu_ticks": 48,
+          "rss_kib": 130464,
+          "pss_kib": 60518,
+          "voluntary": 59,
+          "involuntary": 54
+        },
+        {
+          "start": 406209,
+          "cpu_ticks": 48,
+          "rss_kib": 130464,
+          "pss_kib": 60518,
+          "voluntary": 59,
+          "involuntary": 54
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T13:38:03Z",
+        "loadavg": "5.30 5.09 5.01 3/2036 412041",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          677.603,
+          857.514,
+          3135.384,
+          1300.671,
+          2762.006,
+          400.0,
+          4099.352,
+          4100.0,
+          3300.396,
+          3289.577,
+          2769.946,
+          3303.048
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T13:38:04Z",
+        "loadavg": "5.30 5.09 5.01 9/2035 412099",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1100.056,
+          1100.0,
+          1080.731,
+          595.921,
+          1100.0,
+          996.959,
+          1100.011,
+          1099.917,
+          799.99,
+          799.968,
+          799.978,
+          801.799
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-rpf_gywx/shell.qml\"\n  INFO: Shell ID: \"f79e74e51de1dbad576630a60d6e261e\" Path ID \"f79e74e51de1dbad576630a60d6e261e\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-rpf_gywx/runtime/quickshell/by-id/ltt8cj8amt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "python_original_qml"
+    },
+    {
+      "phase": "settings",
+      "seconds": 1.0037795540001753,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 128.79296875,
+      "pss_mib_median": 60.6591796875,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 406567,
+          "cpu_ticks": 55,
+          "rss_kib": 131884,
+          "pss_kib": 62115,
+          "voluntary": 96,
+          "involuntary": 48
+        },
+        {
+          "start": 406567,
+          "cpu_ticks": 55,
+          "rss_kib": 131884,
+          "pss_kib": 62115,
+          "voluntary": 96,
+          "involuntary": 48
+        },
+        {
+          "start": 406567,
+          "cpu_ticks": 55,
+          "rss_kib": 131884,
+          "pss_kib": 62115,
+          "voluntary": 96,
+          "involuntary": 48
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T13:38:06Z",
+        "loadavg": "5.35 5.10 5.01 3/2040 412264",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          700.014,
+          700.136,
+          694.053,
+          749.326,
+          655.159,
+          672.473,
+          673.317,
+          596.549,
+          700.005,
+          699.914,
+          700.013,
+          720.646
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T13:38:07Z",
+        "loadavg": "5.35 5.10 5.01 5/2039 412317",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          899.981,
+          979.287,
+          979.083,
+          902.151,
+          932.042,
+          696.969,
+          969.161,
+          822.743,
+          997.987,
+          994.998,
+          993.88,
+          974.453
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-sdu0u4yn/shell.qml\"\n  INFO: Shell ID: \"d432d228c7991150f983288dfe55375b\" Path ID \"d432d228c7991150f983288dfe55375b\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-sdu0u4yn/runtime/quickshell/by-id/dzt8gj8amt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "rust_redesign_qml"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+Fri Oct  2 19:15:49 2026    perf-results/profile-3.pstats
+
+         70910 function calls (69461 primitive calls) in 0.071 seconds
+
+   Ordered by: cumulative time
+   List reduced from 863 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     72/1    0.000    0.000    0.071    0.071 {built-in method builtins.exec}
+        1    0.000    0.000    0.071    0.071 lofi-player:1(<module>)
+    105/1    0.000    0.000    0.061    0.061 <frozen importlib._bootstrap>:1360(_find_and_load)
+    105/1    0.000    0.000    0.061    0.061 <frozen importlib._bootstrap>:1308(_find_and_load_unlocked)
+     95/1    0.000    0.000    0.061    0.061 <frozen importlib._bootstrap>:914(_load_unlocked)
+     70/1    0.000    0.000    0.061    0.061 <frozen importlib._bootstrap_external>:753(exec_module)
+    244/3    0.000    0.000    0.061    0.020 <frozen importlib._bootstrap>:483(_call_with_frames_removed)
+        1    0.000    0.000    0.052    0.052 lofi_backend.py:1(<module>)
+       70    0.000    0.000    0.022    0.000 <frozen importlib._bootstrap_external>:826(get_code)
+        1    0.000    0.000    0.021    0.021 lofi_feed.py:1(<module>)
+        1    0.000    0.000    0.018    0.018 request.py:1(<module>)
+       12    0.000    0.000    0.013    0.001 __init__.py:1(<module>)
+        5    0.000    0.000    0.012    0.002 <frozen importlib._bootstrap_external>:818(source_to_code)
+        5    0.012    0.002    0.012    0.002 {built-in method builtins.compile}
+        1    0.000    0.000    0.011    0.011 client.py:1(<module>)
+    19/15    0.000    0.000    0.010    0.001 {built-in method builtins.__import__}
+        1    0.000    0.000    0.010    0.010 lofi_backend.py:1174(main)
+        1    0.000    0.000    0.007    0.007 lofi_backend.py:932(action)
+       38    0.000    0.000    0.007    0.000 __init__.py:287(compile)
+       38    0.000    0.000    0.007    0.000 __init__.py:330(_compile)
+        1    0.000    0.000    0.006    0.006 lofi_backend.py:868(status)
+       37    0.000    0.000    0.006    0.000 _compiler.py:757(compile)
+      105    0.000    0.000    0.006    0.000 <frozen importlib._bootstrap>:1243(_find_spec)
+       19    0.002    0.000    0.006    0.000 enum.py:1741(convert_class)
+      253    0.002    0.000    0.006    0.000 {built-in method builtins.__build_class__}
+       65    0.001    0.000    0.006    0.000 <frozen importlib._bootstrap_external>:509(_compile_bytecode)
+    25/21    0.000    0.000    0.006    0.000 <frozen importlib._bootstrap>:1409(_handle_fromlist)
+       65    0.005    0.000    0.005    0.000 {built-in method marshal.loads}
+      100    0.000    0.000    0.005    0.000 <frozen importlib._bootstrap_external>:1284(find_spec)
+      100    0.000    0.000    0.005    0.000 <frozen importlib._bootstrap_external>:1255(_get_spec)
+        1    0.000    0.000    0.004    0.004 parser.py:1(<module>)
+      266    0.001    0.000    0.004    0.000 <frozen importlib._bootstrap_external>:1357(find_spec)
+        1    0.000    0.000    0.004    0.004 ssl.py:1(<module>)
+        1    0.000    0.000    0.004    0.004 feedparser.py:1(<module>)
+       95    0.000    0.000    0.004    0.000 <frozen importlib._bootstrap>:809(module_from_spec)

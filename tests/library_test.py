@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix="lofi-library-test-") as directory:
     if not match:
         raise SystemExit(output or "Library tests did not report results")
     totals = json.loads(match.group(1))
-    # Four tests and initTestCase must finish before cleanupTestCase reports.
-    if result.returncode or totals != {"passed": 5, "failed": 0}:
+    # Seven tests and initTestCase must finish before cleanupTestCase reports.
+    if result.returncode or totals != {"passed": 8, "failed": 0}:
         raise SystemExit(output)
-    print("4 library interaction tests passed")
+    print("7 library interaction tests passed")

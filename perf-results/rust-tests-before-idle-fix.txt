@@ -1,0 +1,91 @@
+test_ambience_and_missing_media_bridge (player_test.PlayerTest.test_ambience_and_missing_media_bridge) ... ok
+test_concurrent_updates (player_test.PlayerTest.test_concurrent_updates) ... ok
+test_dictation_during_fade_still_ducks_audio (player_test.PlayerTest.test_dictation_during_fade_still_ducks_audio) ... ok
+test_existing_mpris_owner_does_not_disable_volume (player_test.PlayerTest.test_existing_mpris_owner_does_not_disable_volume) ... ok
+test_lifecycle_and_settings (player_test.PlayerTest.test_lifecycle_and_settings) ... ok
+test_music_disconnect_keeps_background_controllable (player_test.PlayerTest.test_music_disconnect_keeps_background_controllable) ... ok
+test_mute_during_fade_is_immediate_and_stays_muted (player_test.PlayerTest.test_mute_during_fade_is_immediate_and_stays_muted) ... ok
+test_nature_alone_can_pause_and_resume (player_test.PlayerTest.test_nature_alone_can_pause_and_resume) ... ok
+test_volume_after_completed_resume_uses_latest_mix (player_test.PlayerTest.test_volume_after_completed_resume_uses_latest_mix) ... ok
+test_voxtype_ducking (player_test.PlayerTest.test_voxtype_ducking) ... ok
+test_audio_resume_seek_and_nature_are_independent (youtube_test.YoutubeIntegrationTest.test_audio_resume_seek_and_nature_are_independent) ... ok
+test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature (youtube_test.YoutubeIntegrationTest.test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature) ... ok
+test_end_does_not_trigger_radio_recovery_and_can_replay (youtube_test.YoutubeIntegrationTest.test_end_does_not_trigger_radio_recovery_and_can_replay) ... ok
+test_remove_current_video_does_not_start_radio (youtube_test.YoutubeIntegrationTest.test_remove_current_video_does_not_start_radio) ... ok
+test_save_reopen_deduplicate_and_remove_without_playback (youtube_test.YoutubeIntegrationTest.test_save_reopen_deduplicate_and_remove_without_playback) ... ok
+test_seek_from_end_resumes_playback (youtube_test.YoutubeIntegrationTest.test_seek_from_end_resumes_playback) ... ok
+test_stop_cancels_slow_extraction (youtube_test.YoutubeIntegrationTest.test_stop_cancels_slow_extraction) ... ok
+test_deep_extractor_cancellation_does_not_leave_frozen_or_orphaned_helpers (native_test.NativeCancellationTest.test_deep_extractor_cancellation_does_not_leave_frozen_or_orphaned_helpers) ... ok
+test_delayed_feed_cannot_block_transport_or_restart_after_stop (native_test.NativeFeedTest.test_delayed_feed_cannot_block_transport_or_restart_after_stop) ... ok
+test_dtd_and_https_downgrade_redirect_do_not_start_audio (native_test.NativeFeedTest.test_dtd_and_https_downgrade_redirect_do_not_start_audio) ... ok
+test_https_feed_uses_os_trust_and_starts_real_background_audio (native_test.NativeFeedTest.test_https_feed_uses_os_trust_and_starts_real_background_audio) ... ok
+test_late_feed_does_not_replace_new_background_selection (native_test.NativeFeedTest.test_late_feed_does_not_replace_new_background_selection) ... ----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 50460)
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/server.py", line 500, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/server.py", line 488, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/home/sky/Projects/Pet/omarchy-lofi-rustTest/tests/native_test.py", line 408, in do_GET
+    self.end_headers()
+    ~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/server.py", line 602, in end_headers
+    self.flush_headers()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/server.py", line 606, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/ssl.py", line 1263, in sendall
+    v = self.send(byte_view[count:])
+  File "/usr/lib/python3.14/ssl.py", line 1232, in send
+    return self._sslobj.write(data)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+ok
+test_transport_properties_and_master_volume (native_test.NativeMprisTest.test_transport_properties_and_master_volume) ... ok
+test_voxtype_pair_preserves_manual_stop_and_respects_disabled_ducking (native_test.NativeMprisTest.test_voxtype_pair_preserves_manual_stop_and_respects_disabled_ducking) ... ok
+test_corrupt_preferences_and_empty_catalog_leave_stop_usable (native_test.NativeRecoveryTest.test_corrupt_preferences_and_empty_catalog_leave_stop_usable) ... ok
+test_layered_settings_migrate_without_changing_active_or_saved_loudness (native_test.NativeRecoveryTest.test_layered_settings_migrate_without_changing_active_or_saved_loudness) ... ok
+test_layers_keep_individual_balance_under_master_and_voxtype (native_test.NativeRecoveryTest.test_layers_keep_individual_balance_under_master_and_voxtype) ... ok
+test_legacy_nature_selection_migrates_once_with_same_volume (native_test.NativeRecoveryTest.test_legacy_nature_selection_migrates_once_with_same_volume) ... ok
+test_legacy_nature_volume_command_sets_only_enabled_layers_directly (native_test.NativeRecoveryTest.test_legacy_nature_volume_command_sets_only_enabled_layers_directly) ... ok
+test_new_station_replaces_pending_retry (native_test.NativeRecoveryTest.test_new_station_replaces_pending_retry) ... ok
+test_pause_cancels_retry_even_without_other_channels (native_test.NativeRecoveryTest.test_pause_cancels_retry_even_without_other_channels) ... ok
+test_reconnect_preserves_voice_and_each_nature_process (native_test.NativeRecoveryTest.test_reconnect_preserves_voice_and_each_nature_process) ... ok
+test_removed_paused_station_waits_for_resume_and_keeps_valid_default (native_test.NativeRecoveryTest.test_removed_paused_station_waits_for_resume_and_keeps_valid_default) ... ok
+test_removed_playing_station_replaces_audio_without_restarting_other_layers (native_test.NativeRecoveryTest.test_removed_playing_station_replaces_audio_without_restarting_other_layers) ... ok
+test_removed_stopped_station_does_not_start_audio (native_test.NativeRecoveryTest.test_removed_stopped_station_does_not_start_audio) ... ok
+test_stop_cancels_retry_and_does_not_restart_from_status (native_test.NativeRecoveryTest.test_stop_cancels_retry_and_does_not_restart_from_status) ... ok
+test_changed_native_executable_replaces_old_daemon (native_test.NativeStressTest.test_changed_native_executable_replaces_old_daemon) ... ok
+test_crashed_controller_reconnects_and_stop_reaps_all_previous_audio (native_test.NativeStressTest.test_crashed_controller_reconnects_and_stop_reaps_all_previous_audio) ... ok
+test_eleven_channels_keep_independent_mix_under_concurrent_clients (native_test.NativeStressTest.test_eleven_channels_keep_independent_mix_under_concurrent_clients) ... ok
+test_parallel_first_commands_create_one_live_controller (native_test.NativeStressTest.test_parallel_first_commands_create_one_live_controller) ... ok
+test_partial_or_oversized_control_client_does_not_block_other_clients (native_test.NativeStressTest.test_partial_or_oversized_control_client_does_not_block_other_clients) ... ok
+test_python_to_rust_transition_retires_legacy_services_at_same_root (native_test.NativeStressTest.test_python_to_rust_transition_retires_legacy_services_at_same_root) ... ok
+test_settings_save_failure_is_reported_to_control_client (native_test.NativeStressTest.test_settings_save_failure_is_reported_to_control_client) ... ok
+test_stdio_matches_reply_ids_amid_unsolicited_status_events (native_test.NativeStressTest.test_stdio_matches_reply_ids_amid_unsolicited_status_events) ... ok
+test_stop_ignores_replaced_pid_file_and_foreign_runtime_process (native_test.NativeStressTest.test_stop_ignores_replaced_pid_file_and_foreign_runtime_process) ... ok
+test_suspended_mpv_does_not_block_status_or_master_controls (native_test.NativeStressTest.test_suspended_mpv_does_not_block_status_or_master_controls) ... ok
+test_session_bus_appearing_after_controller_start_restores_mpris (qa_test.NativeMprisLifecycleTest.test_session_bus_appearing_after_controller_start_restores_mpris) ... ok
+test_session_bus_restart_restores_mpris_without_controller_restart (qa_test.NativeMprisLifecycleTest.test_session_bus_restart_restores_mpris_without_controller_restart) ... ok
+test_temporary_name_owner_releases_to_native_without_controller_restart (qa_test.NativeMprisLifecycleTest.test_temporary_name_owner_releases_to_native_without_controller_restart) ... ok
+
+----------------------------------------------------------------------
+Ran 49 tests in 106.134s
+
+OK

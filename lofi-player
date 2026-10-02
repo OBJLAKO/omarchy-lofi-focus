@@ -1,6 +1,16 @@
-#!/usr/bin/env python3
-"""CLI entry point; keep imports from writing into the watched plugin directory."""
-import sys
-sys.dont_write_bytecode = True
-from lofi_backend import main
-main()
+#!/bin/sh
+# Runtime never builds or downloads code. Development can select an explicit
+# prebuilt executable without changing the installed plugin.
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ "${LOFI_BACKEND:-rust}" = python ]; then
+  exec python3 -B -c 'import sys; sys.path.insert(0, sys.argv.pop(1)); from lofi_backend import main; main()' "$root" "$@"
+fi
+arch=$(uname -m)
+case "$arch" in x86_64|aarch64) ;; *) printf '%s\n' "Skylofi: unsupported architecture $arch" >&2; exit 1 ;; esac
+native=${SKYLOFI_NATIVE:-"$root/bin/linux-$arch/skylofi"}
+if [ ! -x "$native" ]; then
+  printf '%s\n' 'Skylofi native executable is missing. Run scripts/build-native.sh and set SKYLOFI_NATIVE to its printed path, or install a complete native release.' >&2
+  exit 1
+fi
+exec "$native" --root "$root" "$@"

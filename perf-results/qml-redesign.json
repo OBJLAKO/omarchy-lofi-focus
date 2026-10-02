@@ -1,0 +1,1993 @@
+{
+  "method": "Actual QML; fixture playing state and animations on; offscreen Qt renderer, 478x696 viewport; disposable Quickshell process per scenario; installed Omarchy UI types and user theme; layer-shell plumbing replaced by visible/open Item; no backend, audio or BarWidget; private no-activation bus; two seconds settling. This measures process CPU and memory, not GPU, FPS or shared desktop shell memory.",
+  "qml_source_sha256": {
+    "python_original_qml": {
+      "BarWidget.qml": "3370625356bf6de85add718a2cb817e88023675d53115832c218d2651eac5fc0",
+      "FocusDropdown.qml": "17941485a81f7f0ae94727463cabd6fe6a9cbaa1c1a38107172b89811edab968",
+      "MixerLevel.qml": "84436dec6cb6462b9cbeb0a9c947acd474bcd96f5d7b4c433bc8f3453c76ce46",
+      "Panel.qml": "fb2562fe87e0bd00c20248f8b116c7a979fb49434ad3b181686920e80a5f9b11",
+      "PlaybackWave.qml": "83a8dedfe581d9226cc9905d26a078412da463489fa7da78375c3ddc8a1f0423",
+      "StationRow.qml": "44fc75af17d243f3b642c7dd972a0cf1266ae019cb5e33e948ce343a2128be26",
+      "YoutubeLibrary.qml": "b0cf318a0bad570e2e2c6f51c3bce32d3675d05fcd7a9692404e709864659bd0"
+    },
+    "rust_redesign_qml": {
+      "BarWidget.qml": "dcbba4010ebeb8f253f76a202e23d5857f4cad8048b4450f8cd8801023697e0d",
+      "FocusDropdown.qml": "047c06c71155aa0941b5950db16748a21e4598d7363595add2d475f8c3088176",
+      "MixerLevel.qml": "ac5dd7eae47649b927543f6e508edd431b739933e9191ac2bc77a02ab48c8ae2",
+      "Panel.qml": "e82a3042f6a09043fd578bf745b640f6efcd7af41ecc7bb1987b1439db427d67",
+      "PlaybackWave.qml": "a9a3ad044aebb1d7f12d557ee123a741e589656288edf664b78216d6123077f0",
+      "StationRow.qml": "4920ab7b2c53b61959ae9865508b3217e2657e1d49a957682df0ac883939d6a7",
+      "YoutubeLibrary.qml": "7e0638580b8ce71eff035e74b821e6e2e9f36e5ccecabdaca5d908d0f23e3c77"
+    }
+  },
+  "cases": [
+    {
+      "phase": "closed",
+      "seconds": 15.004241113999342,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 146.66796875,
+      "pss_mib_median": 78.646484375,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80441,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80440,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80427,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80427,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80425,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80437,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80528,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80535,
+          "voluntary": 137,
+          "involuntary": 27
+        },
+        {
+          "start": 693270,
+          "cpu_ticks": 54,
+          "rss_kib": 150188,
+          "pss_kib": 80534,
+          "voluntary": 137,
+          "involuntary": 27
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T14:25:53Z",
+        "loadavg": "5.49 5.83 5.67 4/2165 715691",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          2229.573,
+          4115.589,
+          3571.101,
+          4100.03,
+          2168.422,
+          1263.444,
+          4100.0,
+          4100.041,
+          3301.208,
+          3298.643,
+          3301.058,
+          3299.866
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T14:26:08Z",
+        "loadavg": "5.36 5.79 5.66 5/2174 716656",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          506.292,
+          399.864,
+          940.716,
+          909.226,
+          986.042,
+          909.291,
+          856.721,
+          929.032,
+          845.186,
+          996.884,
+          933.434,
+          847.54
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-ytpnw_jt/shell.qml\"\n  INFO: Shell ID: \"6944705e2444d0ea15dd630f0e2a83ca\" Path ID \"6944705e2444d0ea15dd630f0e2a83ca\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-ytpnw_jt/runtime/quickshell/by-id/h2cf3raamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "python_original_qml"
+    },
+    {
+      "phase": "closed",
+      "seconds": 15.003747302000193,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 148.58984375,
+      "pss_mib_median": 80.931640625,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82875,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82875,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82875,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82875,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82875,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82826,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82845,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82875,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82876,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82873,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82873,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82873,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82873,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82874,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82874,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82873,
+          "voluntary": 78,
+          "involuntary": 17
+        },
+        {
+          "start": 695037,
+          "cpu_ticks": 26,
+          "rss_kib": 152156,
+          "pss_kib": 82874,
+          "voluntary": 78,
+          "involuntary": 17
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T14:26:11Z",
+        "loadavg": "5.25 5.76 5.65 3/2177 716814",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          695.722,
+          730.818,
+          400.079,
+          700.0,
+          657.649,
+          972.204,
+          599.991,
+          693.324,
+          684.641,
+          699.97,
+          1179.26,
+          964.241
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T14:26:26Z",
+        "loadavg": "5.53 5.79 5.66 5/2132 718687",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1099.986,
+          1099.985,
+          1078.628,
+          993.821,
+          1099.845,
+          1100.0,
+          1086.949,
+          1049.338,
+          1097.28,
+          1082.234,
+          1082.316,
+          1077.791
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-y68cqkuk/shell.qml\"\n  INFO: Shell ID: \"715a8eb7c6daa8bf4381ea8315fd2db5\" Path ID \"715a8eb7c6daa8bf4381ea8315fd2db5\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-y68cqkuk/runtime/quickshell/by-id/czcflraamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "rust_redesign_qml"
+    },
+    {
+      "phase": "listening",
+      "seconds": 15.006434758000069,
+      "cpu_one_core_percent": 18.791938561533623,
+      "rss_mib_median": 174.83203125,
+      "pss_mib_median": 106.4833984375,
+      "voluntary_context_switches_per_second": 214.37470337749528,
+      "samples": [
+        {
+          "start": 696774,
+          "cpu_ticks": 91,
+          "rss_kib": 180692,
+          "pss_kib": 110703,
+          "voluntary": 535,
+          "involuntary": 94
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 100,
+          "rss_kib": 180692,
+          "pss_kib": 110703,
+          "voluntary": 644,
+          "involuntary": 111
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 111,
+          "rss_kib": 180692,
+          "pss_kib": 110703,
+          "voluntary": 752,
+          "involuntary": 142
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 120,
+          "rss_kib": 180692,
+          "pss_kib": 110703,
+          "voluntary": 860,
+          "involuntary": 160
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 131,
+          "rss_kib": 180696,
+          "pss_kib": 110707,
+          "voluntary": 969,
+          "involuntary": 190
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 139,
+          "rss_kib": 180696,
+          "pss_kib": 110707,
+          "voluntary": 1077,
+          "involuntary": 203
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 148,
+          "rss_kib": 180696,
+          "pss_kib": 110707,
+          "voluntary": 1185,
+          "involuntary": 224
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 156,
+          "rss_kib": 180652,
+          "pss_kib": 110628,
+          "voluntary": 1297,
+          "involuntary": 244
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 167,
+          "rss_kib": 180688,
+          "pss_kib": 110699,
+          "voluntary": 1403,
+          "involuntary": 268
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 179,
+          "rss_kib": 180504,
+          "pss_kib": 110515,
+          "voluntary": 1509,
+          "involuntary": 293
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 188,
+          "rss_kib": 180672,
+          "pss_kib": 110683,
+          "voluntary": 1617,
+          "involuntary": 314
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 197,
+          "rss_kib": 178872,
+          "pss_kib": 108883,
+          "voluntary": 1725,
+          "involuntary": 331
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 207,
+          "rss_kib": 178740,
+          "pss_kib": 108751,
+          "voluntary": 1834,
+          "involuntary": 345
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 216,
+          "rss_kib": 178932,
+          "pss_kib": 108943,
+          "voluntary": 1944,
+          "involuntary": 353
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 227,
+          "rss_kib": 179080,
+          "pss_kib": 109091,
+          "voluntary": 2051,
+          "involuntary": 381
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 235,
+          "rss_kib": 179212,
+          "pss_kib": 109223,
+          "voluntary": 2159,
+          "involuntary": 397
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 245,
+          "rss_kib": 179280,
+          "pss_kib": 109291,
+          "voluntary": 2262,
+          "involuntary": 432
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 255,
+          "rss_kib": 179324,
+          "pss_kib": 109335,
+          "voluntary": 2369,
+          "involuntary": 451
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 265,
+          "rss_kib": 178736,
+          "pss_kib": 108747,
+          "voluntary": 2476,
+          "involuntary": 468
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 274,
+          "rss_kib": 178848,
+          "pss_kib": 108859,
+          "voluntary": 2584,
+          "involuntary": 476
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 284,
+          "rss_kib": 178904,
+          "pss_kib": 108914,
+          "voluntary": 2692,
+          "involuntary": 493
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 293,
+          "rss_kib": 178904,
+          "pss_kib": 108915,
+          "voluntary": 2801,
+          "involuntary": 516
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 305,
+          "rss_kib": 178904,
+          "pss_kib": 108915,
+          "voluntary": 2909,
+          "involuntary": 548
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 312,
+          "rss_kib": 179028,
+          "pss_kib": 109039,
+          "voluntary": 3019,
+          "involuntary": 558
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 323,
+          "rss_kib": 178740,
+          "pss_kib": 108751,
+          "voluntary": 3127,
+          "involuntary": 586
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 333,
+          "rss_kib": 178848,
+          "pss_kib": 108859,
+          "voluntary": 3236,
+          "involuntary": 610
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 340,
+          "rss_kib": 178924,
+          "pss_kib": 108934,
+          "voluntary": 3348,
+          "involuntary": 634
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 348,
+          "rss_kib": 179008,
+          "pss_kib": 109018,
+          "voluntary": 3454,
+          "involuntary": 647
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 357,
+          "rss_kib": 179020,
+          "pss_kib": 108966,
+          "voluntary": 3562,
+          "involuntary": 658
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 367,
+          "rss_kib": 179000,
+          "pss_kib": 108998,
+          "voluntary": 3671,
+          "involuntary": 670
+        },
+        {
+          "start": 696774,
+          "cpu_ticks": 373,
+          "rss_kib": 179000,
+          "pss_kib": 109011,
+          "voluntary": 3752,
+          "involuntary": 691
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T14:26:28Z",
+        "loadavg": "5.53 5.79 5.66 8/2138 718851",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          889.351,
+          894.666,
+          868.559,
+          868.795,
+          587.306,
+          868.706,
+          848.675,
+          868.84,
+          784.006,
+          884.268,
+          686.848,
+          895.299
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T14:26:43Z",
+        "loadavg": "5.39 5.75 5.65 4/2135 719752",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          791.073,
+          400.0,
+          780.166,
+          783.028,
+          793.818,
+          804.676,
+          727.871,
+          730.164,
+          818.767,
+          819.382,
+          840.251,
+          818.859
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-mm0tpvcd/shell.qml\"\n  INFO: Shell ID: \"68f1f423e1d4c05c60110d2df6ef59ec\" Path ID \"68f1f423e1d4c05c60110d2df6ef59ec\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-mm0tpvcd/runtime/quickshell/by-id/ojef2saamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "python_original_qml"
+    },
+    {
+      "phase": "listening",
+      "seconds": 15.003649020000012,
+      "cpu_one_core_percent": 4.065677617404033,
+      "rss_mib_median": 169.359375,
+      "pss_mib_median": 101.2568359375,
+      "voluntary_context_switches_per_second": 124.90294844287143,
+      "samples": [
+        {
+          "start": 698532,
+          "cpu_ticks": 52,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 380,
+          "involuntary": 45
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 54,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 442,
+          "involuntary": 48
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 56,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 506,
+          "involuntary": 53
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 58,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 568,
+          "involuntary": 58
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 60,
+          "rss_kib": 173544,
+          "pss_kib": 103807,
+          "voluntary": 632,
+          "involuntary": 58
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 61,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 695,
+          "involuntary": 64
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 63,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 758,
+          "involuntary": 73
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 65,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 821,
+          "involuntary": 82
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 67,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 884,
+          "involuntary": 90
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 70,
+          "rss_kib": 173544,
+          "pss_kib": 103807,
+          "voluntary": 947,
+          "involuntary": 96
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 72,
+          "rss_kib": 173544,
+          "pss_kib": 103808,
+          "voluntary": 1010,
+          "involuntary": 100
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 74,
+          "rss_kib": 173544,
+          "pss_kib": 103807,
+          "voluntary": 1073,
+          "involuntary": 105
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 75,
+          "rss_kib": 173544,
+          "pss_kib": 103807,
+          "voluntary": 1136,
+          "involuntary": 112
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 77,
+          "rss_kib": 173424,
+          "pss_kib": 103687,
+          "voluntary": 1199,
+          "involuntary": 118
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 79,
+          "rss_kib": 173424,
+          "pss_kib": 103690,
+          "voluntary": 1262,
+          "involuntary": 127
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 82,
+          "rss_kib": 173428,
+          "pss_kib": 103694,
+          "voluntary": 1325,
+          "involuntary": 133
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 83,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 1388,
+          "involuntary": 142
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 84,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 1450,
+          "involuntary": 145
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 87,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 1514,
+          "involuntary": 151
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 90,
+          "rss_kib": 173296,
+          "pss_kib": 103562,
+          "voluntary": 1576,
+          "involuntary": 154
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 92,
+          "rss_kib": 173296,
+          "pss_kib": 103562,
+          "voluntary": 1640,
+          "involuntary": 157
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 94,
+          "rss_kib": 173304,
+          "pss_kib": 103570,
+          "voluntary": 1703,
+          "involuntary": 163
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 96,
+          "rss_kib": 173304,
+          "pss_kib": 103570,
+          "voluntary": 1766,
+          "involuntary": 167
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 98,
+          "rss_kib": 173304,
+          "pss_kib": 103570,
+          "voluntary": 1828,
+          "involuntary": 171
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 100,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 1892,
+          "involuntary": 174
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 103,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 1955,
+          "involuntary": 178
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 105,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 2018,
+          "involuntary": 185
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 107,
+          "rss_kib": 173300,
+          "pss_kib": 103566,
+          "voluntary": 2081,
+          "involuntary": 190
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 109,
+          "rss_kib": 173308,
+          "pss_kib": 103574,
+          "voluntary": 2144,
+          "involuntary": 192
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 111,
+          "rss_kib": 173308,
+          "pss_kib": 103574,
+          "voluntary": 2207,
+          "involuntary": 195
+        },
+        {
+          "start": 698532,
+          "cpu_ticks": 113,
+          "rss_kib": 173308,
+          "pss_kib": 103574,
+          "voluntary": 2254,
+          "involuntary": 199
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T14:26:46Z",
+        "loadavg": "5.28 5.72 5.64 4/2136 719939",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          600.115,
+          599.985,
+          599.857,
+          599.987,
+          600.922,
+          600.045,
+          600.006,
+          600.018,
+          600.002,
+          600.04,
+          600.007,
+          599.987
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T14:27:01Z",
+        "loadavg": "4.69 5.57 5.59 5/2182 720898",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          849.668,
+          894.686,
+          973.028,
+          774.569,
+          889.244,
+          597.923,
+          863.117,
+          996.18,
+          664.961,
+          924.848,
+          766.621,
+          776.104
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-zhdiuulz/shell.qml\"\n  INFO: Shell ID: \"cdfe86710b507c07ac725b0682715d50\" Path ID \"cdfe86710b507c07ac725b0682715d50\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-zhdiuulz/runtime/quickshell/by-id/9dffksaamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "rust_redesign_qml"
+    },
+    {
+      "phase": "settings",
+      "seconds": 15.003785929000514,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 147.72265625,
+      "pss_mib_median": 79.486328125,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81388,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81393,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81387,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81387,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81388,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        },
+        {
+          "start": 700282,
+          "cpu_ticks": 53,
+          "rss_kib": 151268,
+          "pss_kib": 81394,
+          "voluntary": 64,
+          "involuntary": 47
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T14:27:04Z",
+        "loadavg": "4.69 5.57 5.59 14/2179 721065",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          400.0,
+          1200.0,
+          1199.955,
+          1200.0,
+          926.747,
+          400.0,
+          1150.303,
+          998.785,
+          1026.866,
+          916.251,
+          1120.451,
+          922.444
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T14:27:19Z",
+        "loadavg": "4.56 5.49 5.57 4/2162 721974",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          847.844,
+          751.295,
+          397.675,
+          863.314,
+          765.495,
+          700.268,
+          852.379,
+          844.288,
+          970.641,
+          692.792,
+          482.085,
+          659.233
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-v429blzd/shell.qml\"\n  INFO: Shell ID: \"e69b1b7c69ae04295522cdb9806f2588\" Path ID \"e69b1b7c69ae04295522cdb9806f2588\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-v429blzd/runtime/quickshell/by-id/29gf1taamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "python_original_qml"
+    },
+    {
+      "phase": "settings",
+      "seconds": 15.005716196000321,
+      "cpu_one_core_percent": 0.0,
+      "rss_mib_median": 149.08203125,
+      "pss_mib_median": 81.2021484375,
+      "voluntary_context_switches_per_second": 0.0,
+      "samples": [
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83153,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83153,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83153,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83150,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83150,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83150,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83150,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83144,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83147,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83139,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83144,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83088,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83088,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83088,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83144,
+          "voluntary": 106,
+          "involuntary": 17
+        },
+        {
+          "start": 702044,
+          "cpu_ticks": 37,
+          "rss_kib": 152660,
+          "pss_kib": 83151,
+          "voluntary": 106,
+          "involuntary": 17
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T14:27:21Z",
+        "loadavg": "4.51 5.47 5.56 4/2162 722129",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          655.166,
+          828.168,
+          699.552,
+          756.103,
+          879.818,
+          700.0,
+          537.459,
+          399.333,
+          792.321,
+          899.986,
+          772.926,
+          700.046
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T14:27:36Z",
+        "loadavg": "5.50 5.63 5.61 6/2137 723483",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          686.213,
+          841.122,
+          797.135,
+          1200.0,
+          843.238,
+          720.509,
+          809.889,
+          784.001,
+          944.884,
+          959.239,
+          884.384,
+          997.129
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-ihdjvu_e/shell.qml\"\n  INFO: Shell ID: \"5e5047b2fb512fbc264154b2f686d94d\" Path ID \"5e5047b2fb512fbc264154b2f686d94d\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-ihdjvu_e/runtime/quickshell/by-id/z2hfjtaamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "source": "rust_redesign_qml"
+    }
+  ]
+}
