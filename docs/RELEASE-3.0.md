@@ -52,17 +52,23 @@ Rust controller migrates existing settings and replaces legacy controller
 services through the tested handoff. The bundled command never invokes the
 legacy Python backend unless a developer explicitly selects it.
 
-The release validation covers format/Clippy, ten Rust unit cases, 53 native
+The release validation covers format/Clippy, ten Rust unit cases, 54 native
 integration/QA cases and real Rust/QML transport. The unchanged QML snapshot has
 25 component cases and [90 rendered interaction cases across six variants](DESIGN-V2-REVIEW.md),
 including custom fonts, compact windows, light palette and reduced motion.
 The marketplace's exact-commit static check and native-binary maintainer review
 remain separate from these tests.
 
-The [distribution CI run](https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37033064212)
+The [distribution CI run](https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37036842395)
 passed all build, native and frozen Python-reference checks. Its exact packaged
-executable was then checked on Omarchy with [53 silent integration/QA cases](../perf-results/release-native-tests.txt)
+executable was then checked on Omarchy with [54 silent integration/QA cases](../perf-results/release-native-tests.txt)
 and [three real Rust/QML transport cases](../perf-results/release-widget-tests.txt).
+A controlled 2.2-second cold mpv launch checks fades, scaled mix levels and
+retention of the original PID. Stop before IPC and Stop followed by immediate
+Play verify prompt release of cancelled connectors and absence of late audio.
+The connection startup grace is bounded to 15 seconds and follows the original
+process through a duplicated pidfd. Normal ready sockets connect immediately.
+
 The reviewed QML source hashes still match. The final
 [local marketplace preflight](../perf-results/marketplace-release.json) has zero
 findings and one review-required capability: the bundled executable.

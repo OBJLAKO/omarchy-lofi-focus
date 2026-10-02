@@ -20,7 +20,7 @@ test_stop_cancels_slow_extraction (youtube_test.YoutubeIntegrationTest.test_stop
 test_unknown_saved_source_does_not_guess_recording_from_duration (youtube_test.YoutubeIntegrationTest.test_unknown_saved_source_does_not_guess_recording_from_duration) ... ok
 test_deep_extractor_cancellation_does_not_leave_frozen_or_orphaned_helpers (native_test.NativeCancellationTest.test_deep_extractor_cancellation_does_not_leave_frozen_or_orphaned_helpers) ... ok
 test_delayed_feed_cannot_block_transport_or_restart_after_stop (native_test.NativeFeedTest.test_delayed_feed_cannot_block_transport_or_restart_after_stop) ... ----------------------------------------
-Exception occurred during processing of request from ('127.0.0.1', 57090)
+Exception occurred during processing of request from ('127.0.0.1', 35818)
 Traceback (most recent call last):
   File "/usr/lib/python3.14/socketserver.py", line 697, in process_request_thread
     self.finish_request(request, client_address)
@@ -37,7 +37,7 @@ Traceback (most recent call last):
   File "/usr/lib/python3.14/http/server.py", line 488, in handle_one_request
     method()
     ~~~~~~^^
-  File "/home/sky/Projects/Pet/omarchy-lofi-release/tests/native_test.py", line 433, in do_GET
+  File "/home/sky/Projects/Pet/omarchy-lofi-release/tests/native_test.py", line 510, in do_GET
     self.end_headers()
     ~~~~~~~~~~~~~~~~^^
   File "/usr/lib/python3.14/http/server.py", line 602, in end_headers
@@ -60,7 +60,7 @@ ok
 test_dtd_and_https_downgrade_redirect_do_not_start_audio (native_test.NativeFeedTest.test_dtd_and_https_downgrade_redirect_do_not_start_audio) ... ok
 test_https_feed_uses_os_trust_and_starts_real_background_audio (native_test.NativeFeedTest.test_https_feed_uses_os_trust_and_starts_real_background_audio) ... ok
 test_late_feed_does_not_replace_new_background_selection (native_test.NativeFeedTest.test_late_feed_does_not_replace_new_background_selection) ... ----------------------------------------
-Exception occurred during processing of request from ('127.0.0.1', 58084)
+Exception occurred during processing of request from ('127.0.0.1', 51778)
 Traceback (most recent call last):
   File "/usr/lib/python3.14/socketserver.py", line 697, in process_request_thread
     self.finish_request(request, client_address)
@@ -77,7 +77,7 @@ Traceback (most recent call last):
   File "/usr/lib/python3.14/http/server.py", line 488, in handle_one_request
     method()
     ~~~~~~^^
-  File "/home/sky/Projects/Pet/omarchy-lofi-release/tests/native_test.py", line 433, in do_GET
+  File "/home/sky/Projects/Pet/omarchy-lofi-release/tests/native_test.py", line 510, in do_GET
     self.end_headers()
     ~~~~~~~~~~~~~~~~^^
   File "/usr/lib/python3.14/http/server.py", line 602, in end_headers
@@ -112,6 +112,7 @@ test_removed_playing_station_replaces_audio_without_restarting_other_layers (nat
 test_removed_stopped_station_does_not_start_audio (native_test.NativeRecoveryTest.test_removed_stopped_station_does_not_start_audio) ... ok
 test_stop_cancels_retry_and_does_not_restart_from_status (native_test.NativeRecoveryTest.test_stop_cancels_retry_and_does_not_restart_from_status) ... ok
 test_changed_native_executable_replaces_old_daemon (native_test.NativeStressTest.test_changed_native_executable_replaces_old_daemon) ... ok
+test_cold_mpv_startup_keeps_fade_mix_and_stop_cancels_pending_audio (native_test.NativeStressTest.test_cold_mpv_startup_keeps_fade_mix_and_stop_cancels_pending_audio) ... ok
 test_crashed_controller_reconnects_and_stop_reaps_all_previous_audio (native_test.NativeStressTest.test_crashed_controller_reconnects_and_stop_reaps_all_previous_audio) ... ok
 test_eleven_channels_keep_independent_mix_under_concurrent_clients (native_test.NativeStressTest.test_eleven_channels_keep_independent_mix_under_concurrent_clients) ... ok
 test_parallel_first_commands_create_one_live_controller (native_test.NativeStressTest.test_parallel_first_commands_create_one_live_controller) ... ok
@@ -127,6 +128,6 @@ test_session_bus_restart_restores_mpris_without_controller_restart (qa_test.Nati
 test_temporary_name_owner_releases_to_native_without_controller_restart (qa_test.NativeMprisLifecycleTest.test_temporary_name_owner_releases_to_native_without_controller_restart) ... ok
 
 ----------------------------------------------------------------------
-Ran 53 tests in 108.732s
+Ran 54 tests in 116.626s
 
 OK

@@ -2,7 +2,7 @@
   "mode": "advisory-local-working-tree",
   "scannerSourceCommit": "b13d4ffd69a50f44be5d0e563e4eecb4032df7aa",
   "policyVersion": "3",
-  "checkedAt": "2026-10-02T16:27:23.894Z",
+  "checkedAt": "2026-10-02T17:00:15.771Z",
   "outcome": "review-required",
   "findings": [],
   "capabilities": [
@@ -14,7 +14,7 @@
         {
           "path": "bin/linux-x86_64/skylofi",
           "line": 1,
-          "snippet": "ELF executable binary (6224656 bytes)"
+          "snippet": "ELF executable binary (6225552 bytes)"
         }
       ]
     }
@@ -72,11 +72,11 @@
     },
     {
       "path": "bin/SHA256SUMS",
-      "sha256": "482af1b2c6718c32698e8ca37e6b7f0538dd71cb65f8c3e4c59aec3c0a913cfd"
+      "sha256": "9b0f26ce20b027ba46b2f46f8d1c3b57c2e52a489b7726ce198e5f8da34317da"
     },
     {
       "path": "bin/linux-x86_64/skylofi",
-      "sha256": "f1e7f118de2c2c560fed0dd51d4fae3455339077f9c9aad94e168d479e195d95"
+      "sha256": "a2693cc61528098fdf7a1d71a1c9661f7a111a1658809be4851bfa632050769b"
     },
     {
       "path": "lofi-feed",
