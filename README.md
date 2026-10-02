@@ -1,97 +1,142 @@
-# Skylofi
+# Skylofi 3
 
-A quiet listening space in your Omarchy bar. Pick a soundtrack, build a small
-nature mix, and keep listening while you work. The interface follows your
-Omarchy theme and fonts.
+A lo-fi radio and nature-sound mixer for **Omarchy**, with a native **Rust**
+controller and a theme-aware QML interface. Choose a soundtrack, add a little
+rain, and keep your listening space close in the bar.
 
-**Skylofi 3.0** introduces a redesigned interface and a persistent Rust
-controller. Existing `sky.lofi` settings and saved links migrate automatically.
-Measured results and their limits are recorded in
-[the performance report](docs/PERFORMANCE.md) and
-[the final design measurements](docs/PERFORMANCE-V2.md).
+[Marketplace](https://omarchyplugins.com/plugin.html?id=sky.lofi) ·
+[Install](#install) · [See it in action](#make-it-your-space) ·
+[Performance](#measured-with-care) · [Release notes](CHANGELOG.md)
 
-![Skylofi listening interface](docs/redesign/listen.png)
+![Skylofi 3 cover: a quiet listening space with the Listen, Mix and Settings interface](docs/showcase/skylofi-v3-cover.png)
 
-## Your listening space
+## Install
 
-- **Listen:** choose a radio or search saved YouTube links. Playback and overall
-  volume stay in a compact dock across all three tabs.
-- **Mix:** balance foreground audio, an optional voice and selected nature
-  sounds. Each sound has its own level and removal control.
-- **Settings:** adjust fades, dictation ducking and interface motion.
+On Omarchy with plugin support:
 
-Motion responds to input and explains changes. Steam/glow effects and the busy
-decorative visualizer are replaced with restrained transitions and a compact
-playback indicator. Interface motion can be disabled independently of audio fades.
-The view switcher and playback dock stay in place while the active page scrolls.
-Scroll over an unfocused level control to browse the page without changing volume.
+```sh
+omarchy plugin add https://github.com/OBJLAKO/omarchy-lofi-focus.git --enable
+```
 
-![Mix your soundtrack, voice and atmosphere](docs/redesign/mix.png)
+The command installs the repository's current upstream version. The
+[marketplace listing](https://omarchyplugins.com/plugin.html?id=sky.lofi)
+currently shows the earlier **Lofi Focus** release; the Skylofi 3 native-binary
+update is [awaiting maintainer review](https://github.com/omacom/omarchy-plugin-marketplace/issues/9719).
 
-## Controls
+**Requirements:** Omarchy's plugin-capable Quickshell shell, mpv and session
+D-Bus. YouTube playback additionally needs yt-dlp and a supported JavaScript
+runtime, such as Deno. No account or API key is needed; private and restricted
+videos are not supported.
 
-- Left-click the bar icon to play or pause the remembered mix.
-- Right-click to open the listening panel.
-- Middle-click for the next source; scroll to change Master by 5%.
-- Use media keys through MPRIS.
-- Use Tab and keyboard controls in the panel; Escape dismisses it.
+The repository includes a tested **x86_64 GNU/Linux** executable. Normal
+installation needs no Rust toolchain; the launcher never builds or downloads
+code at runtime. Other architectures need an explicit tested build. The plugin
+ID stays `sky.lofi`; existing preferences and saved links migrate automatically.
 
-Choose radio in Listen, or add a public YouTube video to your library. Saved
-finite videos remember playback position and support seeking; live streams open
-at their live position. The library holds 40 entries. Removing an entry requires
-confirmation. YouTube takes the foreground channel and suspends the optional
-voice; nature sounds keep playing.
-Radio has no recording timeline or rewind/forward buttons. A decoder buffer
-duration does not enable seeking; the Rust controller confirms source capabilities.
+## Make it your space
 
-## Sources and atmosphere
+### Listen
+
+Pick a lo-fi station or save a public YouTube link to your library. Search makes
+both easy to find, while playback and overall volume stay within reach across
+every tab. Radio stays live; only confirmed recordings expose a timeline,
+seeking and saved playback position.
+
+![Listen demo: choose a soundtrack with a persistent playback dock](docs/showcase/listen-demo.gif)
+
+<details>
+<summary><strong>Mix — build your own atmosphere</strong></summary>
+
+Balance the soundtrack, an optional voice and your nature sounds independently.
+Add rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a stream, birds
+or crickets. Each layer has its own level; **All sounds** adjusts the complete mix.
+The nine nature recordings are bundled locally.
+
+![Mix demo: layer nature sounds and adjust their individual levels](docs/showcase/mix-demo.gif)
+
+</details>
+
+<details>
+<summary><strong>Settings — make it comfortable</strong></summary>
+
+Adjust playback fades, how much audio remains while VoxType records, and
+interface motion. Normal volume returns during transcription. Motion can be
+disabled independently of audio fades, and the panel follows your Omarchy
+theme and fonts.
+
+![Settings demo: adjust fades, dictation ducking and interface motion](docs/showcase/settings-demo.gif)
+
+</details>
+
+The clips render the actual QML interface with controlled sample state. They
+show interaction and motion, rather than remote-stream loading times or audio.
+The cover is promotional artwork based on interface references.
 
 Four direct lo-fi stations and four Lofi Girl YouTube presets are included.
-Voice choices include talk radio, ATC and publisher-hosted podcasts. Podcasts
-queue up to 12 recent episodes from their RSS feed. Availability depends on the
-publisher and network; see [station sources](STATIONS.md).
+Voice choices cover talk radio, ATC and publisher-hosted podcasts; availability
+depends on the source and network. See [station sources](STATIONS.md) and
+[sound credits](SOUNDS-LICENSES.md). Saved YouTube audio takes the foreground
+channel and suspends the optional voice; nature layers keep playing.
 
-Rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a forest stream,
-birds and crickets are bundled locally. Add sounds from Mix and adjust their
-individual levels. Master scales the complete mix. The audio files retain their
-separate [credits and licenses](SOUNDS-LICENSES.md).
+## Close at hand
 
-Radio recovery uses bounded connection attempts and retry delays of 2, 5, 10,
-20 and 30 seconds. Pause suspends retries, Stop cancels them, and switching music
-keeps independent voice and nature layers. Retry is available when a source fails.
+| Control | Action |
+| --- | --- |
+| Left-click the bar icon | Play or pause the remembered mix |
+| Right-click | Open the panel |
+| Middle-click | Select the next source |
+| Scroll over the bar icon | Adjust overall volume by 5% |
+| Media keys | Control playback through MPRIS |
 
-VoxType ducking reduces the mix while recording, with a configurable retained
-volume (35% by default). Normal volume returns during transcription. Its standard
-state file and a custom state path in the default VoxType configuration are
-supported. With ducking enabled, automatic dictation Pause/Play requests are
-separated from ordinary media-key controls.
+Inside the panel, use Tab and keyboard controls; Escape dismisses it. Scrolling
+over an unfocused level control scrolls the page without changing volume.
+VoxType ducking supports its standard state file and a custom state path in
+the default configuration.
 
-![Focused playback, dictation and motion settings](docs/redesign/settings.png)
+## Rust where it helps
 
-## Native backend
+The QML interface runs inside Omarchy's Quickshell host and keeps a persistent
+local connection to the Rust controller. Rust manages settings, process
+supervision, cached IPC state, recovery, the library, fades, dictation ducking,
+RSS podcasts and MPRIS. **mpv still decodes the audio**; yt-dlp extracts YouTube
+streams. The preserved Python implementation is a benchmark and regression
+reference, outside the normal runtime path.
 
-The QML interface runs inside Omarchy's Quickshell host. A persistent local
-connection controls a Rust daemon; mpv decodes audio and yt-dlp extracts YouTube
-streams. Rust manages settings, IPC, recovery, fades, ducking, the library and
-MPRIS. Python sources remain as a comparison and regression reference.
-Further application backend development is Rust-only. See the
-[audio-engine evaluation](docs/AUDIO-ENGINE-EVALUATION.md) for the considered mpv
-alternatives and the bounded local-mixer proposal.
+The bundled native executable is built and tested on Ubuntu 24.04. Matching
+source, locked dependencies, checksums and build identity ship with it. See
+[native distribution](docs/RUST-PUBLISHING.md) and the
+[audio-engine evaluation](docs/AUDIO-ENGINE-EVALUATION.md) for the architecture
+and runtime requirements.
 
-Runtime requirements: Omarchy's plugin-capable Quickshell shell, **mpv** and the
-session D-Bus. YouTube also needs **yt-dlp** and its supported JavaScript runtime,
-such as **Deno**. No account or API key is needed. Restricted/private videos are
-not supported. Keep the extractor/runtime current when provider behaviour changes.
+## Measured with care
 
-Normal Omarchy installation clones repository files and does not build Rust.
-The release includes a ready **x86_64 GNU/Linux** executable at
-`bin/linux-x86_64/skylofi`, alongside its matching source and checksum. It is
-built and tested on Ubuntu 24.04; architecture and build evidence are documented
-in [the release notes](docs/RELEASE-3.0.md). The plugin
-never downloads or compiles code at runtime. Other architectures need an explicit
-tested build. See [native distribution and marketplace review](docs/RUST-PUBLISHING.md).
+The preserved prototype comparison used real mpv with silent output, local
+audio and three active channels:
 
-Build from source with Rust 1.99.0:
+| Measurement | Previous Python implementation | Rust prototype |
+| --- | ---: | ---: |
+| Persistent control memory, PSS | 29.4 MiB | 4.9 MiB |
+| Volume applied at mpv, median | 154.5 ms via CLI | 0.82 ms via persistent connection |
+
+The earlier **alpha.2** interface smoke run separately recorded **1.18 ms**
+median applied volume timing. These are identified alpha builds, not a fresh
+benchmark of every release binary. The changes combine Rust, a resident
+controller, caching and event handling; they do not isolate language choice.
+Timings measure local control, not speaker latency or internet startup, and mpv
+remains the largest audio-memory cost.
+
+Read the [original comparison and raw evidence](docs/PERFORMANCE.md),
+[earlier alpha.2 interface measurements](docs/PERFORMANCE-V2.md) and
+[independent interaction review](docs/DESIGN-V2-REVIEW.md).
+The current interface and playback-motion changes have separate
+[3.0.1 polish validation](docs/POLISH-3.0.1.md).
+
+<details>
+<summary><strong>Development, storage and CLI</strong></summary>
+
+Building requires Rust 1.99.0. Build output stays outside the plugin's watched
+directory; the runtime uses the bundled executable or an explicit
+`SKYLOFI_NATIVE` developer path.
 
 ```sh
 scripts/build-native.sh
@@ -100,59 +145,15 @@ sha256sum --check bin/SHA256SUMS
 omarchy plugin validate .
 ```
 
-Build output lives outside the plugin's watched directory. The launcher uses
-the bundled executable; `SKYLOFI_NATIVE` can explicitly select a developer build.
-Isolated tests do not install or replace the current desktop plugin.
-
-## Storage and testing
+The [Rust workflow](.github/workflows/rust-checks.yml) runs format, Clippy,
+unit tests and isolated real-mpv integration tests, then records the tested
+native artifact. Fixtures use private state and D-Bus with silent audio.
+[Release validation](docs/RELEASE-3.0.md) and the performance reports retain
+test results, build identities and reproduction commands.
 
 Preferences and the library live in `$XDG_STATE_HOME/sky.lofi/settings.json`
-(normally `~/.local/state/sky.lofi/`). Runtime sockets, status and logs live in
-`$XDG_RUNTIME_DIR/sky.lofi/`. The plugin ID remains `sky.lofi` and existing
-preferences migrate without changing audio-layer balances.
-
-Use the silent, private D-Bus fixture for tests. It has no desktop-service
-activation directories and does not use the installed plugin's state or audio.
-
-```sh
-cargo fmt --manifest-path native/Cargo.toml -- --check
-cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings
-cargo test --locked --manifest-path native/Cargo.toml
-LOFI_TEST_BACKEND=rust SKYLOFI_NATIVE="$HOME/.cache/skylofi-rust-target/release/skylofi" \
-  PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- \
-  python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test
-```
-
-The performance harness uses real mpv with a silent output, local audio,
-isolated settings and 0/1/3/11-channel workloads. It records command timings,
-CPU and proportional memory. A resident Python adapter measures how much comes
-from removing process startup; Rust also changes caching and event handling, so
-the remaining difference cannot be attributed solely to the language.
-Reproduction commands and raw evidence are in [PERFORMANCE.md](docs/PERFORMANCE.md).
-
-The figures below belong to the preserved alpha.1 benchmark, with its own binary
-and source hashes. The second design revision has separate validation artifacts.
-In the silent three-channel fixture, control PSS fell from 29.4 to 4.9 MiB.
-A volume change reached mpv in a median 0.82 ms through the new persistent
-connection, versus 154.5 ms through the previous CLI. This measures local
-control, not speaker latency. Whole-audio CPU results vary with workload;
-mpv remains the largest memory cost.
-
-The [alpha.2 measurements](docs/PERFORMANCE-V2.md) record 1.18 ms median applied
-volume timing in the three-channel fixture. The new Listen animation settles
-instead of continuously waking the renderer. Renderer memory varies between
-runs, so no UI memory improvement is claimed. The [independent UI audit](docs/DESIGN-V2-REVIEW.md)
-passed 90 interaction cases across six sizes/scales/palettes.
-
-Local validation passed **10 Rust unit tests, 53 native integration/QA cases
-and 28 QML component/transport checks**, plus formatting and Clippy with
-warnings rejected. The retained Python reference has separate checks.
-
-The Rust CI workflow builds and tests the backend with read-only repository
-permissions and publishes its tested build artifact. Marketplace updates use
-an exact-commit request and native-binary maintainer review.
-
-CLI examples:
+(normally `~/.local/state/sky.lofi/`). Runtime sockets and logs live in
+`$XDG_RUNTIME_DIR/sky.lofi/`.
 
 ```sh
 ./lofi-player toggle
@@ -163,21 +164,18 @@ CLI examples:
 ./lofi-player stop
 ```
 
-Before uninstalling a deployed version, stop its player, then remove `sky.lofi`
-through Omarchy. Saved preferences remain outside the plugin directory.
+Before uninstalling, stop playback and remove `sky.lofi` through Omarchy.
+Saved preferences remain outside the plugin directory.
+
+</details>
 
 ## Credits
 
-Code: [MIT](LICENSE). Derived from
+Code is [MIT licensed](LICENSE). Skylofi derives from
 [omarchy-lofiatc](https://github.com/dmltallen/omarchy-lofiatc) by dmltallen;
 upstream attribution is preserved. Maintained by [OBJLAKO](https://github.com/OBJLAKO).
 
-Radio and podcasts stream from their publishers. Nature recordings retain their
-individual attribution in [SOUNDS-LICENSES.md](SOUNDS-LICENSES.md). Previews use
-sample listening data.
-
-The native executable includes dependency code under its original licenses;
-see [dependency notices](docs/native/THIRD-PARTY-NOTICES.txt) and the Rust standard
-library [copyright notices](docs/native/RUST-COPYRIGHT-library.html),
-[MIT license](docs/native/RUST-LICENSE-MIT) and
-[Apache license](docs/native/RUST-LICENSE-APACHE).
+Nature recordings retain their individual [credits and licenses](SOUNDS-LICENSES.md).
+The native bundle includes [dependency notices](docs/native/THIRD-PARTY-NOTICES.txt)
+and Rust standard-library [copyright notices](docs/native/RUST-COPYRIGHT-library.html),
+[MIT](docs/native/RUST-LICENSE-MIT) and [Apache](docs/native/RUST-LICENSE-APACHE) licenses.

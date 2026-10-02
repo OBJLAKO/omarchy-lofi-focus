@@ -1,28 +1,39 @@
 import QtQuick
+import QtQuick.Window
 
-// Status feedback, not an invented audio meter. A short response when playback
-// starts settles into a static mark; an open radio panel does not animate forever.
+// An ongoing playback-status motif, not a measurement of the audio signal.
+// Three predetermined stems update at 8 Hz; no render-frame animation runs
+// between updates. Pause, hidden windows and reduced motion stop the timer.
 Item {
   id: root
   property bool active: false
   property bool animate: true
   property color ink: "white"
-  property real emphasis: 0
-  readonly property bool moving: feedback.running
-  function respond() {
-    feedback.stop()
-    emphasis = 0
-    if (active && animate && visible) feedback.restart()
+  property int phase: 0
+  property int frameCount: 0
+  readonly property int updateInterval: 125
+  readonly property var hostWindow: root.Window.window
+  readonly property bool presented: visible && (!hostWindow || (hostWindow.visible && hostWindow.visibility !== Window.Minimized))
+  readonly property bool moving: pulse.running
+  onMovingChanged: if (!moving) phase = 0
+
+  function stemScale(index) {
+    if (!root.active) return 0.25
+    var rest = [0.55, 0.68, 0.42][index]
+    if (!root.moving) return rest
+    return rest + 0.18 * Math.sin((root.phase + index * 4) * Math.PI / 6)
   }
-  onActiveChanged: respond()
-  onAnimateChanged: if (!animate) { feedback.stop(); emphasis = 0 }
-  onVisibleChanged: if (!visible) { feedback.stop(); emphasis = 0 }
-  Component.onCompleted: respond()
-  SequentialAnimation {
-    id: feedback
-    objectName: "playbackFeedback"
-    NumberAnimation { target: root; property: "emphasis"; from: 0; to: 1; duration: 120; easing.type: Easing.OutCubic }
-    NumberAnimation { target: root; property: "emphasis"; to: 0; duration: 220; easing.type: Easing.OutCubic }
+
+  Timer {
+    id: pulse
+    objectName: "playbackPulse"
+    interval: root.updateInterval
+    repeat: true
+    running: root.active && root.animate && root.presented
+    onTriggered: {
+      root.phase = (root.phase + 1) % 12
+      root.frameCount++
+    }
   }
   Row {
     anchors.fill: parent
@@ -30,15 +41,18 @@ Item {
     Repeater {
       model: 3
       Rectangle {
+        id: stem
         required property int index
+        objectName: "playbackStem-" + index
         width: (root.width - 2 * parent.spacing) / 3
         height: root.height
         radius: width / 2
         color: root.ink
-        opacity: root.active ? 0.85 : 0.4
+        opacity: root.active ? 0.9 : 0.4
         transform: Scale {
-          origin.x: root.width / 6; origin.y: root.height / 2
-          yScale: root.active ? [0.55, 0.85, 0.4][index] + root.emphasis * [0.25, 0.12, 0.3][index] : 0.25
+          origin.x: stem.width / 2
+          origin.y: stem.height / 2
+          yScale: root.stemScale(stem.index)
         }
       }
     }

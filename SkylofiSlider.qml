@@ -70,12 +70,19 @@ Item {
   readonly property real range: Math.max(0.0001, maximum - minimum)
   readonly property real progress: Math.max(0, Math.min(1, (liveValue - minimum) / range))
   readonly property bool _hot: mouseArea.containsMouse || root.dragging || root.activeFocus
+  // Keep the thumb's hover enlargement and the focus stroke inside the hit
+  // target. Painting outside the item makes a clipped page cut off the outline
+  // and makes the slider look attached to the caption or row above it.
+  readonly property real horizontalInset: Math.min(width / 2, Math.ceil(knobSize * 1.08 / 2) + Style.space(3))
 
   Rectangle {
     id: track
+    objectName: "sliderTrack"
     anchors.verticalCenter: parent.verticalCenter
     anchors.left: parent.left
     anchors.right: parent.right
+    anchors.leftMargin: root.horizontalInset
+    anchors.rightMargin: root.horizontalInset
     height: root.trackHeight
     radius: height / 2
     color: root.trackColor
@@ -105,20 +112,21 @@ Item {
       radius: 1
       color: root.tickColor
       anchors.verticalCenter: track.verticalCenter
-      x: Math.max(0, Math.min(track.width - width,
+      x: track.x + Math.max(0, Math.min(track.width - width,
                               track.width * (index / (root.tickCount - 1)) - width / 2))
     }
   }
 
   BorderSurface {
     id: knob
+    objectName: "sliderThumb"
     width: root.knobSize
     height: root.knobSize
     radius: root.knobSize / 2
     color: root.knobColor
     borderSpec: Border.flat(root.bar ? root.bar.background : "#101315", Math.max(1, Style.space(2)))
     anchors.verticalCenter: track.verticalCenter
-    x: Math.max(0, Math.min(track.width - width, track.width * root.progress - width / 2))
+    x: track.x + track.width * root.progress - width / 2
     scale: root._hot ? 1.08 : 1.0
 
     Behavior on x {
@@ -133,7 +141,8 @@ Item {
   }
 
   Rectangle {
-    anchors.fill: parent; anchors.margins: -2
+    objectName: "sliderFocusOutline"
+    anchors.fill: parent; anchors.margins: Style.space(1)
     color: "transparent"
     radius: Style.cornerRadius
     border.color: Color.accent
@@ -148,8 +157,8 @@ Item {
     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
     function valueFromX(x) {
-      var clamped = Math.max(0, Math.min(track.width, x))
-      var raw = root.minimum + (clamped / track.width) * root.range
+      var clamped = Math.max(0, Math.min(track.width, x - track.x))
+      var raw = root.minimum + (clamped / Math.max(1, track.width)) * root.range
       if (root.integer) raw = Math.round(raw)
       return Math.max(root.minimum, Math.min(root.maximum, raw))
     }

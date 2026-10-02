@@ -1,0 +1,1588 @@
+{
+  "method": "Same frozen actual QML UI; 480x620 offscreen software Qt window; real bar widget and one panel with layer-shell plumbing replaced by visible/open Item. General interface animations stay enabled in both cases; only equalizer_animation toggles the ongoing status motif. Bar transport replaced by fixture-only JSON process. Only Quickshell CPU/PSS sampled; child fixture, bus, Rust, mpv, GPU, FPS, audio and shared desktop-shell memory excluded. Two seconds settling. Active motif uses direct transforms at 8 Hz, not a frame-rate animation.",
+  "source_sha256": {
+    "BarWidget.qml": "18f9912e3fcce102eb40b3fb4da3596cbae1c42117caf8bf37ad9cb221b0861e",
+    "FocusDropdown.qml": "4a62eec58a435d1e9b3e5f7124578675b2495b96d6ce8d8dca032963ec74c673",
+    "MixerLevel.qml": "29b96b9dd70e7dd588e0abb8c887c3ae323f736b69fbd8cc1985f95f81158bf9",
+    "Panel.qml": "3a3baeeebb9b8b3980228b97d1ad669680ddfeffd6e6c65fe7b6b5db7cac4284",
+    "PlaybackWave.qml": "6066cb5ba05f595cfe963a9e2a3d42c49013424cd46788fc1d455e39f5537cac",
+    "SkylofiButton.qml": "9c49f10aa81570297a518836a668566d3c01296f20e94018fa831f0b7f8dba91",
+    "SkylofiSlider.qml": "e071d0c9105a12e587642b3ebe4fa476cdd20d23748f9904590ab149022a332c",
+    "SkylofiStyle.qml": "0dd853550c9cce8cad944280f912995627395363fc4587bef2ad550dccbfc3bd",
+    "SkylofiSwitch.qml": "c705c62d139f4c7cf4c548af4399d0be417b13034147e31ff701feed8efb3068",
+    "StationRow.qml": "bf110cf3a3c5bf3e215bbb0cb79f9086f9213d80c6c74760271594aac3c2cc42",
+    "YoutubeLibrary.qml": "1189a4ba0976675524b1dd22f8218b8dcd7a234acdd0337f4219c0174a84bb53"
+  },
+  "cases": [
+    {
+      "case": "panel_static",
+      "panel_open": true,
+      "animations": true,
+      "playback_indicator_motion": false,
+      "window_visible": true,
+      "seconds": 12.004263417999027,
+      "cpu_one_core_percent": 0.0,
+      "pss_mib_median": 116.9345703125,
+      "rss_mib_median": 172.45703125,
+      "indicators_before": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": false,
+          "presented": true,
+          "frameCount": 0,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": true,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "indicators_after": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": false,
+          "presented": true,
+          "frameCount": 0,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": true,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "samples": [
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119740,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119741,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119742,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119742,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119742,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119742,
+          "voluntary": 108,
+          "involuntary": 17
+        },
+        {
+          "start": 2027381,
+          "cpu_ticks": 43,
+          "rss_kib": 176596,
+          "pss_kib": 119742,
+          "voluntary": 108,
+          "involuntary": 17
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T18:08:15Z",
+        "loadavg": "5.30 5.13 5.72 4/2089 1484447",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          947.761,
+          399.889,
+          1200.986,
+          1087.992,
+          692.571,
+          1112.038,
+          944.058,
+          1300.0,
+          1121.155,
+          1192.916,
+          1164.4,
+          1164.613
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T18:08:27Z",
+        "loadavg": "5.11 5.09 5.70 6/2033 1484997",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1166.203,
+          1173.505,
+          1155.219,
+          1083.59,
+          1200.0,
+          630.483,
+          1199.202,
+          1189.412,
+          1199.916,
+          1199.955,
+          1199.985,
+          1199.963
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-motion-perf-9w_4s9w0/shell.qml\"\n  INFO: Shell ID: \"0e522b298693eb82a8017635d9a3e09a\" Path ID \"0e522b298693eb82a8017635d9a3e09a\"\n  INFO: Saving logs to \"/tmp/skylofi-motion-perf-9w_4s9w0/runtime/quickshell/by-id/0btvo1lamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: MOTION_PERF_READY\n"
+    },
+    {
+      "case": "panel_ongoing",
+      "panel_open": true,
+      "animations": true,
+      "playback_indicator_motion": true,
+      "window_visible": true,
+      "seconds": 12.00321773700125,
+      "cpu_one_core_percent": 0.6664879514214853,
+      "pss_mib_median": 114.80859375,
+      "rss_mib_median": 170.3984375,
+      "indicators_before": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": true,
+          "presented": true,
+          "frameCount": 17,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": true,
+          "presented": true,
+          "frameCount": 17,
+          "interval": 125
+        }
+      ],
+      "indicators_after": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": true,
+          "presented": true,
+          "frameCount": 114,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": true,
+          "presented": true,
+          "frameCount": 114,
+          "interval": 125
+        }
+      ],
+      "samples": [
+        {
+          "start": 2028854,
+          "cpu_ticks": 50,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 143,
+          "involuntary": 63
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 52,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 151,
+          "involuntary": 65
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 52,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 159,
+          "involuntary": 66
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 52,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 167,
+          "involuntary": 68
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 53,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 175,
+          "involuntary": 69
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 53,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 183,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 53,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 191,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 53,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 199,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 54,
+          "rss_kib": 174688,
+          "pss_kib": 117791,
+          "voluntary": 207,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 54,
+          "rss_kib": 174480,
+          "pss_kib": 117552,
+          "voluntary": 215,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 54,
+          "rss_kib": 174484,
+          "pss_kib": 117556,
+          "voluntary": 223,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 55,
+          "rss_kib": 174484,
+          "pss_kib": 117556,
+          "voluntary": 232,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 55,
+          "rss_kib": 174488,
+          "pss_kib": 117591,
+          "voluntary": 240,
+          "involuntary": 72
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 55,
+          "rss_kib": 174488,
+          "pss_kib": 117561,
+          "voluntary": 249,
+          "involuntary": 73
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 55,
+          "rss_kib": 174488,
+          "pss_kib": 117561,
+          "voluntary": 257,
+          "involuntary": 73
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 56,
+          "rss_kib": 174488,
+          "pss_kib": 117591,
+          "voluntary": 265,
+          "involuntary": 75
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 56,
+          "rss_kib": 174488,
+          "pss_kib": 117562,
+          "voluntary": 273,
+          "involuntary": 76
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 56,
+          "rss_kib": 174488,
+          "pss_kib": 117562,
+          "voluntary": 281,
+          "involuntary": 77
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 57,
+          "rss_kib": 174488,
+          "pss_kib": 117562,
+          "voluntary": 289,
+          "involuntary": 78
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 57,
+          "rss_kib": 174492,
+          "pss_kib": 117564,
+          "voluntary": 297,
+          "involuntary": 78
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 57,
+          "rss_kib": 174492,
+          "pss_kib": 117564,
+          "voluntary": 305,
+          "involuntary": 78
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 57,
+          "rss_kib": 174492,
+          "pss_kib": 117564,
+          "voluntary": 313,
+          "involuntary": 82
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 58,
+          "rss_kib": 174432,
+          "pss_kib": 117505,
+          "voluntary": 321,
+          "involuntary": 82
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 58,
+          "rss_kib": 174432,
+          "pss_kib": 117505,
+          "voluntary": 329,
+          "involuntary": 82
+        },
+        {
+          "start": 2028854,
+          "cpu_ticks": 58,
+          "rss_kib": 174432,
+          "pss_kib": 117505,
+          "voluntary": 335,
+          "involuntary": 83
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T18:08:29Z",
+        "loadavg": "5.02 5.07 5.70 1/2031 1485146",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          660.429,
+          478.837,
+          1265.68,
+          1249.583,
+          1124.744,
+          2315.93,
+          884.305,
+          528.126,
+          708.903,
+          918.864,
+          967.951,
+          797.314
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T18:08:41Z",
+        "loadavg": "5.19 5.10 5.70 3/2042 1485795",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1032.877,
+          614.315,
+          400.914,
+          561.065,
+          1052.344,
+          948.125,
+          548.901,
+          1000.447,
+          1032.505,
+          985.618,
+          881.042,
+          1025.461
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-motion-perf-_ehqrd18/shell.qml\"\n  INFO: Shell ID: \"c937e1184e678787d0f59951116984ce\" Path ID \"c937e1184e678787d0f59951116984ce\"\n  INFO: Saving logs to \"/tmp/skylofi-motion-perf-_ehqrd18/runtime/quickshell/by-id/2utv32lamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: MOTION_PERF_READY\n"
+    },
+    {
+      "case": "bar_static",
+      "panel_open": false,
+      "animations": true,
+      "playback_indicator_motion": false,
+      "window_visible": true,
+      "seconds": 12.007117181001377,
+      "cpu_one_core_percent": 0.0,
+      "pss_mib_median": 90.716796875,
+      "rss_mib_median": 146.13671875,
+      "indicators_before": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": false,
+          "presented": true,
+          "frameCount": 0,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "indicators_after": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": false,
+          "presented": true,
+          "frameCount": 0,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "samples": [
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92895,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92895,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92895,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92895,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92895,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92893,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92894,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92893,
+          "voluntary": 75,
+          "involuntary": 14
+        },
+        {
+          "start": 2030337,
+          "cpu_ticks": 38,
+          "rss_kib": 149644,
+          "pss_kib": 92893,
+          "voluntary": 75,
+          "involuntary": 14
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T18:08:44Z",
+        "loadavg": "5.17 5.10 5.70 5/2035 1485930",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1200.031,
+          1140.144,
+          1147.424,
+          1171.909,
+          1165.622,
+          1148.123,
+          1189.809,
+          1132.227,
+          1149.564,
+          1174.998,
+          1180.818,
+          1147.495
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T18:08:56Z",
+        "loadavg": "5.22 5.12 5.69 5/2095 1486783",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          2851.348,
+          3261.787,
+          399.446,
+          449.569,
+          2757.965,
+          891.562,
+          2851.253,
+          2800.0,
+          2099.959,
+          2099.779,
+          2100.211,
+          2105.989
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-motion-perf-i2ttjjzz/shell.qml\"\n  INFO: Shell ID: \"423bc020af86a9a4d67a5df691df2725\" Path ID \"423bc020af86a9a4d67a5df691df2725\"\n  INFO: Saving logs to \"/tmp/skylofi-motion-perf-i2ttjjzz/runtime/quickshell/by-id/5guvi2lamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: MOTION_PERF_READY\n"
+    },
+    {
+      "case": "bar_ongoing",
+      "panel_open": false,
+      "animations": true,
+      "playback_indicator_motion": true,
+      "window_visible": true,
+      "seconds": 12.003531631999067,
+      "cpu_one_core_percent": 0.4998528919609937,
+      "pss_mib_median": 90.828125,
+      "rss_mib_median": 146.375,
+      "indicators_before": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": true,
+          "presented": true,
+          "frameCount": 17,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "indicators_after": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": true,
+          "presented": true,
+          "frameCount": 113,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "samples": [
+        {
+          "start": 2031803,
+          "cpu_ticks": 51,
+          "rss_kib": 150024,
+          "pss_kib": 93199,
+          "voluntary": 105,
+          "involuntary": 31
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 51,
+          "rss_kib": 150024,
+          "pss_kib": 93199,
+          "voluntary": 113,
+          "involuntary": 31
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 51,
+          "rss_kib": 150024,
+          "pss_kib": 93199,
+          "voluntary": 121,
+          "involuntary": 34
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 52,
+          "rss_kib": 150024,
+          "pss_kib": 93199,
+          "voluntary": 129,
+          "involuntary": 36
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 52,
+          "rss_kib": 150024,
+          "pss_kib": 93199,
+          "voluntary": 137,
+          "involuntary": 37
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 52,
+          "rss_kib": 150024,
+          "pss_kib": 93199,
+          "voluntary": 145,
+          "involuntary": 38
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 52,
+          "rss_kib": 149888,
+          "pss_kib": 93025,
+          "voluntary": 153,
+          "involuntary": 39
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 52,
+          "rss_kib": 149888,
+          "pss_kib": 93024,
+          "voluntary": 161,
+          "involuntary": 39
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 53,
+          "rss_kib": 149888,
+          "pss_kib": 93025,
+          "voluntary": 169,
+          "involuntary": 39
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 54,
+          "rss_kib": 149888,
+          "pss_kib": 93025,
+          "voluntary": 177,
+          "involuntary": 41
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 54,
+          "rss_kib": 149888,
+          "pss_kib": 93025,
+          "voluntary": 185,
+          "involuntary": 41
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 54,
+          "rss_kib": 149888,
+          "pss_kib": 93031,
+          "voluntary": 193,
+          "involuntary": 42
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 54,
+          "rss_kib": 149888,
+          "pss_kib": 93008,
+          "voluntary": 201,
+          "involuntary": 43
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 54,
+          "rss_kib": 149888,
+          "pss_kib": 93007,
+          "voluntary": 209,
+          "involuntary": 43
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 55,
+          "rss_kib": 149816,
+          "pss_kib": 92936,
+          "voluntary": 217,
+          "involuntary": 43
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 55,
+          "rss_kib": 149816,
+          "pss_kib": 92990,
+          "voluntary": 225,
+          "involuntary": 44
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 55,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 233,
+          "involuntary": 44
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 55,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 241,
+          "involuntary": 44
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 55,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 249,
+          "involuntary": 44
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 55,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 257,
+          "involuntary": 46
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 56,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 265,
+          "involuntary": 47
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 56,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 273,
+          "involuntary": 47
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 56,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 281,
+          "involuntary": 47
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 56,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 290,
+          "involuntary": 47
+        },
+        {
+          "start": 2031803,
+          "cpu_ticks": 57,
+          "rss_kib": 149816,
+          "pss_kib": 92991,
+          "voluntary": 297,
+          "involuntary": 47
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T18:08:59Z",
+        "loadavg": "5.04 5.08 5.68 6/2097 1486941",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1173.716,
+          1112.417,
+          1199.855,
+          1200.012,
+          1158.464,
+          935.858,
+          916.96,
+          1167.88,
+          1200.023,
+          1200.02,
+          1200.002,
+          1200.031
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T18:09:11Z",
+        "loadavg": "4.81 5.03 5.65 2/2096 1487760",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          950.704,
+          1179.551,
+          1030.141,
+          859.244,
+          1269.471,
+          1059.679,
+          1188.428,
+          400.0,
+          1247.635,
+          834.191,
+          1174.479,
+          1007.315
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-motion-perf-911_nhxn/shell.qml\"\n  INFO: Shell ID: \"3f8df688104329ed827c1bd42c62631e\" Path ID \"3f8df688104329ed827c1bd42c62631e\"\n  INFO: Saving logs to \"/tmp/skylofi-motion-perf-911_nhxn/runtime/quickshell/by-id/l7vvw2lamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: MOTION_PERF_READY\n"
+    },
+    {
+      "case": "all_hidden",
+      "panel_open": true,
+      "animations": true,
+      "playback_indicator_motion": true,
+      "window_visible": false,
+      "seconds": 12.006229744998564,
+      "cpu_one_core_percent": 0.0,
+      "pss_mib_median": 91.8779296875,
+      "rss_mib_median": 146.671875,
+      "indicators_before": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "indicators_after": [
+        {
+          "name": "barPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        },
+        {
+          "name": "panelPlaybackActivity",
+          "moving": false,
+          "presented": false,
+          "frameCount": 0,
+          "interval": 125
+        }
+      ],
+      "samples": [
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94082,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94083,
+          "voluntary": 66,
+          "involuntary": 13
+        },
+        {
+          "start": 2033283,
+          "cpu_ticks": 64,
+          "rss_kib": 150192,
+          "pss_kib": 94084,
+          "voluntary": 66,
+          "involuntary": 13
+        }
+      ],
+      "host_before": {
+        "utc": "2026-10-02T18:09:14Z",
+        "loadavg": "4.83 5.03 5.65 6/2096 1487898",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1072.657,
+          1094.517,
+          1057.299,
+          1005.477,
+          776.947,
+          399.751,
+          1100.0,
+          1099.979,
+          1034.335,
+          1099.271,
+          1099.881,
+          1101.107
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "host_after": {
+        "utc": "2026-10-02T18:09:26Z",
+        "loadavg": "4.80 5.01 5.64 5/2043 1488438",
+        "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
+        "logical_cpus": 12,
+        "cpu_frequency_mhz": [
+          1311.927,
+          1265.007,
+          1693.32,
+          1282.18,
+          1252.754,
+          1305.986,
+          1262.888,
+          1148.526,
+          1300.077,
+          1299.903,
+          1299.988,
+          1300.004
+        ],
+        "scaling_governor": {
+          "cpu11": "powersave",
+          "cpu9": "powersave",
+          "cpu7": "powersave",
+          "cpu5": "powersave",
+          "cpu3": "powersave",
+          "cpu1": "powersave",
+          "cpu10": "powersave",
+          "cpu8": "powersave",
+          "cpu6": "powersave",
+          "cpu4": "powersave",
+          "cpu2": "powersave",
+          "cpu0": "powersave"
+        }
+      },
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-motion-perf-_2719syx/shell.qml\"\n  INFO: Shell ID: \"b1e9088d66733efb91ab5e10ef3f3ff6\" Path ID \"b1e9088d66733efb91ab5e10ef3f3ff6\"\n  INFO: Saving logs to \"/tmp/skylofi-motion-perf-_2719syx/runtime/quickshell/by-id/uyvvb3lamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: MOTION_PERF_READY\n"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+  INFO: Launching config: "/tmp/skylofi-v2-review-ngjh0od0/shell.qml"
+  INFO: Shell ID: "c643ab89a004200544038e6dd9ab3f4b" Path ID "c643ab89a004200544038e6dd9ab3f4b"
+  INFO: Saving logs to "/tmp/skylofi-v2-review-ngjh0od0/runtime/quickshell/by-id/4bov9ykamt/log.qslog"
+  INFO: Configuration Loaded
+ DEBUG qml: UI_REVIEW_RESULT {"passed":16,"failed":0}

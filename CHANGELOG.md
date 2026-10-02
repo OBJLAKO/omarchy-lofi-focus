@@ -1,3 +1,16 @@
+# 3.0.1 · 2026-10-02
+
+- Keep slider focus outlines and enlarged thumbs inside their controls; fix
+  caption clearance and compact removable-layer geometry.
+- Scroll keyboard focus to the actual mixer control, including large-font
+  layouts whose complete layer row is taller than the available viewport.
+- Show quiet ongoing playback motion in the panel and bar at eight updates per
+  second, only while a channel is audible. Pause, mute, hidden windows and
+  reduced motion stop the timer; connection retries alone do not animate.
+- Refresh the project page with a Skylofi 3 launch cover, actual QML GIF
+  walkthroughs, direct marketplace links and reproducible presentation assets.
+- Preserve Rust playback, settings, saved links and standard installation.
+
 # 3.0.0 · 2026-10-02
 
 - Replace the Python runtime controller with a persistent Rust backend for

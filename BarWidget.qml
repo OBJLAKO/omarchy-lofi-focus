@@ -11,6 +11,14 @@ BarWidget {
   moduleName: "sky.lofi"
   property bool playerRunning: false
   property bool playerPaused: false
+  property bool musicRunning: false
+  property string mainState: "stopped"
+  property int mainVolume: 80
+  property bool backgroundRunning: false
+  property string backgroundState: "stopped"
+  property var natureLayers: []
+  property bool animationsEnabled: true
+  property bool equalizerEnabled: true
   property string stationName: ""
   property string categoryName: ""
   property string bgName: ""
@@ -29,6 +37,20 @@ BarWidget {
   signal actionFinished(var arguments, int exitCode, string message)
   readonly property string playerPath: Qt.resolvedUrl("lofi-player").toString().replace(/^file:\/\//, "")
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
+  readonly property bool playbackChannels: (root.musicRunning && root.mainState === "playing")
+    || (root.backgroundRunning && root.backgroundState === "playing")
+    || root.natureLayers.some(function(layer) { return layer.running === true })
+  readonly property bool audibleChannels: (root.musicRunning && root.mainState === "playing" && root.mainVolume > 0)
+    || (root.backgroundRunning && root.backgroundState === "playing" && root.bgVolume > 0)
+    || root.natureLayers.some(function(layer) { return layer.running === true && Number(layer.volume) > 0 })
+  readonly property bool playbackActive: root.statusReady && root.playerRunning && !root.playerPaused && root.masterVolume > 0 && root.audibleChannels
+  readonly property string playbackLabel: root.playerPaused ? "Paused"
+    : root.playbackActive ? "Playing"
+    : root.playbackChannels && (root.masterVolume === 0 || !root.audibleChannels) ? "Muted"
+    : root.mainState === "ended" ? "Finished"
+    : root.mainState === "failed" ? "Source unavailable"
+    : root.mainState === "reconnecting" ? "Reconnecting"
+    : "Connecting"
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
 
   function open() { if (panelLoader.item) panelLoader.item.open() }
@@ -53,6 +75,14 @@ BarWidget {
       root.statusJson = raw
       root.playerRunning = state.running === true
       root.playerPaused = state.paused === true
+      root.musicRunning = state.main_running === true
+      root.mainState = String(state.main_state || (root.musicRunning ? "playing" : "stopped"))
+      root.mainVolume = Math.max(0, Math.min(100, Math.round(Number(state.main_volume === undefined ? 80 : state.main_volume)) || 0))
+      root.backgroundRunning = state.bg_running === true
+      root.backgroundState = String(state.bg_state || (root.backgroundRunning ? "playing" : "stopped"))
+      root.natureLayers = Array.isArray(state.nature_layers) ? state.nature_layers : []
+      root.animationsEnabled = state.animations !== false
+      root.equalizerEnabled = state.equalizer_animation !== false
       root.stationName = root.singleLineText(state.name, 120)
       root.categoryName = root.singleLineText(state.category_name, 60)
       root.bgName = root.singleLineText(state.bg_name, 120)
@@ -209,14 +239,15 @@ BarWidget {
     bar: root.bar
     text: ""; hasVisualContent: true; labelVisible: false
     fixedWidth: root.vertical ? root.barSize : Style.space(30)
-    active: root.statusReady && root.playerRunning && !root.playerPaused
+    active: root.playbackActive
     dimmed: root.playerRunning && root.playerPaused
     tooltipText: !root.statusReady ? "Skylofi · connecting to player"
       : root.actionError ? "Skylofi · " + root.actionError
-      : root.playerRunning ? (root.playerPaused ? "Paused · " : "Playing · ") + root.singleLineText(root.stationName, 80)
+      : root.playerRunning ? root.playbackLabel + " · " + root.singleLineText(root.stationName, 80)
         + (root.mixOn && root.bgName ? " + " + root.singleLineText(root.bgName, 60) : "")
       : "Skylofi · left click to play, right click to open"
     Canvas {
+      id: headphones
       anchors.centerIn: parent
       width: Style.space(18); height: Style.space(18)
       property color ink: button.active ? button.activeColor : button.foreground
@@ -228,6 +259,18 @@ BarWidget {
         c.beginPath(); c.moveTo(4,15); c.lineTo(4,11); c.arc(12,11,8,Math.PI,0); c.lineTo(20,15); c.stroke()
         c.beginPath(); c.roundedRect(3,12,4,8,1.5,1.5); c.roundedRect(17,12,4,8,1.5,1.5); c.stroke()
       }
+    }
+    PlaybackWave {
+      id: barActivity
+      objectName: "barPlaybackActivity"
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.verticalCenterOffset: Style.space(2)
+      width: Style.space(7); height: Style.space(7)
+      active: root.playbackActive
+      animate: root.animationsEnabled && root.equalizerEnabled
+      visible: root.playbackActive
+      ink: headphones.ink
     }
     onPressed: function(mouseButton) {
       if (mouseButton === Qt.RightButton) root.togglePanel()

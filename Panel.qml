@@ -18,6 +18,7 @@ Panel {
   // ---- Player state, mirrored from status.json
   property bool playerRunning: false
   property bool musicRunning: false
+  property bool voiceRunning: false
   property bool playerPaused: false
   property string playerStationId: ""
   property string playerName: ""
@@ -89,6 +90,11 @@ Panel {
   readonly property int revealDuration: Math.round(160 * revealSpeed)
 
   readonly property bool isPlaying: playerRunning && !playerPaused && !sourceEnded
+  readonly property bool audiblePlayback: playerRunning && !playerPaused && masterVolume > 0 && (
+    (musicRunning && mainState === "playing" && mainVolume > 0)
+    || (voiceRunning && bgState === "playing" && bgVolume > 0)
+    || natureLayers.some(function(layer) { return layer.running === true && Number(layer.volume) > 0 })
+  )
   readonly property bool musicConnecting: mainState === "connecting" || mainState === "reconnecting"
   readonly property bool sessionActive: playerRunning || musicConnecting
   readonly property bool voiceLoading: mixOn && !youtubeSelected && bgState === "loading"
@@ -210,6 +216,7 @@ Panel {
       root.bgStation = String(state.bg_station || "")
       root.bgName = String(state.bg_name || "")
       root.bgState = String(state.bg_state || (state.bg_running === true ? "playing" : "stopped"))
+      root.voiceRunning = state.bg_running === undefined ? root.bgState === "playing" : state.bg_running === true
       var backgroundError = typeof state.bg_error === "string" ? state.bg_error
         : typeof state.error === "string" && state.error.indexOf("Podcast unavailable:") === 0 ? state.error : ""
       root.bgError = backgroundError.replace(/[\r\n\t]+/g, " ").slice(0, 300)
@@ -478,12 +485,14 @@ Panel {
               width: parent.width
               spacing: Style.space(8)
               SourceTab {
+                objectName: "radioSourceTab"
                 width: Style.space(110)
                 text: "Radio"
                 selected: !root.libraryOpen
                 onActivated: root.libraryOpen = false
               }
               SourceTab {
+                objectName: "savedSourceTab"
                 width: Math.min(Style.space(170), parent.width - Style.space(118))
                 text: "Saved links" + (root.youtubeEntries.length > 0 ? " · " + root.youtubeEntries.length : "")
                 selected: root.libraryOpen
@@ -566,7 +575,7 @@ Panel {
               bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
               animate: root.liveMotion
               onEdited: function(value) { root.setVolume("main", value) }
-              onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
+              onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
             }
             ControlGroup {
               width: parent.width
@@ -622,7 +631,7 @@ Panel {
                   bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
                   animate: root.liveMotion
                   onEdited: function(value) { root.setVolume("bg", value) }
-                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
+                  onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
                 }
               }
             }
@@ -683,7 +692,7 @@ Panel {
                       animate: root.liveMotion
                       onEdited: function(value) { root.setVolume(modelData.value, value) }
                       onRemoveRequested: root.runAction(["nature", modelData.value, "off"])
-                      onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
+                      onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
                     }
                   }
                 }
@@ -748,14 +757,14 @@ Panel {
               SettingToggle {
                 objectName: "animationsToggle"
                 label: "Interface motion"
-                hint: "Short transitions between controls."
+                hint: "Feedback and transitions between controls."
                 checked: root.animationsEnabled
                 onToggled: root.runAction(["ui", "animations", root.animationsEnabled ? "off" : "on"])
               }
               SettingToggle {
                 objectName: "playbackIndicatorToggle"
-                label: "Playback feedback"
-                hint: root.animationsEnabled ? "A brief response when playback changes." : "Enable interface motion to animate the mark."
+                label: "Playback indicator"
+                hint: root.animationsEnabled ? "A quiet moving mark while sounds play." : "Enable interface motion to animate the mark."
                 enabled: root.animationsEnabled
                 checked: root.equalizerEnabled
                 onToggled: root.runAction(["ui", "equalizer", root.equalizerEnabled ? "off" : "on"])
@@ -796,7 +805,7 @@ Panel {
               PlaybackWave {
                 width: Style.space(12); height: Style.space(12)
                 anchors.verticalCenter: parent.verticalCenter
-                active: root.isPlaying
+                active: root.audiblePlayback
                 animate: root.liveMotion && root.equalizerEnabled
                 ink: Color.accent
               }
@@ -846,7 +855,7 @@ Panel {
           objectName: "finitePlaybackControls"
           visible: root.hasProgress
           width: parent.width
-          spacing: Style.space(2)
+          spacing: Style.space(6)
           Row {
             width: parent.width
             spacing: Style.space(8)
@@ -1087,7 +1096,7 @@ Panel {
     property real step: 1
     property string suffix: ""
     signal edited(int value)
-    width: parent.width; spacing: Style.space(2)
+    width: parent.width; spacing: Style.space(6)
     Row {
       width: parent.width
       spacing: Style.space(10)
