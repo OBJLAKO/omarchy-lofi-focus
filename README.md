@@ -136,8 +136,8 @@ mpv remains the largest memory cost.
 
 The [alpha.2 measurements](docs/PERFORMANCE-V2.md) record 1.18 ms median applied
 volume timing in the three-channel fixture. The new Listen animation settles
-instead of continuously waking the renderer; the persistent layout also adds
-memory cost in Settings. The [independent UI audit](docs/DESIGN-V2-REVIEW.md)
+instead of continuously waking the renderer. Renderer memory varies between
+runs, so no UI memory improvement is claimed. The [independent UI audit](docs/DESIGN-V2-REVIEW.md)
 passed 90 interaction cases across six sizes/scales/palettes.
 
 Local validation passed **10 Rust unit tests, 53 native integration/QA cases

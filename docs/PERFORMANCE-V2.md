@@ -42,16 +42,22 @@ seconds of sampling per case. Source hashes and complete logs are retained.
 
 | State | Alpha.1 CPU, % one core | Alpha.2 CPU, % one core | Alpha.1 PSS, MiB | Alpha.2 PSS, MiB |
 | --- | ---: | ---: | ---: | ---: |
-| Closed | 0.00 | 0.00 | 78.98 | 79.74 |
-| Listen | 3.60 | 0.00 | 100.91 | 105.76 |
-| Settings | 0.00 | 0.00 | 79.08 | 103.82 |
+| Closed | 0.00 | 0.00 | 54.88 | 54.93 |
+| Listen | 3.30 | 0.00 | 56.02 | 103.62 |
+| Settings | 0.00 | 0.00 | 81.45 | 65.89 |
 
 The new playback mark responds once and settles, replacing the repeated
 animation in the first redesign. No steady CPU ticks or voluntary wakeups were
 sampled in the new Listen fixture. This benefit belongs to the QML motion
-implementation, not the backend language. The stable player and retained page
-content have a memory cost: the new Settings fixture uses about 24.7 MiB more
-PSS. These are complete isolated-renderer processes; they do not measure GPU,
+implementation, not the backend language. Renderer memory is much less stable:
+the [initial run](../perf-results/qml-design-v2-initial.json) recorded Listen PSS
+of 100.91/105.76 MiB and Settings PSS of 79.08/103.82 MiB for old/new. The final
+repetition above reverses the Settings difference and changes the Listen gap.
+The last production correction only caps the host window's height; the
+offscreen surface ignores that extra fitting argument. These differences do
+not establish a memory gain or a fixed memory penalty for the new UI. The
+initial 24.7 MiB Settings difference is retained as an observation, not a
+reproducible cost. These are complete isolated-renderer processes; they do not measure GPU,
 on-screen FPS, physical input latency or incremental memory in the shared
 desktop shell. The separate UI audit reproduces actual panel insets and scale.
 

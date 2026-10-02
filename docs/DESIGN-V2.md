@@ -73,6 +73,15 @@ and navigation stay reachable. The dock can reserve additional height for a
 verified finite recording timeline or an error message without relocating the
 header. An ordinary radio state must not consume that empty extra height.
 
+The production height uses
+`panel.fittedContentHeight(visual.panelHeight, visual.panelHeight)`: the second
+argument explicitly caps the whole card at the design height. The host's height
+helper otherwise adds its vertical padding and border to the first argument,
+unlike its width helper. At the default scale that produced a 460 × 644 px live
+panel instead of the audited 460 × 600 px card. The explicit cap preserves the
+audited geometry and still lets the host shrink the card to the available screen
+height. The independent renderer includes the real padding and border insets.
+
 ## Listen
 
 The page begins with an understated **Radio / Saved** source filter on the left.

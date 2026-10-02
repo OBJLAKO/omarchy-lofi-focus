@@ -372,7 +372,9 @@ Panel {
     padding: visual.padding
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(visual.panelWidth)
-    contentHeight: panel.fittedContentHeight(visual.panelHeight)
+    // The host fitter adds content padding; the cap keeps the whole card at
+    // the design height while still shrinking to the available screen space.
+    contentHeight: panel.fittedContentHeight(visual.panelHeight, visual.panelHeight)
 
     FocusScope {
       id: keyCatcher

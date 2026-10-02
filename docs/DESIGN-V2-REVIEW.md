@@ -34,7 +34,12 @@ configuration, cache and state directories.
 Only `KeyboardPanel` window placement is replaced. The temporary surface retains
 the real host border, padding and content insets: 460 × 600 px is the whole card,
 not its usable content rectangle. This distinction exposed the initial V2 mixer
-overflow that the earlier wide render fixture missed.
+overflow that the earlier wide render fixture missed. A final real Wayland check
+also confirmed that the host's `fittedContentHeight` helper adds card insets by
+default, whereas `fittedContentWidth` does not. The production call now supplies
+an explicit maximum: `fittedContentHeight(visual.panelHeight, visual.panelHeight)`.
+Its final card is therefore 600 px high at the default scale, matching this
+review, rather than the previous 644 px helper result.
 
 During the review, actual screenshots and interaction identified these issues:
 
@@ -47,7 +52,9 @@ During the review, actual screenshots and interaction identified these issues:
 | P2 | Entered link values replaced the only visible field labels. | URL and optional name now have persistent visible labels; failed saves preserve entered values. |
 | P2 | The shared map-to-item calculation was used without tracking ancestor transforms. | This was a layout lifecycle issue, not just a wrong constant; the corrected popup is checked after scrolling and at enlarged scale. |
 
-The final run used the frozen QML after the per-bar font inheritance correction.
+The final run used the frozen QML after the per-bar font inheritance correction
+and the explicit host height cap. Recorded source hashes were compared with the
+working tree after the run; every hash matched.
 Every variant passed **15 actual interaction cases**, plus QtTest's initialization
 case: **90 interaction cases + 6 initialization cases**, with zero failures.
 There are **30 fresh screenshots per variant, 180 total**. Each `result.json`
@@ -65,7 +72,7 @@ were regenerated from the same immutable snapshot.
 
 The recorded [source hashes](redesign-v2-review/source-sha256.json) identify the
 tested snapshot. `Panel.qml` SHA-256 is
-`8130594ee68e98cc369b7fed07064b9c2eebe59e6e742e57e48f3086bdea3bd8`.
+`7bbde25c77ccfa1085a2c16e83b0692fd9f3e0c5f2909f5a6b9bff9cfc8fdaaa`.
 
 Representative renders:
 

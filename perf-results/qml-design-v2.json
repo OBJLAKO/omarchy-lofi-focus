@@ -14,7 +14,7 @@
       "BarWidget.qml": "dcbba4010ebeb8f253f76a202e23d5857f4cad8048b4450f8cd8801023697e0d",
       "FocusDropdown.qml": "4a62eec58a435d1e9b3e5f7124578675b2495b96d6ce8d8dca032963ec74c673",
       "MixerLevel.qml": "5cbd71580a6fac51d08eb46471fc0300d7c3128d93800ad45af808f6a8c989e3",
-      "Panel.qml": "8130594ee68e98cc369b7fed07064b9c2eebe59e6e742e57e48f3086bdea3bd8",
+      "Panel.qml": "7bbde25c77ccfa1085a2c16e83b0692fd9f3e0c5f2909f5a6b9bff9cfc8fdaaa",
       "PlaybackWave.qml": "4db595ee91a745561fc2b0df838953be7e55f337544a989a5570dd9392a37c25",
       "SkylofiButton.qml": "9c49f10aa81570297a518836a668566d3c01296f20e94018fa831f0b7f8dba91",
       "SkylofiSlider.qml": "8bd983856ffb809a3411ee5b90a1debd7f0d8f274e7f291b7a52228ac8044d2b",
@@ -27,199 +27,199 @@
   "cases": [
     {
       "phase": "closed",
-      "seconds": 10.0031640899997,
+      "seconds": 10.003562162999515,
       "cpu_one_core_percent": 0.0,
-      "rss_mib_median": 146.84765625,
-      "pss_mib_median": 78.9755859375,
+      "rss_mib_median": 122.96875,
+      "pss_mib_median": 54.8779296875,
       "voluntary_context_switches_per_second": 0.0,
       "samples": [
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80853,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80846,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         },
         {
-          "start": 1158890,
-          "cpu_ticks": 33,
-          "rss_kib": 150372,
-          "pss_kib": 80871,
-          "voluntary": 66,
-          "involuntary": 33
+          "start": 1236686,
+          "cpu_ticks": 54,
+          "rss_kib": 125920,
+          "pss_kib": 56195,
+          "voluntary": 144,
+          "involuntary": 62
         }
       ],
       "host_before": {
-        "utc": "2026-10-02T15:43:29Z",
-        "loadavg": "6.90 6.53 6.40 5/2319 1073540",
+        "utc": "2026-10-02T15:56:28Z",
+        "loadavg": "5.59 6.83 6.83 8/2362 1109348",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          877.21,
-          1079.613,
-          1068.171,
-          1095.675,
-          1098.227,
-          1085.817,
-          1095.662,
-          1085.062,
-          1070.654,
-          1090.354,
-          1085.308,
-          1078.021
+          786.023,
+          879.303,
+          861.034,
+          899.926,
+          900.0,
+          899.973,
+          900.0,
+          700.006,
+          899.953,
+          900.016,
+          899.261,
+          899.968
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -237,23 +237,23 @@
         }
       },
       "host_after": {
-        "utc": "2026-10-02T15:43:39Z",
-        "loadavg": "7.09 6.58 6.41 5/2301 1074022",
+        "utc": "2026-10-02T15:56:38Z",
+        "loadavg": "6.00 6.87 6.84 11/2362 1109620",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          1159.754,
-          1150.901,
-          776.417,
-          1125.735,
-          922.64,
-          1017.739,
-          1098.781,
-          1079.584,
-          1093.15,
-          1008.22,
-          971.246,
-          1025.64
+          1855.21,
+          1833.017,
+          1832.89,
+          1832.832,
+          1833.011,
+          1819.482,
+          1833.244,
+          1833.668,
+          1399.907,
+          1399.974,
+          1399.574,
+          1400.0
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -270,204 +270,204 @@
           "cpu0": "powersave"
         }
       },
-      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-k4sbq6n7/shell.qml\"\n  INFO: Shell ID: \"d830b42bbd6adb99ebd66f17057397d7\" Path ID \"d830b42bbd6adb99ebd66f17057397d7\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-k4sbq6n7/runtime/quickshell/by-id/280nfceamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-_4nqtbt7/shell.qml\"\n  INFO: Shell ID: \"25896c434d676d49faf12c11e2cacc13\" Path ID \"25896c434d676d49faf12c11e2cacc13\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-_4nqtbt7/runtime/quickshell/by-id/qwrn1yeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
       "source": "design_v1_alpha1"
     },
     {
       "phase": "closed",
-      "seconds": 10.003748765000637,
+      "seconds": 10.002959892000945,
       "cpu_one_core_percent": 0.0,
-      "rss_mib_median": 147.63671875,
-      "pss_mib_median": 79.7431640625,
+      "rss_mib_median": 123.06640625,
+      "pss_mib_median": 54.9345703125,
       "voluntary_context_switches_per_second": 0.0,
       "samples": [
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81607,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81635,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81643,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56232,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56253,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56193,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81657,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56193,
+          "voluntary": 56,
+          "involuntary": 56
         },
         {
-          "start": 1160132,
-          "cpu_ticks": 29,
-          "rss_kib": 151180,
-          "pss_kib": 81656,
-          "voluntary": 60,
-          "involuntary": 19
+          "start": 1237952,
+          "cpu_ticks": 39,
+          "rss_kib": 126020,
+          "pss_kib": 56234,
+          "voluntary": 56,
+          "involuntary": 56
         }
       ],
       "host_before": {
-        "utc": "2026-10-02T15:43:42Z",
-        "loadavg": "6.92 6.56 6.41 5/2302 1074148",
+        "utc": "2026-10-02T15:56:40Z",
+        "loadavg": "6.00 6.87 6.84 6/2363 1109703",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          799.204,
-          900.05,
-          701.763,
-          399.887,
-          803.375,
-          400.107,
-          907.838,
-          989.574,
-          728.883,
-          961.691,
-          749.593,
-          956.299
+          743.176,
+          735.232,
+          736.864,
+          743.336,
+          731.474,
+          730.474,
+          733.936,
+          727.204,
+          742.79,
+          840.998,
+          852.634,
+          830.581
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -485,23 +485,23 @@
         }
       },
       "host_after": {
-        "utc": "2026-10-02T15:43:52Z",
-        "loadavg": "7.08 6.60 6.42 18/2331 1074727",
+        "utc": "2026-10-02T15:56:50Z",
+        "loadavg": "6.65 6.99 6.88 6/2376 1110001",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          1097.575,
-          1096.779,
-          1096.768,
-          1076.078,
-          1083.074,
-          1073.824,
-          1099.127,
-          1097.572,
-          1099.111,
-          1102.572,
-          1101.25,
-          1101.307
+          3399.291,
+          3405.599,
+          3565.209,
+          3547.722,
+          3514.233,
+          3342.843,
+          3420.687,
+          3456.732,
+          2669.257,
+          2668.34,
+          2669.609,
+          2663.932
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -518,204 +518,204 @@
           "cpu0": "powersave"
         }
       },
-      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-dpc9sz_l/shell.qml\"\n  INFO: Shell ID: \"9434b074a2dd018aaedb0beca43731fd\" Path ID \"9434b074a2dd018aaedb0beca43731fd\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-dpc9sz_l/runtime/quickshell/by-id/2q0nsceamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-wnzru5cd/shell.qml\"\n  INFO: Shell ID: \"a16598d3f00678bf837397fdd5c54a34\" Path ID \"a16598d3f00678bf837397fdd5c54a34\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-wnzru5cd/runtime/quickshell/by-id/y6sneyeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
       "source": "design_v2_alpha2"
     },
     {
       "phase": "listening",
-      "seconds": 10.003370549000465,
-      "cpu_one_core_percent": 3.59878701120365,
-      "rss_mib_median": 169.109375,
-      "pss_mib_median": 100.9091796875,
-      "voluntary_context_switches_per_second": 124.95788233346008,
+      "seconds": 10.004055340999912,
+      "cpu_one_core_percent": 3.298662279961121,
+      "rss_mib_median": 124.38671875,
+      "pss_mib_median": 56.0166015625,
+      "voluntary_context_switches_per_second": 124.9493287864061,
       "samples": [
         {
-          "start": 1161369,
-          "cpu_ticks": 32,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 354,
-          "involuntary": 31
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 33,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 417,
-          "involuntary": 32
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 35,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 480,
-          "involuntary": 36
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 36,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 543,
-          "involuntary": 40
-        },
-        {
-          "start": 1161369,
+          "start": 1239198,
           "cpu_ticks": 38,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 605,
-          "involuntary": 49
+          "rss_kib": 127372,
+          "pss_kib": 57361,
+          "voluntary": 349,
+          "involuntary": 103
         },
         {
-          "start": 1161369,
+          "start": 1239198,
           "cpu_ticks": 41,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 669,
-          "involuntary": 53
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 42,
-          "rss_kib": 173356,
-          "pss_kib": 103519,
-          "voluntary": 731,
-          "involuntary": 62
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 44,
-          "rss_kib": 173168,
-          "pss_kib": 103331,
-          "voluntary": 794,
-          "involuntary": 69
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 46,
-          "rss_kib": 173168,
-          "pss_kib": 103331,
-          "voluntary": 857,
-          "involuntary": 76
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 49,
-          "rss_kib": 173168,
-          "pss_kib": 103303,
-          "voluntary": 920,
-          "involuntary": 82
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 50,
-          "rss_kib": 173168,
-          "pss_kib": 103308,
-          "voluntary": 983,
-          "involuntary": 85
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 52,
-          "rss_kib": 173168,
-          "pss_kib": 103331,
-          "voluntary": 1046,
-          "involuntary": 87
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 54,
-          "rss_kib": 173168,
-          "pss_kib": 103330,
-          "voluntary": 1109,
-          "involuntary": 90
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 56,
-          "rss_kib": 173168,
-          "pss_kib": 103331,
-          "voluntary": 1173,
-          "involuntary": 98
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 58,
-          "rss_kib": 173128,
-          "pss_kib": 103291,
-          "voluntary": 1235,
-          "involuntary": 106
-        },
-        {
-          "start": 1161369,
-          "cpu_ticks": 60,
-          "rss_kib": 173132,
-          "pss_kib": 103295,
-          "voluntary": 1299,
+          "rss_kib": 127372,
+          "pss_kib": 57363,
+          "voluntary": 411,
           "involuntary": 109
         },
         {
-          "start": 1161369,
-          "cpu_ticks": 62,
-          "rss_kib": 173132,
-          "pss_kib": 103243,
-          "voluntary": 1361,
-          "involuntary": 114
+          "start": 1239198,
+          "cpu_ticks": 43,
+          "rss_kib": 127372,
+          "pss_kib": 57363,
+          "voluntary": 474,
+          "involuntary": 116
         },
         {
-          "start": 1161369,
-          "cpu_ticks": 64,
-          "rss_kib": 173108,
-          "pss_kib": 103242,
-          "voluntary": 1425,
-          "involuntary": 118
+          "start": 1239198,
+          "cpu_ticks": 44,
+          "rss_kib": 127372,
+          "pss_kib": 57363,
+          "voluntary": 537,
+          "involuntary": 124
         },
         {
-          "start": 1161369,
+          "start": 1239198,
+          "cpu_ticks": 45,
+          "rss_kib": 127372,
+          "pss_kib": 57363,
+          "voluntary": 600,
+          "involuntary": 136
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 46,
+          "rss_kib": 127372,
+          "pss_kib": 57363,
+          "voluntary": 663,
+          "involuntary": 137
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 48,
+          "rss_kib": 127376,
+          "pss_kib": 57367,
+          "voluntary": 726,
+          "involuntary": 144
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 50,
+          "rss_kib": 127376,
+          "pss_kib": 57367,
+          "voluntary": 789,
+          "involuntary": 148
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 51,
+          "rss_kib": 127376,
+          "pss_kib": 57367,
+          "voluntary": 852,
+          "involuntary": 153
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 53,
+          "rss_kib": 127380,
+          "pss_kib": 57371,
+          "voluntary": 915,
+          "involuntary": 156
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 54,
+          "rss_kib": 127380,
+          "pss_kib": 57371,
+          "voluntary": 978,
+          "involuntary": 168
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 56,
+          "rss_kib": 127328,
+          "pss_kib": 57319,
+          "voluntary": 1041,
+          "involuntary": 169
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 58,
+          "rss_kib": 127328,
+          "pss_kib": 57318,
+          "voluntary": 1104,
+          "involuntary": 175
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 60,
+          "rss_kib": 127328,
+          "pss_kib": 57318,
+          "voluntary": 1167,
+          "involuntary": 188
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 61,
+          "rss_kib": 127328,
+          "pss_kib": 57318,
+          "voluntary": 1230,
+          "involuntary": 201
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 63,
+          "rss_kib": 127328,
+          "pss_kib": 57318,
+          "voluntary": 1293,
+          "involuntary": 211
+        },
+        {
+          "start": 1239198,
           "cpu_ticks": 66,
-          "rss_kib": 173116,
-          "pss_kib": 103254,
-          "voluntary": 1487,
-          "involuntary": 122
+          "rss_kib": 127328,
+          "pss_kib": 57319,
+          "voluntary": 1357,
+          "involuntary": 214
         },
         {
-          "start": 1161369,
-          "cpu_ticks": 67,
-          "rss_kib": 173116,
-          "pss_kib": 103279,
-          "voluntary": 1550,
-          "involuntary": 126
-        },
-        {
-          "start": 1161369,
+          "start": 1239198,
           "cpu_ticks": 68,
-          "rss_kib": 173116,
-          "pss_kib": 103279,
-          "voluntary": 1604,
-          "involuntary": 128
+          "rss_kib": 127328,
+          "pss_kib": 57319,
+          "voluntary": 1419,
+          "involuntary": 224
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 69,
+          "rss_kib": 127328,
+          "pss_kib": 57319,
+          "voluntary": 1483,
+          "involuntary": 231
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 70,
+          "rss_kib": 127328,
+          "pss_kib": 57249,
+          "voluntary": 1545,
+          "involuntary": 239
+        },
+        {
+          "start": 1239198,
+          "cpu_ticks": 71,
+          "rss_kib": 127328,
+          "pss_kib": 57254,
+          "voluntary": 1599,
+          "involuntary": 245
         }
       ],
       "host_before": {
-        "utc": "2026-10-02T15:43:54Z",
-        "loadavg": "7.08 6.60 6.42 4/2344 1074883",
+        "utc": "2026-10-02T15:56:52Z",
+        "loadavg": "6.52 6.96 6.87 5/2398 1110108",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          1565.178,
-          1700.214,
-          1800.116,
-          1800.0,
-          1511.064,
-          1800.0,
-          1800.0,
-          1610.323,
-          1376.487,
-          607.858,
-          1347.444,
-          1286.811
+          2230.878,
+          2200.0,
+          2199.943,
+          2230.522,
+          2200.022,
+          2349.926,
+          2200.029,
+          2160.801,
+          1699.865,
+          1699.934,
+          1699.876,
+          1700.094
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -733,23 +733,23 @@
         }
       },
       "host_after": {
-        "utc": "2026-10-02T15:44:04Z",
-        "loadavg": "6.44 6.49 6.39 3/2341 1075430",
+        "utc": "2026-10-02T15:57:02Z",
+        "loadavg": "6.36 6.91 6.86 6/2408 1110401",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          1200.0,
-          1200.012,
-          1199.95,
-          1200.05,
-          1112.111,
-          1200.0,
-          1200.0,
-          1200.0,
-          1162.571,
-          1163.156,
-          1170.498,
-          1013.856
+          4099.928,
+          4100.0,
+          4100.0,
+          4100.0,
+          4099.872,
+          4100.0,
+          4099.953,
+          4100.0,
+          3300.149,
+          3299.947,
+          3299.982,
+          3300.015
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -766,204 +766,204 @@
           "cpu0": "powersave"
         }
       },
-      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-372grrp2/shell.qml\"\n  INFO: Shell ID: \"a4e0ffdeb5c977901b38c13e068d2039\" Path ID \"a4e0ffdeb5c977901b38c13e068d2039\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-372grrp2/runtime/quickshell/by-id/l91n4deamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-z1as41c_/shell.qml\"\n  INFO: Shell ID: \"c835c954b8eb49e54296cc97d435af5e\" Path ID \"c835c954b8eb49e54296cc97d435af5e\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-z1as41c_/runtime/quickshell/by-id/ghsnqyeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
       "source": "design_v1_alpha1"
     },
     {
       "phase": "listening",
-      "seconds": 10.00440716400044,
+      "seconds": 10.007106801000191,
       "cpu_one_core_percent": 0.0,
-      "rss_mib_median": 174.0,
-      "pss_mib_median": 105.763671875,
+      "rss_mib_median": 171.82421875,
+      "pss_mib_median": 103.619140625,
       "voluntary_context_switches_per_second": 0.0,
       "samples": [
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106125,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106083,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106139,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106096,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106096,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106091,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106101,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106074,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106106,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106106,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106103,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106107,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106080,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108302,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106107,
+          "voluntary": 124,
+          "involuntary": 48
         },
         {
-          "start": 1162600,
-          "cpu_ticks": 36,
-          "rss_kib": 178176,
-          "pss_kib": 108279,
-          "voluntary": 135,
-          "involuntary": 22
+          "start": 1240438,
+          "cpu_ticks": 29,
+          "rss_kib": 175948,
+          "pss_kib": 106100,
+          "voluntary": 124,
+          "involuntary": 48
         }
       ],
       "host_before": {
-        "utc": "2026-10-02T15:44:07Z",
-        "loadavg": "6.16 6.43 6.37 2/2338 1075572",
+        "utc": "2026-10-02T15:57:05Z",
+        "loadavg": "6.36 6.91 6.86 10/2412 1110504",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          789.013,
-          713.015,
-          515.486,
-          657.418,
-          399.798,
-          627.883,
-          578.983,
-          577.214,
-          677.066,
-          678.852,
-          699.415,
-          673.633
+          800.019,
+          800.026,
+          800.0,
+          800.0,
+          800.0,
+          800.028,
+          800.0,
+          800.007,
+          699.998,
+          700.017,
+          699.982,
+          699.995
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -981,23 +981,23 @@
         }
       },
       "host_after": {
-        "utc": "2026-10-02T15:44:17Z",
-        "loadavg": "6.05 6.40 6.36 8/2333 1076050",
+        "utc": "2026-10-02T15:57:15Z",
+        "loadavg": "6.53 6.93 6.86 11/2407 1110976",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          799.938,
-          800.016,
-          800.008,
-          799.826,
-          799.991,
-          799.88,
-          800.0,
-          800.016,
-          799.984,
-          817.543,
-          799.785,
-          959.03
+          1100.0,
+          1100.0,
+          1074.967,
+          1086.113,
+          1099.988,
+          1099.978,
+          1100.0,
+          1099.988,
+          877.576,
+          881.944,
+          882.033,
+          881.857
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -1014,204 +1014,204 @@
           "cpu0": "powersave"
         }
       },
-      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-h83834b5/shell.qml\"\n  INFO: Shell ID: \"745145653a2388c27597de94534671a5\" Path ID \"745145653a2388c27597de94534671a5\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-h83834b5/runtime/quickshell/by-id/6t1ngdeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-29yee8zz/shell.qml\"\n  INFO: Shell ID: \"b22d193c5aa3faf7cb77ecfb69219a82\" Path ID \"b22d193c5aa3faf7cb77ecfb69219a82\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-29yee8zz/runtime/quickshell/by-id/lssn3zeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
       "source": "design_v2_alpha2"
     },
     {
       "phase": "settings",
-      "seconds": 10.0037306109989,
+      "seconds": 10.003587200999391,
       "cpu_one_core_percent": 0.0,
-      "rss_mib_median": 147.1796875,
-      "pss_mib_median": 79.0849609375,
+      "rss_mib_median": 149.74609375,
+      "pss_mib_median": 81.4462890625,
       "voluntary_context_switches_per_second": 0.0,
       "samples": [
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80984,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83396,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80985,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83402,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80985,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83401,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80985,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83401,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80985,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83401,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80985,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83400,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80985,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83389,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83395,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83401,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80982,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83397,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83383,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83383,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83433,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80983,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         },
         {
-          "start": 1163842,
+          "start": 1241675,
           "cpu_ticks": 49,
-          "rss_kib": 150712,
-          "pss_kib": 80925,
-          "voluntary": 87,
-          "involuntary": 60
+          "rss_kib": 153340,
+          "pss_kib": 83456,
+          "voluntary": 85,
+          "involuntary": 43
         }
       ],
       "host_before": {
-        "utc": "2026-10-02T15:44:19Z",
-        "loadavg": "6.05 6.40 6.36 8/2315 1076215",
+        "utc": "2026-10-02T15:57:17Z",
+        "loadavg": "6.49 6.91 6.86 11/2377 1111127",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          895.115,
-          1021.822,
-          973.937,
-          748.842,
-          1027.181,
-          1009.442,
-          952.636,
-          1021.767,
-          1026.358,
-          999.833,
-          1000.003,
-          999.96
+          900.009,
+          899.963,
+          899.986,
+          900.027,
+          814.008,
+          831.751,
+          831.212,
+          833.315,
+          828.655,
+          835.074,
+          834.268,
+          834.989
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -1229,23 +1229,23 @@
         }
       },
       "host_after": {
-        "utc": "2026-10-02T15:44:29Z",
-        "loadavg": "6.44 6.47 6.38 4/2279 1076717",
+        "utc": "2026-10-02T15:57:27Z",
+        "loadavg": "6.63 6.93 6.86 4/2356 1111659",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          899.917,
-          899.99,
-          848.582,
-          862.179,
-          847.215,
-          844.878,
-          809.26,
-          802.046,
-          844.384,
-          848.748,
-          831.839,
-          836.971
+          800.0,
+          799.984,
+          799.983,
+          800.057,
+          800.075,
+          868.099,
+          800.0,
+          823.993,
+          800.181,
+          799.985,
+          800.024,
+          800.489
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -1262,204 +1262,204 @@
           "cpu0": "powersave"
         }
       },
-      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-fulbmzfj/shell.qml\"\n  INFO: Shell ID: \"1dfcdc6d58e2c32b37148b8764435ab1\" Path ID \"1dfcdc6d58e2c32b37148b8764435ab1\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-fulbmzfj/runtime/quickshell/by-id/ea2ntdeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-wydphrvu/shell.qml\"\n  INFO: Shell ID: \"fa6018d871e6b23c9ea39a654e65ca99\" Path ID \"fa6018d871e6b23c9ea39a654e65ca99\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-wydphrvu/runtime/quickshell/by-id/k8tnfzeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
       "source": "design_v1_alpha1"
     },
     {
       "phase": "settings",
-      "seconds": 10.005270116000247,
+      "seconds": 10.003151917999276,
       "cpu_one_core_percent": 0.0,
-      "rss_mib_median": 171.98046875,
-      "pss_mib_median": 103.8154296875,
+      "rss_mib_median": 134.21484375,
+      "pss_mib_median": 65.89453125,
       "voluntary_context_switches_per_second": 0.0,
       "samples": [
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67425,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67397,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106306,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67475,
+          "voluntary": 196,
+          "involuntary": 50
         },
         {
-          "start": 1165100,
-          "cpu_ticks": 58,
-          "rss_kib": 176108,
-          "pss_kib": 106307,
-          "voluntary": 176,
-          "involuntary": 54
+          "start": 1242932,
+          "cpu_ticks": 46,
+          "rss_kib": 137436,
+          "pss_kib": 67476,
+          "voluntary": 196,
+          "involuntary": 50
         }
       ],
       "host_before": {
-        "utc": "2026-10-02T15:44:32Z",
-        "loadavg": "7.29 6.64 6.44 6/2282 1076887",
+        "utc": "2026-10-02T15:57:30Z",
+        "loadavg": "6.63 6.93 6.86 11/2361 1111759",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          839.296,
-          1125.443,
-          1200.073,
-          1199.987,
-          1061.268,
-          1098.333,
-          1200.0,
-          1199.987,
-          900.028,
-          900.017,
-          900.496,
-          900.002
+          799.971,
+          799.967,
+          799.977,
+          799.975,
+          800.008,
+          766.275,
+          793.27,
+          513.811,
+          800.058,
+          799.982,
+          799.989,
+          799.751
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -1477,23 +1477,23 @@
         }
       },
       "host_after": {
-        "utc": "2026-10-02T15:44:42Z",
-        "loadavg": "8.08 6.83 6.50 8/2285 1077354",
+        "utc": "2026-10-02T15:57:40Z",
+        "loadavg": "6.70 6.94 6.87 6/2360 1112166",
         "cpu_model": "12th Gen Intel(R) Core(TM) i5-12450H",
         "logical_cpus": 12,
         "cpu_frequency_mhz": [
-          800.027,
-          800.0,
-          799.642,
-          799.967,
-          787.025,
-          506.987,
-          800.44,
-          799.991,
-          764.594,
-          704.852,
-          726.319,
-          762.966
+          1111.209,
+          1199.987,
+          1200.0,
+          1199.955,
+          679.801,
+          1200.012,
+          1200.0,
+          1199.941,
+          900.005,
+          900.004,
+          899.949,
+          899.729
         ],
         "scaling_governor": {
           "cpu11": "powersave",
@@ -1510,7 +1510,7 @@
           "cpu0": "powersave"
         }
       },
-      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-0iku4_t9/shell.qml\"\n  INFO: Shell ID: \"a5b761719f054905a6945c1acac58f48\" Path ID \"a5b761719f054905a6945c1acac58f48\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-0iku4_t9/runtime/quickshell/by-id/ys2n5eeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
+      "qml_log": "  INFO: Launching config: \"/tmp/skylofi-qml-perf-gq3uz0zr/shell.qml\"\n  INFO: Shell ID: \"277b1fa3849dffed6bcb36b529f2f5f1\" Path ID \"277b1fa3849dffed6bcb36b529f2f5f1\"\n  INFO: Saving logs to \"/tmp/skylofi-qml-perf-gq3uz0zr/runtime/quickshell/by-id/jrtnszeamt/log.qslog\"\n  INFO: Configuration Loaded\n DEBUG qml: QML_PERF_READY\n",
       "source": "design_v2_alpha2"
     }
   ]
