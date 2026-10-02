@@ -29,6 +29,7 @@ Item {
  property bool open
  property bool centerOnBar
  property var focusTarget
+ property int padding
  property real contentWidth
  property real contentHeight
  width:parent.width

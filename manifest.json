@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "sky.lofi",
   "name": "Skylofi",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "author": "OBJLAKO",
   "license": "MIT",
   "description": "A quiet listening space: radio, saved YouTube audio and a personal nature mix, with a native Rust controller.",

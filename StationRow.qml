@@ -2,9 +2,14 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 
-// Selection stays visible; hover and keyboard focus are temporary affordances.
-CursorSurface {
+// Plain source rows let the names lead. One persistent selected mark and a
+// separate keyboard outline distinguish selection from hover.
+BorderSurface {
   id: root
+  property bool current: false
+  property bool hasCursor: mouse.containsMouse || activeFocus
+  property color foreground: Color.foreground
+  property color accent: Color.accent
   property string glyph: "\uf001"
   property string name: ""
   property string description: ""
@@ -13,9 +18,18 @@ CursorSurface {
   property bool animate: true
   property string fontFamily: Style.font.family
   signal activated()
-  implicitHeight: Math.max(Style.space(54), copy.implicitHeight + Style.space(18))
+  SkylofiStyle { id: visual; foreground: root.foreground; background: Color.popups.background; accent: root.accent }
+  implicitHeight: visual.rowHeight
+  color: mouse.pressed ? visual.pressed : root.hasCursor ? visual.hover : root.current ? visual.selected : "transparent"
+  radius: visual.radius
+  Behavior on color {
+    enabled: root.animate && root.visible
+    ColorAnimation { id: selectionFeedback; duration: visual.feedbackDuration }
+  }
+  onAnimateChanged: if (!animate) selectionFeedback.complete()
+  onVisibleChanged: if (!visible) selectionFeedback.complete()
+  borderSpec: activeFocus ? Border.flat(root.accent, 1) : Border.none()
   activeFocusOnTab: true
-  hasCursor: mouse.containsMouse || activeFocus
   Accessible.role: Accessible.Button
   Accessible.name: name
   Accessible.description: description + (current ? ", selected" : "")
@@ -24,51 +38,45 @@ CursorSurface {
   Keys.onEnterPressed: root.activated()
   Keys.onSpacePressed: root.activated()
 
-  Rectangle {
-    x: Style.space(10)
+  Text {
+    x: Style.space(12)
+    width: visual.iconSlot
     anchors.verticalCenter: parent.verticalCenter
-    width: Style.space(32); height: width
-    radius: Style.cornerRadius
-    color: Qt.alpha(root.current ? root.accent : root.foreground, 0.08)
-    Text {
-      anchors.centerIn: parent
-      visible: !root.playing
-      text: root.current ? (root.muted ? "\uf04c" : "\uf00c") : root.glyph
-      color: root.current ? root.accent : Qt.alpha(root.foreground, 0.75)
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.body
-    }
-    PlaybackWave {
-      anchors.centerIn: parent
-      width: Style.space(14); height: Style.space(14)
-      visible: root.playing
-      active: root.playing
-      animate: root.animate
-      ink: root.accent
-    }
+    text: root.glyph
+    color: root.current ? root.accent : visual.quiet
+    font.family: root.fontFamily; font.pixelSize: visual.iconSize
+    horizontalAlignment: Text.AlignHCenter
   }
   Column {
     id: copy
-    x: Style.space(54)
-    width: parent.width - x - Style.space(12)
+    x: Style.space(46)
+    width: parent.width - x - Style.space(34)
     anchors.verticalCenter: parent.verticalCenter
-    spacing: Style.space(3)
+    spacing: Style.space(4)
     Text {
       width: parent.width
       text: root.name; textFormat: Text.PlainText
       color: root.foreground
-      font.family: root.fontFamily; font.pixelSize: Style.font.body
-      font.bold: root.current
+      font.family: root.fontFamily; font.pixelSize: visual.body
+      font.weight: root.current ? Font.DemiBold : Font.Normal
       elide: Text.ElideRight
     }
     Text {
       width: parent.width
       visible: text.length > 0
       text: root.description; textFormat: Text.PlainText
-      color: Qt.alpha(root.foreground, 0.7)
-      font.family: root.fontFamily; font.pixelSize: Style.font.caption
+      color: visual.muted
+      font.family: root.fontFamily; font.pixelSize: visual.caption
       elide: Text.ElideRight
     }
+  }
+  Text {
+    anchors.right: parent.right; anchors.rightMargin: Style.space(12)
+    anchors.verticalCenter: parent.verticalCenter
+    visible: root.current
+    text: root.muted ? "\uf04c" : "\uf00c"
+    color: root.accent
+    font.family: root.fontFamily; font.pixelSize: visual.caption
   }
   MouseArea {
     id: mouse

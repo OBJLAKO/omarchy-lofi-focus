@@ -32,6 +32,7 @@ Item {
  property bool open
  property bool centerOnBar
  property var focusTarget
+ property int padding
  property real contentWidth
  property real contentHeight
  width: parent.width
@@ -80,7 +81,7 @@ Window {
     win.scenario++
     if(win.scenario === 1) player.showView(1)
     else if(win.scenario === 2) player.showView(2)
-    else if(win.scenario === 3) { player.showView(0); player.libraryOpen=true; player.playerStationId="youtube-demo";player.playerName="A conversation for a rainy day";player.mainTitle=player.playerName;player.playerCategory="youtube";player.playerCategoryName="YouTube";player.mainDuration=3840;player.mainPosition=1240 }
+    else if(win.scenario === 3) { player.showView(0); player.libraryOpen=true; player.playerStationId="youtube-demo";player.playerName="A conversation for a rainy day";player.mainTitle=player.playerName;player.playerCategory="youtube";player.playerCategoryName="YouTube";player.canSeek=true;player.mainDuration=3840;player.mainPosition=1240 }
     else if(win.scenario === 4) { var lib=win.findItem(player,"youtubeLibrary");lib.addingLink=true;player.youtubeUrl.text="https://youtu.be/jNQXAC9IVRw";player.youtubeTitle.text="Rainy day conversation" }
     else if(win.scenario === 5) { var lib=win.findItem(player,"youtubeLibrary");lib.addingLink=false;player.youtubeEntries=[{id:"youtube-demo",name:"A conversation for a rainy day",position:1240},{id:"youtube-demo2",name:"Sunday morning jazz",position:0},{id:"youtube-demo3",name:"Forest piano",position:0},{id:"youtube-demo4",name:"After hours jazz",position:500},{id:"youtube-demo5",name:"Quiet coding",position:0}];win.findItem(player,"librarySearch").text="jazz" }
     else if(win.scenario === 6) { win.findItem(player,"librarySearch").text="";player.youtubeEntries=[{id:"youtube-demo",name:"A conversation for a rainy day",position:1240},{id:"youtube-demo2",name:"Sunday morning jazz",position:0}];win.findItem(player,"youtubeLibrary").pendingRemoval="youtube-demo" }

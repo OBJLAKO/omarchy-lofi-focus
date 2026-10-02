@@ -192,14 +192,19 @@ impl Media {
     }
     fn seek(&self, offset: i64) {
         let state = self.state();
-        if let Some(position) = state["main_position"].as_f64() {
+        if let Some(position) = state["main_position"]
+            .as_f64()
+            .filter(|_| state["can_seek"] == true)
+        {
             let target = (position + offset as f64 / 1e6).to_string();
             send(&self.events, &["seek", &target], "mpris:Seek");
         }
     }
     fn set_position(&self, track_id: OwnedObjectPath, position: i64) {
         let state = self.state();
-        if track_id.as_str() == format!("/sky/lofi/{}", state["index"].as_u64().unwrap_or(0)) {
+        if state["can_seek"] == true
+            && track_id.as_str() == format!("/sky/lofi/{}", state["index"].as_u64().unwrap_or(0))
+        {
             let target = (position as f64 / 1e6).to_string();
             send(&self.events, &["seek", &target], "mpris:SetPosition");
         }
@@ -266,9 +271,7 @@ impl Media {
     }
     #[zbus(property)]
     fn can_seek(&self) -> bool {
-        self.state()["main_duration"]
-            .as_f64()
-            .is_some_and(|n| n > 0.0)
+        self.state()["can_seek"] == true
     }
     #[zbus(property)]
     fn can_control(&self) -> bool {
@@ -336,6 +339,7 @@ pub fn start(
                             current["station"],
                             current["master_volume"],
                             current["main_duration"],
+                            current["can_seek"],
                             current["count"]
                         ]);
                         if fingerprint == last {
@@ -358,6 +362,7 @@ pub fn start(
                                 current["master_volume"].as_f64().unwrap_or(100.0) / 100.0,
                             ),
                         );
+                        changed.insert("CanSeek", OwnedValue::from(current["can_seek"] == true));
                         connection.emit_signal(
                             None::<&str>,
                             OBJECT,

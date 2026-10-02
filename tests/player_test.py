@@ -1,6 +1,7 @@
 """Integration tests with real mpv IPC, silent local audio and an isolated D-Bus."""
 import json
 import os
+import select
 from pathlib import Path
 import shutil
 import socket
@@ -95,7 +96,22 @@ class PlayerTest(unittest.TestCase):
         self.action('ui', 'fade', 'off', check=False)
         self.action('stop', check=False)
         if self.backend == 'rust':
-            self.action('shutdown', check=False)
+            # The reply acknowledges shutdown; the daemon still has a short
+            # socket/lock cleanup tail. Pin its identity before waiting so a
+            # temporary runtime is never removed underneath that final write.
+            handle = None
+            try:
+                pid = int((self.base/'runtime/sky.lofi/controller.pid').read_text())
+                handle = os.pidfd_open(pid)
+            except (FileNotFoundError, ProcessLookupError):
+                pass
+            try:
+                self.action('shutdown', check=False)
+                if handle is not None:
+                    self.assertTrue(select.select([handle], [], [], 3)[0], 'Controller did not finish shutdown')
+            finally:
+                if handle is not None:
+                    os.close(handle)
         self.temp.cleanup()
 
     def test_lifecycle_and_settings(self):

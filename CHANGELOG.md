@@ -1,3 +1,15 @@
+# 3.0.0-alpha.2 · design revision
+
+- Keep navigation and compact playback/overall-volume controls stable across tabs.
+- Rework every Listen, Mix and Settings block, source rows, library forms and levels.
+- Fit searchable dropdowns inside the panel and preserve reliable keyboard focus.
+- Let unfocused slider wheel events scroll the page without changing volume.
+- Make local controls honor the interface-motion preference, including switches.
+- Confirm live/finite source capabilities in a bounded Rust extraction proxy;
+  remove radio timelines/rewind and disable seeking through CLI and MPRIS.
+- Reconnect radio/live EOF instead of presenting it as a finished recording.
+- Record an independent rendered UI audit and an evaluation of audio-engine options.
+
 # 3.0.0-alpha.1 · rustTest experiment
 
 - Redesign listening around Listen, Mix and Settings, with clear layer controls,

@@ -1,12 +1,29 @@
 import QtQuick
 
-// Small state indicator, deliberately not presented as measured audio data.
+// Status feedback, not an invented audio meter. A short response when playback
+// starts settles into a static mark; an open radio panel does not animate forever.
 Item {
   id: root
   property bool active: false
   property bool animate: true
   property color ink: "white"
-  readonly property bool moving: active && animate && visible
+  property real emphasis: 0
+  readonly property bool moving: feedback.running
+  function respond() {
+    feedback.stop()
+    emphasis = 0
+    if (active && animate && visible) feedback.restart()
+  }
+  onActiveChanged: respond()
+  onAnimateChanged: if (!animate) { feedback.stop(); emphasis = 0 }
+  onVisibleChanged: if (!visible) { feedback.stop(); emphasis = 0 }
+  Component.onCompleted: respond()
+  SequentialAnimation {
+    id: feedback
+    objectName: "playbackFeedback"
+    NumberAnimation { target: root; property: "emphasis"; from: 0; to: 1; duration: 120; easing.type: Easing.OutCubic }
+    NumberAnimation { target: root; property: "emphasis"; to: 0; duration: 220; easing.type: Easing.OutCubic }
+  }
   Row {
     anchors.fill: parent
     spacing: Math.max(1, root.width / 9)
@@ -20,15 +37,8 @@ Item {
         color: root.ink
         opacity: root.active ? 0.85 : 0.4
         transform: Scale {
-          id: barScale
           origin.x: root.width / 6; origin.y: root.height / 2
-          yScale: root.active ? [0.55, 0.85, 0.4][index] : 0.25
-        }
-        SequentialAnimation {
-          running: root.moving
-          loops: Animation.Infinite
-          NumberAnimation { target: barScale; property: "yScale"; to: [0.9, 0.45, 0.7][index]; duration: 700 + index * 130; easing.type: Easing.InOutSine }
-          NumberAnimation { target: barScale; property: "yScale"; to: [0.35, 0.8, 0.4][index]; duration: 780 + index * 100; easing.type: Easing.InOutSine }
+          yScale: root.active ? [0.55, 0.85, 0.4][index] + root.emphasis * [0.25, 0.12, 0.3][index] : 0.25
         }
       }
     }

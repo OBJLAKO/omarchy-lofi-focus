@@ -29,10 +29,15 @@ Window {
     }
 
     function test_liveAndFiniteProgress() {
-      panel.applyStatus(JSON.stringify({running: true, paused: false, main_position: 30, main_duration: 120}))
+      // A radio decoder's buffer duration is not a recording timeline.
+      panel.applyStatus(JSON.stringify({running: true, paused: false, category: "lofi", can_seek: false, main_position: 30, main_duration: 120}))
+      compare(panel.hasProgress, false)
+      panel.applyStatus(JSON.stringify({running: true, paused: false, category: "youtube", can_seek: true, main_position: 30, main_duration: 120}))
       compare(panel.hasProgress, true)
       compare(panel.progressFraction, 0.25)
-      panel.applyStatus(JSON.stringify({running: true, paused: false, main_position: null, main_duration: null}))
+      panel.applyStatus(JSON.stringify({running: true, paused: false, category: "youtube", can_seek: false, main_position: 30, main_duration: 120}))
+      compare(panel.hasProgress, false)
+      panel.applyStatus(JSON.stringify({running: true, paused: false, category: "youtube", can_seek: true, main_position: null, main_duration: null}))
       compare(panel.hasProgress, false)
     }
 

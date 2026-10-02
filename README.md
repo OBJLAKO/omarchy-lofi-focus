@@ -4,7 +4,7 @@ A quiet listening space in your Omarchy bar. Pick a soundtrack, build a small
 nature mix, and keep listening while you work. The interface follows your
 Omarchy theme and fonts.
 
-This is the **3.0.0-alpha.1 experiment on `rustTest`**: a redesigned interface and
+This is the **3.0.0-alpha.2 experiment on `rustTest`**: a redesigned interface and
 a Rust controller. The existing marketplace release remains separate. Measured
 results and their limits are recorded in [the performance report](docs/PERFORMANCE.md).
 
@@ -12,8 +12,8 @@ results and their limits are recorded in [the performance report](docs/PERFORMAN
 
 ## Your listening space
 
-- **Listen:** choose a radio or search saved YouTube links. Transport and Master
-  volume stay close to what is playing.
+- **Listen:** choose a radio or search saved YouTube links. Playback and overall
+  volume stay in a compact dock across all three tabs.
 - **Mix:** balance foreground audio, an optional voice and selected nature
   sounds. Each sound has its own level and removal control.
 - **Settings:** adjust fades, dictation ducking and interface motion.
@@ -21,6 +21,8 @@ results and their limits are recorded in [the performance report](docs/PERFORMAN
 Motion responds to input and explains changes. Steam/glow effects and the busy
 decorative visualizer are replaced with restrained transitions and a compact
 playback indicator. Interface motion can be disabled independently of audio fades.
+The view switcher and playback dock stay in place while the active page scrolls.
+Scroll over an unfocused level control to browse the page without changing volume.
 
 ![Mix your soundtrack, voice and atmosphere](docs/redesign/mix.png)
 
@@ -37,6 +39,8 @@ finite videos remember playback position and support seeking; live streams open
 at their live position. The library holds 40 entries. Removing an entry requires
 confirmation. YouTube takes the foreground channel and suspends the optional
 voice; nature sounds keep playing.
+Radio has no recording timeline or rewind/forward buttons. A decoder buffer
+duration does not enable seeking; the Rust controller confirms source capabilities.
 
 ## Sources and atmosphere
 
@@ -68,6 +72,9 @@ The QML interface runs inside Omarchy's Quickshell host. A persistent local
 connection controls a Rust daemon; mpv decodes audio and yt-dlp extracts YouTube
 streams. Rust manages settings, IPC, recovery, fades, ducking, the library and
 MPRIS. Python sources remain as a comparison and regression reference.
+Further application backend development is Rust-only. See the
+[audio-engine evaluation](docs/AUDIO-ENGINE-EVALUATION.md) for the considered mpv
+alternatives and the bounded local-mixer proposal.
 
 Runtime requirements: Omarchy's plugin-capable Quickshell shell, **mpv** and the
 session D-Bus. YouTube also needs **yt-dlp** and its supported JavaScript runtime,
@@ -119,13 +126,21 @@ from removing process startup; Rust also changes caching and event handling, so
 the remaining difference cannot be attributed solely to the language.
 Reproduction commands and raw evidence are in [PERFORMANCE.md](docs/PERFORMANCE.md).
 
+The figures below belong to the preserved alpha.1 benchmark, with its own binary
+and source hashes. The second design revision has separate validation artifacts.
 In the silent three-channel fixture, control PSS fell from 29.4 to 4.9 MiB.
 A volume change reached mpv in a median 0.82 ms through the new persistent
 connection, versus 154.5 ms through the previous CLI. This measures local
 control, not speaker latency. Whole-audio CPU results vary with workload;
 mpv remains the largest memory cost.
 
-Local validation passed **9 Rust unit tests, 50 native integration/QA cases
+The [alpha.2 measurements](docs/PERFORMANCE-V2.md) record 1.18 ms median applied
+volume timing in the three-channel fixture. The new Listen animation settles
+instead of continuously waking the renderer; the persistent layout also adds
+memory cost in Settings. The [independent UI audit](docs/DESIGN-V2-REVIEW.md)
+passed 90 interaction cases across six sizes/scales/palettes.
+
+Local validation passed **10 Rust unit tests, 53 native integration/QA cases
 and 28 QML component/transport checks**, plus formatting and Clippy with
 warnings rejected. The retained Python reference has separate checks.
 

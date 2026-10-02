@@ -308,8 +308,14 @@ impl Engine {
             command.args(["--ytdl=yes","--ytdl-format=bestaudio","--keep-open=yes","--sid=no","--ytdl-raw-options=ignore-config=,no-plugin-dirs=,no-remote-components=,no-playlist=,socket-timeout=10,retries=1,extractor-retries=1"]);
             command.arg(format!(
                 "--script-opts=ytdl_hook-ytdl_path={},ytdl_hook-force_all_formats=no",
-                config::which("yt-dlp").unwrap().display()
+                std::env::current_exe()
+                    .map_err(|e| e.to_string())?
+                    .display()
             ));
+            command.env("SKYLOFI_EXTRACTOR_PROXY", "1").env(
+                "SKYLOFI_EXTRACTOR_GENERATION",
+                (self.generation + 1).to_string(),
+            );
             if station.position > 0.0 {
                 command.arg(format!("--start={}", station.position));
             }
@@ -641,6 +647,24 @@ impl Engine {
                 .ok_or_else(|| format!("Missing argument for {command}"))
         };
         match command {
+            "__source_kind" => {
+                let generation = arg(1)?
+                    .parse::<u64>()
+                    .map_err(|_| "Invalid source generation")?;
+                let kind = arg(2)?;
+                if !["recording", "live", "unknown"].contains(&kind) {
+                    return Err("Invalid source kind".into());
+                }
+                if let Some(channel) = self
+                    .channels
+                    .get_mut("main")
+                    .filter(|channel| channel.generation == generation && channel.youtube)
+                {
+                    channel.properties.insert("source-kind".into(), json!(kind));
+                    self.changed();
+                }
+                return Ok(());
+            }
             "status" => return Ok(()),
             "start" | "station" => self.begin(Some(arg(1)?))?,
             "play" | "resume" => self.begin(args.get(1).map(String::as_str))?,
@@ -832,6 +856,11 @@ impl Engine {
                 self.reload_catalog();
             }
             "seek" => {
+                if !self.can_seek() {
+                    return Err(
+                        "Seeking is available only for a loaded recording, not live radio.".into(),
+                    );
+                }
                 let seconds = arg(1)?
                     .parse::<f64>()
                     .map_err(|_| "Invalid seek position")?;
@@ -1116,8 +1145,6 @@ impl Engine {
                 .as_str()
                 .map(config::clean_title)
                 .unwrap_or_default())
-        } else if name == "metadata" {
-            json!({"ytdl_is_live":if value["data"]["ytdl_is_live"]==true || value["data"]["ytdl_is_live"].as_str().is_some_and(|s|["true","yes","1"].contains(&s)) {"true"} else {"false"}})
         } else {
             value["data"].clone()
         };
@@ -1137,7 +1164,11 @@ impl Engine {
                 fade.started = Instant::now();
             }
         }
-        if key == "main" && name == "eof-reached" && data == true {
+        if key == "main"
+            && name == "eof-reached"
+            && data == true
+            && self.source_kind() == "recording"
+        {
             self.ended = true;
             self.retry_due = None;
             self.bookmark();
@@ -1186,9 +1217,7 @@ impl Engine {
             .as_str()
             .map(config::clean_title)
             .unwrap_or_default();
-        let live = self.prop("main", "metadata")["ytdl_is_live"]
-            .as_str()
-            .is_some_and(|s| ["true", "yes", "1"].contains(&s));
+        let finite = self.prop("main", "source-kind") == "recording";
         for entry in self.settings["youtube"].as_array_mut().unwrap() {
             if entry["id"] != self.station {
                 continue;
@@ -1202,7 +1231,7 @@ impl Engine {
                 entry["name"] = json!(title);
             }
             if let Some(duration) = duration.filter(|n| *n > 0.0) {
-                entry["position"] = json!(if !live && position < duration - 5.0 {
+                entry["position"] = json!(if finite && position < duration - 5.0 {
                     (position * 10.0).round() / 10.0
                 } else {
                     0.0
@@ -1252,7 +1281,7 @@ impl Engine {
             if self.retry_due.is_some() {
                 self.changed();
             }
-            if self.youtube() {
+            if self.youtube() && !matches!(self.source_kind(), "radio" | "live") {
                 if !self.alive("main")
                     || (self.prop("main", "time-pos").is_null()
                         && now.duration_since(self.started) > Duration::from_secs(45))
@@ -1264,11 +1293,22 @@ impl Engine {
                 }
             } else if !self.ended {
                 let ready = self.prop("main", "time-pos").is_number();
-                let stalled = if ready {
-                    now.duration_since(self.progress) >= Duration::from_secs(15)
-                } else {
-                    now.duration_since(self.started) >= Duration::from_secs(15)
-                };
+                let stalled = self.prop("main", "eof-reached") == true
+                    || if ready {
+                        now.duration_since(self.progress) >= Duration::from_secs(15)
+                    } else {
+                        let timeout = if self
+                            .catalog
+                            .entries
+                            .get(&self.station)
+                            .is_some_and(|s| s.kind == "youtube")
+                        {
+                            45
+                        } else {
+                            15
+                        };
+                        now.duration_since(self.started) >= Duration::from_secs(timeout)
+                    };
                 if self.alive("main") && !stalled {
                     self.retry_due = None;
                     if self
@@ -1329,6 +1369,31 @@ impl Engine {
     pub fn has_duration(&self) -> bool {
         self.prop("main", "duration").is_number()
     }
+    fn source_kind(&self) -> &str {
+        let saved = self.settings["youtube"]
+            .as_array()
+            .is_some_and(|entries| entries.iter().any(|entry| entry["id"] == self.station));
+        if !saved {
+            "radio"
+        } else {
+            self.channels
+                .get("main")
+                .and_then(|channel| channel.properties.get("source-kind"))
+                .and_then(Value::as_str)
+                .unwrap_or("unknown")
+        }
+    }
+    fn can_seek(&self) -> bool {
+        // Radio decoders can report a growing duration or a seekable cache.
+        // Only an explicitly saved finite recording gets a timeline.
+        self.source_kind() == "recording"
+            && self.alive("main")
+            && self.prop("main", "seekable") == true
+            && self
+                .prop("main", "duration")
+                .as_f64()
+                .is_some_and(|duration| duration.is_finite() && duration > 0.0)
+    }
     pub fn status(&self) -> Value {
         let main = self.catalog.entries.get(&self.station);
         let bg = self
@@ -1361,23 +1426,23 @@ impl Engine {
             .find(|e| e["enabled"] == true)
             .and_then(|e| e["id"].as_str())
             .unwrap_or("off");
-        let live = self.prop("main", "metadata")["ytdl_is_live"]
-            .as_str()
-            .is_some_and(|s| ["true", "yes", "1"].contains(&s));
+        let can_seek = self.can_seek();
         let mut status = json!({
             "running":self.mode!="stopped","paused":self.mode=="paused","main_running":self.alive("main"),"main_state":main_state,
             "retry_in":self.retry_due.map(|due|due.saturating_duration_since(Instant::now()).as_secs_f64().ceil() as u64).unwrap_or(0),"retry_attempt":self.attempts,
             "station":self.station,"name":main.map(|s|s.name.as_str()).unwrap_or("No sources available"),"category":if self.youtube() {"youtube"} else {main.map(|s|s.category.as_str()).unwrap_or("")},
-            "category_name":main.map(|s|if s.kind=="youtube" {"YouTube live"} else {s.category_name.as_str()}).unwrap_or(""),"url":main.map(|s|s.url.as_str()).unwrap_or(""),
+            "category_name":main.map(|s|if s.kind=="youtube" && s.category != "youtube" {"YouTube live"} else {s.category_name.as_str()}).unwrap_or(""),"url":main.map(|s|s.url.as_str()).unwrap_or(""),
             "main_volume":self.settings["mainVolume"],"bg_volume":self.settings["bgVolume"],"master_volume":self.settings["masterVolume"],"ducking":self.settings["ducking"],
             "bg_station":bg.map(|s|s.id.as_str()).unwrap_or(""),"bg_name":bg.map(|s|s.name.as_str()).unwrap_or(""),"bg_running":self.alive("bg"),"mix":enabled(&self.settings,"mix") && !self.youtube(),
             "nature_layers":layers,"youtube_entries":self.settings["youtube"],"youtube_available":self.youtube_available,"nature_volume":self.settings["natureVolume"],"noise_volume":self.settings["natureVolume"],
             "noise_station":selected,"noise_running":layers.iter().any(|e|e["running"]==true),"index":self.catalog.music.iter().position(|s|s==&self.station).unwrap_or(0),"count":self.catalog.music.len(),
-            "main_title":self.prop("main","media-title"),"bg_title":self.prop("bg","media-title"),"main_position":self.prop("main","time-pos"),"main_duration":if live {Value::Null} else {self.prop("main","duration")},
+            "main_title":self.prop("main","media-title"),"bg_title":self.prop("bg","media-title"),"main_position":self.prop("main","time-pos"),"main_duration":if can_seek {self.prop("main","duration")} else {Value::Null},
             "bg_position":self.prop("bg","time-pos"),"bg_duration":self.prop("bg","duration"),"duck_level":self.settings["duckLevel"],"native_backend":true,"backend_version":env!("CARGO_PKG_VERSION"),"recording":self.recording,"error":self.error.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(300).collect::<String>(),
             "bg_error":self.bg_error.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(300).collect::<String>(),
             "bg_state":if self.feed_loading {"loading"} else if self.alive("bg") {if self.mode=="paused" {"paused"} else {"playing"}} else if !self.bg_error.is_empty() {"failed"} else {"stopped"}
         });
+        status["can_seek"] = Value::Bool(can_seek);
+        status["source_kind"] = json!(self.source_kind());
         for (target, source) in [
             ("animations", "animations"),
             ("reveal_animations", "revealAnimations"),

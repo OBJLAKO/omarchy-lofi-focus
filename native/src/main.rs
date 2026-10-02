@@ -1,5 +1,6 @@
 mod config;
 mod engine;
+mod extractor;
 mod feed;
 mod mpris;
 mod process;
@@ -53,6 +54,9 @@ fn main() {
 }
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
+    if std::env::var("SKYLOFI_EXTRACTOR_PROXY").as_deref() == Ok("1") {
+        return extractor::run(&args);
+    }
     let root = if let Some(index) = args.iter().position(|a| a == "--root") {
         if index + 1 >= args.len() {
             return Err("--root needs a plugin directory".into());

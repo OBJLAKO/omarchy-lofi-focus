@@ -58,6 +58,8 @@ Panel {
   readonly property bool sourceEnded: mainState === "ended"
   property real mainPosition: -1
   property real mainDuration: -1
+  property bool canSeek: false
+  property string sourceKind: "unknown"
 
   // Existing preferences remain readable during upgrades. Only purposeful
   // motion and audio controls are exposed in the new interface.
@@ -106,6 +108,9 @@ Panel {
     : root.mainState === "failed" ? "Source unavailable"
     : root.playerRunning ? "Playing"
     : "Ready"
+  readonly property string sourceLabel: root.playerRunning && !root.musicRunning && !root.musicConnecting && root.enabledNatureCount > 0
+    ? "Nature mix" : root.canSeek ? "Recording" : root.sourceKind === "radio" ? "Live radio" : root.sourceKind === "recording" ? "Recording"
+      : root.sourceKind === "live" ? "YouTube live" : "Online audio"
 
   readonly property string heroMeta: {
     var parts = []
@@ -131,7 +136,8 @@ Panel {
     for (var c of categories) {
       if (c.id !== "lofi") continue
       for (var st of c.stations) out.push({
-        id: st.id, name: st.name, description: st.description,
+        id: st.id, name: st.name,
+        description: String(st.description || "").replace(/\s*·\s*requires yt-dlp/ig, "").replace(/\s*·\s*formerly Chillofi/ig, ""),
         glyph: categoryGlyph(c.id)
       })
     }
@@ -142,9 +148,9 @@ Panel {
     return root.sessionActive && !root.playerPaused && root.playerStationId === id && root.musicRunning
   }
 
-  // Progress only makes sense when the stream reports a duration: live radio
-  // leaves it unset, podcasts and YouTube links do not.
-  readonly property bool hasProgress: root.mainDuration > 0 && root.mainPosition >= 0
+  // Some live services report a moving duration. A timeline is only useful
+  // when the backend has positively identified a finite recording.
+  readonly property bool hasProgress: root.canSeek && root.mainDuration > 0 && root.mainPosition >= 0
   readonly property real progressFraction: root.hasProgress
     ? Math.max(0, Math.min(1, root.mainPosition / root.mainDuration)) : 0
   readonly property string nowPlayingTitle: root.mainTitle || root.playerName || "Choose your soundtrack"
@@ -222,6 +228,9 @@ Panel {
       root.mainTitle = String(state.main_title || "").replace(/[\r\n\t]+/g, " ").slice(0, 200)
       root.mainPosition = typeof state.main_position === "number" ? state.main_position : -1
       root.mainDuration = typeof state.main_duration === "number" ? state.main_duration : -1
+      root.canSeek = state.can_seek === true
+      root.sourceKind = ["radio", "recording", "live", "unknown"].indexOf(state.source_kind) >= 0
+        ? state.source_kind : root.canSeek ? "recording" : root.playerCategory === "lofi" ? "radio" : "unknown"
       root.animationsEnabled = state.animations !== false
       root.revealEnabled = state.reveal_animations !== false
       root.steamEnabled = state.steam_animation !== false
@@ -330,12 +339,28 @@ Panel {
     }
   }
   function animatePage() {
-    if (root.liveMotion && root.revealEnabled && root.revealDuration > 0) pageReveal.restart()
+    if (root.liveMotion) pageReveal.restart()
     else { pageReveal.stop(); pages.opacity = 1 }
   }
-  onCurrentViewChanged: Qt.callLater(root.animatePage)
+  onLiveMotionChanged: if (!root.liveMotion) { pageReveal.stop(); pages.opacity = 1 }
+  onCurrentViewChanged: {
+    voicePicker.close(); naturePicker.close()
+    Qt.callLater(root.animatePage)
+  }
   onLibraryOpenChanged: Qt.callLater(root.animatePage)
-  NumberAnimation { id: pageReveal; target: pages; property: "opacity"; from: 0.6; to: 1; duration: root.revealDuration; easing.type: Easing.OutCubic }
+  NumberAnimation {
+    id: pageReveal
+    objectName: "pageTransition"
+    target: pages; property: "opacity"; from: 0.72; to: 1
+    duration: visual.transitionDuration; easing.type: Easing.OutCubic
+  }
+
+  SkylofiStyle {
+    id: visual
+    foreground: root.contentForeground
+    background: Color.popups.background
+    accent: Color.accent
+  }
 
   KeyboardPanel {
     id: panel
@@ -344,12 +369,11 @@ Panel {
     bar: root.bar
     open: root.opened
     centerOnBar: true
+    padding: visual.padding
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(430))
-    contentHeight: panel.fittedContentHeight(Style.space(640))
+    contentWidth: panel.fittedContentWidth(visual.panelWidth)
+    contentHeight: panel.fittedContentHeight(visual.panelHeight)
 
-    // Native Tab order and control-local arrows. Escape closes transient views
-    // first; a second Escape dismisses the whole panel.
     FocusScope {
       id: keyCatcher
       anchors.fill: parent
@@ -360,7 +384,7 @@ Panel {
           if (voicePicker.popupOpen) voicePicker.close()
           else if (naturePicker.popupOpen) naturePicker.close()
           else if (youtubeLibrary.addingLink) youtubeLibrary.addingLink = false
-          else if (root.currentView !== 0) root.showView(0)
+          else if (youtubeLibrary.pendingRemoval.length > 0) youtubeLibrary.pendingRemoval = ""
           else root.close()
           event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_F) {
@@ -376,173 +400,35 @@ Panel {
       Column {
         id: chrome
         width: parent.width
-        spacing: Style.space(14)
-
+        spacing: Style.space(12)
         Row {
           width: parent.width
-          height: Style.space(34)
-          spacing: Style.space(10)
-          Column {
+          height: Style.space(32)
+          spacing: visual.controlGap
+          Text {
             width: parent.width - closeButton.width - parent.spacing
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(2)
-            Text {
-              text: "Skylofi"
-              color: root.contentForeground; textFormat: Text.PlainText
-              font.family: root.contentFontFamily; font.pixelSize: Style.font.title; font.bold: true
-            }
-            Text {
-              text: "Sound for your space"
-              color: root.contentMuted; textFormat: Text.PlainText
-              font.family: root.contentFontFamily; font.pixelSize: Style.font.caption
-            }
+            text: "Skylofi"
+            textFormat: Text.PlainText
+            color: root.contentForeground
+            font.family: root.contentFontFamily
+            font.pixelSize: visual.title
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
           }
-          Button {
+          SkylofiButton {
+            fontFamily: root.contentFontFamily
+            animate: root.liveMotion
             id: closeButton
             iconText: "\uf00d"
-            tooltipText: "Close panel · Esc"
-            foreground: root.contentMuted
+            tooltipText: "Close · Esc"
+            foreground: visual.muted
             width: Style.space(32); height: Style.space(32)
             horizontalPadding: 0; verticalPadding: 0
             focusable: true
             Accessible.name: "Close panel"
             onClicked: root.close()
           }
-        }
-
-        BorderSurface {
-          id: nowPlaying
-          visible: root.currentView !== 2
-          width: parent.width
-          height: nowCopy.implicitHeight + Style.space(28)
-          radius: Style.cornerRadius
-          color: Qt.alpha(Color.accent, root.isPlaying ? 0.08 : 0.035)
-          borderSpec: Border.controlSpec("normal", root.contentForeground, Color.accent)
-          Behavior on color { enabled: root.liveMotion; ColorAnimation { duration: 180 } }
-          Column {
-            id: nowCopy
-            anchors.left: parent.left; anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.margins: Style.space(14)
-            spacing: Style.space(10)
-            Row {
-              width: parent.width
-              spacing: Style.space(7)
-              Rectangle {
-                width: Style.space(6); height: width; radius: width / 2
-                color: root.mainState === "failed" ? Color.urgent : root.isPlaying ? Color.accent : root.contentMuted
-                anchors.verticalCenter: parent.verticalCenter
-              }
-              Text {
-                text: root.heroStatus + (root.playerCategoryName ? " · " + root.playerCategoryName : "")
-                textFormat: Text.PlainText; color: root.contentMuted
-                font.family: root.contentFontFamily; font.pixelSize: Style.font.caption
-              }
-              Item { width: Math.max(0, parent.width - parent.children[0].width - parent.children[1].width - activity.width - parent.spacing * 3); height: 1 }
-              PlaybackWave {
-                id: activity
-                width: Style.space(14); height: Style.space(12)
-                anchors.verticalCenter: parent.verticalCenter
-                active: root.isPlaying
-                animate: root.liveMotion && root.equalizerEnabled
-                ink: Color.accent
-              }
-            }
-            Text {
-              width: parent.width
-              text: root.nowPlayingTitle; textFormat: Text.PlainText
-              color: root.contentForeground
-              font.family: root.contentFontFamily; font.pixelSize: Style.font.title; font.bold: true
-              elide: Text.ElideRight
-              maximumLineCount: 1
-            }
-            Row {
-              width: parent.width
-              spacing: Style.space(6)
-              Button {
-                objectName: "previousSource"
-                width: Style.space(36); height: Style.space(36)
-                iconText: "\uf048"
-                tooltipText: root.youtubeSelected && root.hasProgress ? "Back 15 seconds" : "Previous source"
-                foreground: root.contentForeground; focusable: true
-                onClicked: root.runAction(root.youtubeSelected && root.hasProgress ? ["seek", String(Math.max(0, root.mainPosition - 15))] : ["prev"])
-              }
-              Button {
-                objectName: "togglePlayback"
-                text: root.sourceEnded ? "Replay" : root.playerPaused ? "Resume" : root.sessionActive ? "Pause" : "Play"
-                iconText: root.sessionActive && !root.playerPaused && !root.sourceEnded ? "\uf04c" : "\uf04b"
-                selected: true
-                width: Style.space(106); height: Style.space(36)
-                foreground: root.contentForeground; focusable: true
-                onClicked: root.runAction(["toggle"])
-              }
-              Button {
-                objectName: "nextSource"
-                width: Style.space(36); height: Style.space(36)
-                iconText: "\uf051"
-                tooltipText: root.youtubeSelected && root.hasProgress ? "Forward 15 seconds" : "Next source"
-                foreground: root.contentForeground; focusable: true
-                onClicked: root.runAction(root.youtubeSelected && root.hasProgress ? ["seek", String(Math.min(root.mainDuration, root.mainPosition + 15))] : ["next"])
-              }
-              Item { width: Math.max(0, parent.width - Style.space(214) - parent.spacing * 4); height: 1 }
-              Button {
-                objectName: "stopPlayback"
-                width: Style.space(36); height: Style.space(36)
-                iconText: "\uf04d"; tooltipText: "Stop all sounds"
-                enabled: root.sessionActive
-                opacity: enabled ? 1 : 0.45
-                foreground: root.contentMuted; focusable: true
-                onClicked: root.runAction(["stop"])
-              }
-            }
-            Column {
-              visible: root.hasProgress
-              width: parent.width
-              spacing: Style.space(2)
-              PanelSlider {
-                objectName: "playbackProgress"
-                width: parent.width
-                minimum: 0; maximum: Math.max(1, root.mainDuration); step: 15
-                value: Math.max(0, root.mainPosition)
-                trackColor: Qt.alpha(root.contentForeground, 0.16)
-                fillColor: Color.accent; knobColor: Color.accent
-                activeFocusOnTab: true
-                Accessible.role: Accessible.Slider; Accessible.name: "Playback position"
-                Keys.onLeftPressed: root.runAction(["seek", String(Math.max(0, root.mainPosition - 15))])
-                Keys.onRightPressed: root.runAction(["seek", String(Math.min(root.mainDuration, root.mainPosition + 15))])
-                onReleased: function(value) { root.runAction(["seek", String(value)]) }
-              }
-              Row {
-                width: parent.width
-                Text { width: parent.width / 2; text: root.formatTime(root.mainPosition); color: root.contentMuted; font.family: root.contentFontFamily; font.pixelSize: Style.font.caption }
-                Text { width: parent.width / 2; text: root.formatTime(root.mainDuration); color: root.contentMuted; horizontalAlignment: Text.AlignRight; font.family: root.contentFontFamily; font.pixelSize: Style.font.caption }
-              }
-            }
-            Row {
-              visible: root.mainState === "failed"
-              width: parent.width
-              spacing: Style.space(8)
-              Text {
-                width: parent.width - retryButton.width - parent.spacing
-                text: root.youtubeSelected ? "This link could not play. Try again or choose another source." : "Source unavailable. Try again or choose another station."
-                wrapMode: Text.Wrap; textFormat: Text.PlainText
-                color: root.contentMuted; font.family: root.contentFontFamily; font.pixelSize: Style.font.caption
-              }
-              Button {
-                id: retryButton
-                text: "Retry"; foreground: root.contentForeground; focusable: true
-                onClicked: root.runAction(["start", root.playerStationId])
-              }
-            }
-          }
-        }
-        MixerLevel {
-          visible: root.currentView !== 2
-          width: parent.width
-          label: "Master"
-          value: root.masterVolume
-          bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
-          onEdited: function(value) { root.setVolume("master", value) }
         }
         Row {
           id: tabs
@@ -551,32 +437,31 @@ Panel {
           spacing: Style.space(4)
           Repeater {
             model: ["Listen", "Mix", "Settings"]
-            Button {
+            NavTab {
               required property string modelData
               required property int index
               objectName: "mainTab-" + index
-              width: (tabs.width - 2 * tabs.spacing) / 3
-              height: Style.space(36)
+              width: (tabs.width - tabs.spacing * 2) / 3
               text: modelData
               selected: root.currentView === index
-              focusable: true
-              foreground: root.contentForeground
-              Accessible.name: modelData
-              onClicked: root.showView(index)
+              onActivated: root.showView(index)
             }
           }
         }
-        PanelSeparator { width: parent.width; foreground: root.contentForeground }
-        Caption { visible: text.length > 0; text: root.actionMessage; color: Color.urgent }
       }
 
       Item {
         id: pages
-        anchors.top: chrome.bottom; anchors.topMargin: Style.space(14)
-        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        objectName: "pageViewport"
+        anchors.top: chrome.bottom
+        anchors.topMargin: visual.groupGap
+        anchors.left: parent.left; anchors.right: parent.right
+        anchors.bottom: playerDock.top
+        anchors.bottomMargin: visual.groupGap
         clip: true
         Flickable {
           id: listenScroll
+          objectName: "listenScroll"
           anchors.fill: parent
           contentWidth: width; contentHeight: contentColumn.implicitHeight
           clip: true; visible: root.currentView === 0
@@ -585,33 +470,33 @@ Panel {
           Column {
             id: contentColumn
             objectName: "focusContent"
-            width: parent.width
+            width: parent.width - (listenScroll.contentHeight > listenScroll.height ? Style.space(10) : 0)
             spacing: Style.space(12)
             Row {
               width: parent.width
-              spacing: Style.space(6)
-              Button {
-                width: (parent.width - parent.spacing) / 2
-                text: "Radio"; iconText: "\uf001"
-                selected: !root.libraryOpen; bordered: true; focusable: true
-                foreground: root.contentForeground
-                onClicked: root.libraryOpen = false
+              spacing: Style.space(8)
+              SourceTab {
+                width: Style.space(110)
+                text: "Radio"
+                selected: !root.libraryOpen
+                onActivated: root.libraryOpen = false
               }
-              Button {
-                width: (parent.width - parent.spacing) / 2
-                text: "Saved links · " + root.youtubeEntries.length; iconText: "\uf144"
-                selected: root.libraryOpen; bordered: true; focusable: true
-                foreground: root.contentForeground
-                onClicked: root.libraryOpen = true
+              SourceTab {
+                width: Math.min(Style.space(170), parent.width - Style.space(118))
+                text: "Saved links" + (root.youtubeEntries.length > 0 ? " · " + root.youtubeEntries.length : "")
+                selected: root.libraryOpen
+                onActivated: root.libraryOpen = true
               }
             }
             TextField {
               id: stationSearch
               objectName: "stationSearch"
               width: parent.width
+              height: visual.controlHeight
               visible: !root.libraryOpen
-              placeholderText: "Search stations"
+              placeholderText: "Search radio"
               foreground: root.contentForeground
+              font.family: root.contentFontFamily; font.pixelSize: visual.body
               maximumLength: 160
               Keys.onEscapePressed: { text = ""; focus = false }
             }
@@ -630,18 +515,15 @@ Panel {
                   current: root.playerStationId === modelData.id
                   playing: root.isMusicPlaying(modelData.id)
                   muted: root.playerPaused
-                  animate: root.liveMotion && root.equalizerEnabled && root.currentView === 0 && !root.libraryOpen
+                  animate: root.liveMotion
                   foreground: root.contentForeground; fontFamily: root.contentFontFamily
                   onActivated: root.runAction(["start", modelData.id])
                   onActiveFocusChanged: if (activeFocus) root.ensureVisible(listenScroll, this)
                 }
               }
-              Text {
+              Caption {
                 visible: stationSearch.text.length > 0 && root.musicStations.filter(function(st) { return (st.name + " " + st.description).toLowerCase().indexOf(stationSearch.text.trim().toLowerCase()) >= 0 }).length === 0
-                width: parent.width
-                text: "No stations found. Try another search."
-                color: root.contentMuted; font.family: root.contentFontFamily; font.pixelSize: Style.font.bodySmall
-                wrapMode: Text.Wrap
+                text: "No matching stations. Try another search."
               }
             }
             YoutubeLibrary {
@@ -651,69 +533,76 @@ Panel {
               width: parent.width
               entries: root.youtubeEntries; selectedId: root.playerStationId
               playing: root.isPlaying && root.youtubeSelected
-              animate: root.liveMotion && root.equalizerEnabled && root.currentView === 0
-              foreground: root.contentForeground; muted: root.contentMuted; fontFamily: root.contentFontFamily
+              animate: root.liveMotion
+              foreground: root.contentForeground; muted: visual.muted; fontFamily: root.contentFontFamily
               available: root.youtubeAvailable; saving: root.savingLink
               message: root.libraryMessage; failed: root.libraryError
               onSaveRequested: root.saveYoutube()
               onPlayRequested: function(id) { root.runAction(["start", id]) }
               onRemoveRequested: function(id) { root.runAction(["youtube-remove", id]) }
+              onFocusRequested: function(item) { root.ensureVisible(listenScroll, item) }
             }
           }
         }
 
         Flickable {
           id: mixerScroll
+          objectName: "mixScroll"
           anchors.fill: parent
           contentWidth: width; contentHeight: mixColumn.implicitHeight
           visible: root.currentView === 1; clip: true
           boundsBehavior: Flickable.StopAtBounds; interactive: contentHeight > height
           Column {
             id: mixColumn
-            width: parent.width
-            spacing: Style.space(16)
-            Column {
-              width: parent.width; spacing: Style.space(4)
-              PageTitle { text: "Your mix" }
-              Caption { text: "Balance your soundtrack, voice and atmosphere." }
-            }
+            width: parent.width - (mixerScroll.contentHeight > mixerScroll.height ? Style.space(10) : 0)
+            spacing: visual.groupGap
             MixerLevel {
               objectName: "soundtrackLevel"
               width: parent.width
-              label: "Soundtrack"; labelWidth: Style.space(108); value: root.mainVolume
+              compact: true; labelWidth: Style.space(90)
+              label: "Soundtrack"; value: root.mainVolume
               bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+              animate: root.liveMotion
               onEdited: function(value) { root.setVolume("main", value) }
+              onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
             }
-            PanelSeparator { width: parent.width; foreground: root.contentForeground }
-            Column {
-              width: parent.width; spacing: Style.space(8)
-              SectionTitle { text: "Voice & conversations" }
-              Caption { visible: root.youtubeSelected; text: "Voice is paused while YouTube plays. It returns when you switch to radio." }
+            ControlGroup {
+              width: parent.width
+              SectionTitle { text: "Voice" }
               FocusDropdown {
                 id: voicePicker
                 objectName: "voicePicker"
+                popupBoundary: keyCatcher
                 width: parent.width
+                label: "Background voice"
                 showLabel: false; options: root.backgroundOptions
                 animate: root.liveMotion
                 value: root.mixOn ? root.bgStation : "off"
                 enabled: !root.youtubeSelected
-                opacity: enabled ? 1 : 0.5
+                opacity: enabled ? 1 : 0.45
                 foreground: root.contentForeground; fontFamily: root.contentFontFamily
                 placeholderText: "Search voices and podcasts"
                 onChanged: function(value) { root.runAction(["bg", value]) }
+                onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
+              }
+              Caption {
+                visible: root.youtubeSelected
+                text: "Voice is available with radio. Switch to Radio in Listen to use it."
               }
               Row {
                 width: parent.width
                 visible: root.voiceMessage.length > 0
-                spacing: Style.space(8)
+                spacing: visual.controlGap
                 Caption {
                   objectName: "voiceStatus"
                   width: parent.width - (voiceRetry.visible ? voiceRetry.width + parent.spacing : 0)
                   anchors.verticalCenter: parent.verticalCenter
                   text: root.voiceMessage
-                  color: root.voiceFailed ? Color.urgent : root.contentMuted
+                  color: root.voiceFailed ? Color.urgent : visual.muted
                 }
-                Button {
+                SkylofiButton {
+                  fontFamily: root.contentFontFamily
+                  animate: root.liveMotion
                   id: voiceRetry
                   objectName: "voiceRetry"
                   visible: root.voiceFailed && root.bgStation.length > 0
@@ -721,59 +610,78 @@ Panel {
                   onClicked: root.runAction(["bg", root.bgStation])
                 }
               }
-              MixerLevel {
-                visible: root.mixOn && !root.youtubeSelected
+              Disclosure {
                 width: parent.width
-                label: "Voice"; labelWidth: Style.space(108); value: root.bgVolume
-                bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                onEdited: function(value) { root.setVolume("bg", value) }
+                expanded: root.mixOn && !root.youtubeSelected
+                MixerLevel {
+                  width: parent.width
+                  compact: true; labelWidth: Style.space(90)
+                  label: "Voice level"; value: root.bgVolume
+                  bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                  animate: root.liveMotion
+                  onEdited: function(value) { root.setVolume("bg", value) }
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
+                }
               }
             }
-            PanelSeparator { width: parent.width; foreground: root.contentForeground }
-            Column {
-              width: parent.width; spacing: Style.space(10)
+            ControlGroup {
+              width: parent.width
               Row {
-                width: parent.width; spacing: Style.space(8)
-                SectionTitle { width: parent.width - naturePicker.width - parent.spacing; text: "Atmosphere · " + root.enabledNatureCount; anchors.verticalCenter: parent.verticalCenter }
+                width: parent.width
+                spacing: visual.controlGap
+                SectionTitle {
+                  width: parent.width - (naturePicker.visible ? naturePicker.width + parent.spacing : 0)
+                  text: "Nature sounds"
+                  anchors.verticalCenter: parent.verticalCenter
+                }
                 FocusDropdown {
                   id: naturePicker
                   objectName: "naturePicker"
-                  width: Style.space(150)
+                  popupBoundary: keyCatcher
+                  width: Math.min(Style.space(136), parent.width * 0.46)
                   visible: root.availableSounds.length > 0
-                  showLabel: false; triggerLabel: "+ Add sound"
+                  label: "Add nature sound"
+                  showLabel: false; triggerLabel: width < Style.space(120) ? "+ Add" : "+ Add sound"
                   showDescriptions: false; animate: root.liveMotion
-                  placeholderText: "Search nature sounds"
+                  placeholderText: "Find a sound"
                   options: root.availableSounds; value: ""
                   foreground: root.contentForeground; fontFamily: root.contentFontFamily
                   onChanged: function(value) {
                     root.runAction(["nature", value, "on"])
                     Qt.callLater(function() { naturePicker.value = "" })
                   }
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
                 }
               }
-              Caption { visible: root.enabledNatureCount === 0; text: "Add rain, a fireplace or a little ocean. Every sound has its own level." }
+              Caption { visible: root.enabledNatureCount === 0; text: "Add a little rain, wind or a fireplace." }
               Item {
                 id: natureBody
                 objectName: "section-body-nature"
                 width: parent.width
                 height: root.isCollapsed("nature") ? 0 : natureColumn.implicitHeight
                 clip: true
-                Behavior on height { enabled: root.liveMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 Column {
                   id: natureColumn
                   width: parent.width; spacing: Style.space(8)
+                  move: Transition {
+                    NumberAnimation { properties: "y"; duration: root.liveMotion && natureColumn.visible ? visual.disclosureDuration : 0; easing.type: Easing.OutCubic }
+                  }
                   Repeater {
                     model: root.noiseOptions
                     MixerLevel {
                       required property var modelData
                       readonly property var soundState: root.natureLayer(modelData.value)
+                      objectName: "natureLevel-" + modelData.value
                       visible: soundState.enabled
                       width: parent.width
-                      label: modelData.label; labelWidth: Style.space(108); value: soundState.volume
+                      compact: true; labelWidth: Style.space(112)
+                      label: modelData.label; value: soundState.volume
                       removable: true
                       bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                      animate: root.liveMotion
                       onEdited: function(value) { root.setVolume(modelData.value, value) }
                       onRemoveRequested: root.runAction(["nature", modelData.value, "off"])
+                      onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
                     }
                   }
                 }
@@ -784,75 +692,432 @@ Panel {
 
         Flickable {
           id: settingsScroll
+          objectName: "settingsScroll"
           anchors.fill: parent
           contentWidth: width; contentHeight: settingsColumn.implicitHeight
           visible: root.currentView === 2; clip: true
           boundsBehavior: Flickable.StopAtBounds; interactive: contentHeight > height
           Column {
             id: settingsColumn
-            width: parent.width; spacing: Style.space(18)
-            PageTitle { text: "Settings" }
-            Column {
-              width: parent.width; spacing: Style.space(10)
+            width: parent.width - (settingsScroll.contentHeight > settingsScroll.height ? Style.space(10) : 0)
+            spacing: visual.groupGap
+            ControlGroup {
+              width: parent.width
               SectionTitle { text: "Playback" }
               SettingToggle {
-                label: "Gentle start & stop"
-                hint: "Ease the mix in and out."
+                objectName: "fadeToggle"
+                label: "Fade in and out"
+                hint: "Start and pause sounds gently."
                 checked: root.fadeEnabled
                 onToggled: root.runAction(["ui", "fade", root.fadeEnabled ? "off" : "on"])
               }
-              SettingSlider {
-                visible: root.fadeEnabled
+              Disclosure {
+                width: parent.width
+                expanded: root.fadeEnabled
+                SettingSlider {
+                objectName: "fadeDuration"
                 label: "Fade duration"; value: root.fadeSeconds
-                minimum: 1; maximum: 8; step: 1; suffix: root.fadeSeconds + "s"
+                minimum: 1; maximum: 8; step: 1; suffix: root.fadeSeconds + " s"
                 onEdited: function(value) { root.runAction(["ui", "fadeSeconds", String(value)]) }
+                }
               }
-            }
-            PanelSeparator { width: parent.width; foreground: root.contentForeground }
-            Column {
-              width: parent.width; spacing: Style.space(10)
-              SectionTitle { text: "Focus" }
+              Rectangle { width: parent.width; height: 1; color: visual.line }
               SettingToggle {
-                label: "Quiet while dictating"
-                hint: "Lower every sound while VoxType records."
+                objectName: "dictationToggle"
+                label: "Lower audio while dictating"
+                hint: "Automatically quiet sounds when VoxType records."
                 checked: root.ducking
                 onToggled: root.runAction(["ducking", root.ducking ? "off" : "on"])
               }
-              SettingSlider {
-                visible: root.ducking
-                label: "Keep audible"; value: root.duckLevel
+              Disclosure {
+                width: parent.width
+                expanded: root.ducking
+                SettingSlider {
+                objectName: "dictationVolume"
+                label: "Volume while dictating"; value: root.duckLevel
                 minimum: 0; maximum: 100; step: 5; suffix: root.duckLevel + "%"
                 onEdited: function(value) { root.runAction(["ui", "duckLevel", String(value)]) }
+                }
               }
             }
-            PanelSeparator { width: parent.width; foreground: root.contentForeground }
-            Column {
-              width: parent.width; spacing: Style.space(10)
-              SectionTitle { text: "Appearance" }
+            ControlGroup {
+              width: parent.width
+              SectionTitle { text: "Interface" }
               SettingToggle {
+                objectName: "animationsToggle"
                 label: "Interface motion"
-                hint: "Brief transitions when controls change."
+                hint: "Short transitions between controls."
                 checked: root.animationsEnabled
                 onToggled: root.runAction(["ui", "animations", root.animationsEnabled ? "off" : "on"])
               }
               SettingToggle {
-                label: "Playback indicator"
-                hint: "A small moving mark while audio plays."
+                objectName: "playbackIndicatorToggle"
+                label: "Playback feedback"
+                hint: root.animationsEnabled ? "A brief response when playback changes." : "Enable interface motion to animate the mark."
                 enabled: root.animationsEnabled
                 checked: root.equalizerEnabled
                 onToggled: root.runAction(["ui", "equalizer", root.equalizerEnabled ? "off" : "on"])
               }
             }
-            Caption { text: "Tab to move · arrows to adjust levels\nCtrl + F to search · Ctrl + 1 / 2 / 3 to switch views" }
           }
         }
         ScrollMark { view: root.currentView === 0 ? listenScroll : root.currentView === 1 ? mixerScroll : settingsScroll }
       }
+
+      Column {
+        id: playerDock
+        objectName: "playbackDock"
+        readonly property bool compactControls: width < Style.space(360)
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        spacing: Style.space(10)
+        Rectangle { width: parent.width; height: 1; color: visual.line }
+        Row {
+          width: parent.width
+          spacing: Style.space(10)
+          Column {
+            width: Math.max(0, parent.width - playButton.width - stopButton.width - parent.spacing * 2)
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(3)
+            Text {
+              objectName: "nowPlayingName"
+              width: parent.width
+              text: root.playerRunning && !root.musicRunning && !root.musicConnecting && root.enabledNatureCount > 0
+                ? "Nature mix" : root.playerName || "Choose a station"
+              textFormat: Text.PlainText
+              color: root.contentForeground
+              font.family: root.contentFontFamily; font.pixelSize: visual.body
+              font.weight: Font.DemiBold; elide: Text.ElideRight
+            }
+            Row {
+              width: parent.width
+              spacing: Style.space(6)
+              PlaybackWave {
+                width: Style.space(12); height: Style.space(12)
+                anchors.verticalCenter: parent.verticalCenter
+                active: root.isPlaying
+                animate: root.liveMotion && root.equalizerEnabled
+                ink: Color.accent
+              }
+              Text {
+                width: parent.width - Style.space(18)
+                text: root.sessionActive ? root.sourceLabel + " · " + root.heroStatus : root.heroStatus
+                textFormat: Text.PlainText
+                color: root.mainState === "failed" ? Color.urgent : visual.muted
+                font.family: root.contentFontFamily; font.pixelSize: visual.caption
+                elide: Text.ElideRight
+              }
+            }
+          }
+          SkylofiButton {
+            fontFamily: root.contentFontFamily
+            animate: root.liveMotion
+            id: playButton
+            objectName: "togglePlayback"
+            readonly property string actionLabel: root.sourceEnded ? "Replay" : root.playerPaused ? "Resume" : root.sessionActive ? "Pause" : "Play"
+            text: playerDock.compactControls ? "" : actionLabel
+            tooltipText: actionLabel
+            iconText: root.sessionActive && !root.playerPaused && !root.sourceEnded ? "\uf04c" : "\uf04b"
+            selected: true
+            width: playerDock.compactControls ? visual.controlHeight : Style.space(98); height: visual.controlHeight
+            fontSize: visual.body; iconSize: visual.body
+            foreground: root.contentForeground; focusable: true
+            Accessible.name: actionLabel + " sounds"
+            onClicked: root.runAction(["toggle"])
+          }
+          SkylofiButton {
+            fontFamily: root.contentFontFamily
+            animate: root.liveMotion
+            id: stopButton
+            objectName: "stopPlayback"
+            text: playerDock.compactControls ? "Stop" : "Stop all"
+            tooltipText: "Stop all sounds"
+            width: playerDock.compactControls ? Style.space(58) : Style.space(72); height: visual.controlHeight
+            fontSize: visual.label
+            enabled: root.sessionActive
+            opacity: enabled ? 1 : 0.4
+            foreground: visual.muted; focusable: true
+            Accessible.name: "Stop all sounds"
+            onClicked: root.runAction(["stop"])
+          }
+        }
+        Column {
+          objectName: "finitePlaybackControls"
+          visible: root.hasProgress
+          width: parent.width
+          spacing: Style.space(2)
+          Row {
+            width: parent.width
+            spacing: Style.space(8)
+            Text {
+              width: parent.width - times.width - parent.spacing
+              text: root.mainTitle && root.mainTitle !== root.playerName ? root.mainTitle : "Recording"
+              textFormat: Text.PlainText; color: visual.muted
+              font.family: root.contentFontFamily; font.pixelSize: visual.caption
+              elide: Text.ElideRight
+            }
+            Text {
+              id: times
+              text: root.formatTime(root.mainPosition) + " / " + root.formatTime(root.mainDuration)
+              color: visual.muted
+              font.family: root.contentFontFamily; font.pixelSize: visual.caption
+            }
+          }
+          SkylofiSlider {
+            objectName: "playbackProgress"
+            animate: root.liveMotion
+            width: parent.width; height: Style.space(24)
+            minimum: 0; maximum: Math.max(1, root.mainDuration); step: 15
+            value: Math.max(0, root.mainPosition)
+            trackColor: visual.line
+            fillColor: Color.accent; knobColor: Color.accent
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Slider; Accessible.name: "Recording position"
+            Keys.onLeftPressed: if (root.hasProgress) root.runAction(["seek", String(Math.max(0, root.mainPosition - 15))])
+            Keys.onRightPressed: if (root.hasProgress) root.runAction(["seek", String(Math.min(root.mainDuration, root.mainPosition + 15))])
+            onReleased: function(value) { if (root.hasProgress) root.runAction(["seek", String(value)]) }
+          }
+        }
+        Row {
+          visible: root.mainState === "failed"
+          width: parent.width
+          spacing: visual.controlGap
+          Caption {
+            width: parent.width - retryButton.width - parent.spacing
+            text: "Source unavailable. Try again or choose another."
+            anchors.verticalCenter: parent.verticalCenter
+          }
+          SkylofiButton {
+            fontFamily: root.contentFontFamily
+            animate: root.liveMotion
+            id: retryButton
+            text: "Retry"; foreground: root.contentForeground; focusable: true
+            onClicked: root.runAction(["start", root.playerStationId])
+          }
+        }
+        Caption { visible: text.length > 0; text: root.actionMessage; color: Color.urgent }
+        MixerLevel {
+          objectName: "allSoundsLevel"
+          width: parent.width
+          compact: true
+          label: "All sounds"; value: root.masterVolume
+          bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+          animate: root.liveMotion
+          onEdited: function(value) { root.setVolume("master", value) }
+        }
+      }
     }
   }
 
-  // A quiet, theme-coloured thumb that remains visible whenever content overflows.
-  // It is outside the moving content so it also works in offscreen/native shells.
+  component NavTab: Item {
+    id: tab
+    property string text: ""
+    property bool selected: false
+    signal activated()
+    height: visual.controlHeight
+    activeFocusOnTab: true
+    Accessible.role: Accessible.PageTab
+    Accessible.name: text
+    Accessible.selected: selected
+    Keys.onReturnPressed: activated()
+    Keys.onEnterPressed: activated()
+    Keys.onSpacePressed: activated()
+    Rectangle {
+      anchors.fill: parent
+      color: tabMouse.pressed ? visual.pressed : tab.activeFocus || tabMouse.containsMouse ? visual.hover : "transparent"
+      radius: Math.min(Style.cornerRadius, Style.space(6))
+      border.color: tab.activeFocus ? Color.accent : "transparent"
+      border.width: 1
+      Behavior on color { enabled: root.liveMotion && tab.visible; ColorAnimation { duration: visual.feedbackDuration } }
+    }
+    Text {
+      anchors.centerIn: parent
+      width: parent.width - Style.space(12)
+      text: tab.text; textFormat: Text.PlainText
+      horizontalAlignment: Text.AlignHCenter
+      color: tab.selected ? root.contentForeground : visual.muted
+      font.family: root.contentFontFamily; font.pixelSize: tab.width < Style.space(125) ? visual.label : visual.body
+      font.weight: tab.selected ? Font.DemiBold : Font.Normal
+      elide: Text.ElideRight
+    }
+    Rectangle {
+      anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+      anchors.leftMargin: Style.space(12); anchors.rightMargin: Style.space(12)
+      height: Style.space(2)
+      color: tab.selected ? Color.accent : visual.line
+      Behavior on color { enabled: root.liveMotion && tab.visible; ColorAnimation { duration: visual.feedbackDuration } }
+    }
+    MouseArea {
+      id: tabMouse
+      anchors.fill: parent; hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: { tab.forceActiveFocus(); tab.activated() }
+    }
+  }
+  component SourceTab: Item {
+    id: sourceTab
+    property string text: ""
+    property bool selected: false
+    signal activated()
+    height: Style.space(30)
+    activeFocusOnTab: true
+    Accessible.role: Accessible.PageTab
+    Accessible.name: text
+    Accessible.selected: selected
+    Keys.onReturnPressed: activated()
+    Keys.onEnterPressed: activated()
+    Keys.onSpacePressed: activated()
+    Rectangle {
+      anchors.fill: parent
+      radius: Math.min(Style.cornerRadius, Style.space(6))
+      color: sourceMouse.pressed ? visual.pressed : sourceTab.selected ? visual.selected : sourceMouse.containsMouse || sourceTab.activeFocus ? visual.hover : "transparent"
+      border.color: sourceTab.activeFocus ? Color.accent : "transparent"
+      border.width: 1
+      Behavior on color { enabled: root.liveMotion && sourceTab.visible; ColorAnimation { duration: visual.feedbackDuration } }
+    }
+    Text {
+      anchors.centerIn: parent
+      text: sourceTab.text; textFormat: Text.PlainText
+      width: parent.width - Style.space(12)
+      horizontalAlignment: Text.AlignHCenter
+      color: sourceTab.selected ? root.contentForeground : visual.muted
+      font.family: root.contentFontFamily; font.pixelSize: visual.label
+      font.weight: sourceTab.selected ? Font.DemiBold : Font.Normal
+      elide: Text.ElideRight
+    }
+    MouseArea {
+      id: sourceMouse
+      anchors.fill: parent; hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: { sourceTab.forceActiveFocus(); sourceTab.activated() }
+    }
+  }
+  component ControlGroup: BorderSurface {
+    id: group
+    default property alias controls: groupColumn.data
+    implicitHeight: groupColumn.implicitHeight + Style.space(28)
+    radius: Math.min(Style.cornerRadius, Style.space(10))
+    color: visual.surface
+    borderSpec: Border.flat(visual.line, 1)
+    Column {
+      id: groupColumn
+      anchors.left: parent.left; anchors.right: parent.right
+      anchors.top: parent.top; anchors.margins: Style.space(14)
+      spacing: Style.space(12)
+    }
+  }
+  component Disclosure: Item {
+    id: disclosure
+    default property alias controls: disclosureBody.data
+    property bool expanded: false
+    readonly property bool animate: root.liveMotion && visible
+    height: expanded ? disclosureBody.implicitHeight : 0
+    visible: expanded || height > 0
+    enabled: expanded
+    clip: true
+    onAnimateChanged: if (!animate) disclosureFeedback.complete()
+    Behavior on height {
+      enabled: disclosure.animate
+      NumberAnimation { id: disclosureFeedback; duration: visual.disclosureDuration; easing.type: Easing.OutCubic }
+    }
+    Column { id: disclosureBody; width: parent.width }
+  }
+  component SectionTitle: Text {
+    width: parent.width
+    textFormat: Text.PlainText; color: root.contentForeground
+    font.family: root.contentFontFamily; font.pixelSize: visual.label; font.weight: Font.DemiBold
+    elide: Text.ElideRight
+  }
+  component Caption: Text {
+    width: parent.width
+    textFormat: Text.PlainText; color: visual.muted; wrapMode: Text.Wrap
+    font.family: root.contentFontFamily; font.pixelSize: visual.caption
+  }
+  component SettingToggle: Row {
+    id: setting
+    property string label: ""
+    property string hint: ""
+    property bool checked: false
+    signal toggled()
+    width: parent.width; spacing: Style.space(12)
+    Item {
+      id: settingCopy
+      width: parent.width - toggleControl.width - parent.spacing
+      implicitHeight: settingLabels.implicitHeight
+      anchors.verticalCenter: parent.verticalCenter
+      Column {
+        id: settingLabels
+        width: parent.width
+        spacing: Style.space(4)
+        Text {
+          width: parent.width; text: setting.label; textFormat: Text.PlainText
+          color: root.contentForeground
+          font.family: root.contentFontFamily; font.pixelSize: visual.body
+          wrapMode: Text.Wrap
+        }
+        Caption { text: setting.hint; visible: text.length > 0 }
+      }
+      MouseArea {
+        anchors.fill: parent
+        enabled: setting.enabled
+        cursorShape: Qt.PointingHandCursor
+        onClicked: { toggleControl.forceActiveFocus(Qt.MouseFocusReason); setting.toggled() }
+      }
+    }
+    SkylofiSwitch {
+      id: toggleControl
+      objectName: "settingSwitch"
+      checked: setting.checked; interactive: setting.enabled
+      animate: root.liveMotion
+      hasCursor: activeFocus
+      foreground: root.contentForeground
+      anchors.verticalCenter: parent.verticalCenter
+      Accessible.name: setting.label
+      onToggled: setting.toggled()
+      onActiveFocusChanged: if (activeFocus) root.ensureVisible(settingsScroll, setting)
+    }
+  }
+  component SettingSlider: Column {
+    id: sliderRow
+    property string label: ""
+    property real value: 0
+    property real minimum: 0
+    property real maximum: 1
+    property real step: 1
+    property string suffix: ""
+    signal edited(int value)
+    width: parent.width; spacing: Style.space(2)
+    Row {
+      width: parent.width
+      spacing: Style.space(10)
+      Text {
+        width: parent.width - readout.width - parent.spacing
+        text: sliderRow.label; textFormat: Text.PlainText
+        color: visual.muted
+        font.family: root.contentFontFamily; font.pixelSize: visual.label
+        elide: Text.ElideRight
+      }
+      Text {
+        id: readout
+        width: Style.space(48); text: sliderRow.suffix
+        color: root.contentForeground
+        font.family: root.contentFontFamily; font.pixelSize: visual.label
+        horizontalAlignment: Text.AlignRight
+      }
+    }
+    SkylofiSlider {
+      width: parent.width; height: Style.space(30)
+      animate: root.liveMotion
+      bar: root.bar; minimum: sliderRow.minimum; maximum: sliderRow.maximum; step: sliderRow.step; integer: true
+      value: sliderRow.value
+      trackColor: visual.line; fillColor: Color.accent; knobColor: Color.accent
+      activeFocusOnTab: true
+      Accessible.role: Accessible.Slider; Accessible.name: sliderRow.label
+      Keys.onLeftPressed: sliderRow.edited(Math.max(sliderRow.minimum, sliderRow.value - sliderRow.step))
+      Keys.onRightPressed: sliderRow.edited(Math.min(sliderRow.maximum, sliderRow.value + sliderRow.step))
+      onReleased: function(value) { sliderRow.edited(value) }
+      onActiveFocusChanged: if (activeFocus) root.ensureVisible(settingsScroll, sliderRow)
+    }
+  }
   component ScrollMark: Item {
     id: mark
     required property var view
@@ -866,7 +1131,7 @@ Panel {
       height: Math.max(Style.space(24), mark.height * Math.min(1, mark.view.height / Math.max(1, mark.view.contentHeight)))
       y: Math.max(0, Math.min(mark.height - height, mark.view.contentY / Math.max(1, mark.view.contentHeight - mark.view.height) * (mark.height - height)))
       radius: width / 2
-      color: Qt.alpha(root.contentForeground, mouse.containsMouse || mouse.pressed ? 0.8 : 0.4)
+      color: mouse.containsMouse || mouse.pressed ? visual.muted : visual.quiet
     }
     MouseArea {
       id: mouse
@@ -879,72 +1144,5 @@ Panel {
       onPressed: function(event) { move(event.y) }
       onPositionChanged: function(event) { if (pressed) move(event.y) }
     }
-  }
-  component PageTitle: Text {
-    width: parent.width
-    textFormat: Text.PlainText; color: root.contentForeground
-    font.family: root.contentFontFamily; font.pixelSize: Style.font.title; font.bold: true
-  }
-  component SectionTitle: Text {
-    width: parent.width
-    textFormat: Text.PlainText; color: root.contentForeground
-    font.family: root.contentFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true
-  }
-  component Caption: Text {
-    width: parent.width
-    textFormat: Text.PlainText; color: root.contentMuted; wrapMode: Text.Wrap
-    font.family: root.contentFontFamily; font.pixelSize: Style.font.caption
-  }
-  component SettingToggle: Row {
-    id: setting
-    property string label: ""
-    property string hint: ""
-    property bool checked: false
-    signal toggled()
-    width: parent.width; spacing: Style.space(12)
-    opacity: setting.enabled ? 1 : 0.45
-    Column {
-      width: parent.width - toggleControl.width - parent.spacing
-      anchors.verticalCenter: parent.verticalCenter; spacing: Style.space(3)
-      Text { width: parent.width; text: setting.label; textFormat: Text.PlainText; color: root.contentForeground; font.family: root.contentFontFamily; font.pixelSize: Style.font.bodySmall; wrapMode: Text.Wrap }
-      Caption { text: setting.hint; visible: text.length > 0 }
-    }
-    ToggleSwitch {
-      id: toggleControl
-      checked: setting.checked; interactive: setting.enabled
-      activeFocusOnTab: true
-      hasCursor: activeFocus
-      foreground: root.contentForeground
-      anchors.verticalCenter: parent.verticalCenter
-      Accessible.name: setting.label
-      Keys.onSpacePressed: setting.toggled()
-      Keys.onReturnPressed: setting.toggled()
-      onToggled: setting.toggled()
-    }
-  }
-  component SettingSlider: Row {
-    id: sliderRow
-    property string label: ""
-    property real value: 0
-    property real minimum: 0
-    property real maximum: 1
-    property real step: 1
-    property string suffix: ""
-    signal edited(int value)
-    width: parent.width; spacing: Style.space(10)
-    Text { width: Style.space(108); text: sliderRow.label; textFormat: Text.PlainText; color: root.contentForeground; font.family: root.contentFontFamily; font.pixelSize: Style.font.bodySmall; anchors.verticalCenter: parent.verticalCenter }
-    PanelSlider {
-      width: parent.width - Style.space(108) - readout.width - parent.spacing * 2
-      bar: root.bar; minimum: sliderRow.minimum; maximum: sliderRow.maximum; step: sliderRow.step; integer: true
-      value: sliderRow.value
-      trackColor: Qt.alpha(root.contentForeground, 0.16); fillColor: root.contentForeground; knobColor: root.contentForeground
-      activeFocusOnTab: true
-      Accessible.role: Accessible.Slider; Accessible.name: sliderRow.label
-      Keys.onLeftPressed: sliderRow.edited(Math.max(sliderRow.minimum, sliderRow.value - sliderRow.step))
-      Keys.onRightPressed: sliderRow.edited(Math.min(sliderRow.maximum, sliderRow.value + sliderRow.step))
-      onReleased: function(value) { sliderRow.edited(value) }
-      anchors.verticalCenter: parent.verticalCenter
-    }
-    Text { id: readout; width: Style.space(36); text: sliderRow.suffix; color: root.contentMuted; font.family: root.contentFontFamily; font.pixelSize: Style.font.caption; horizontalAlignment: Text.AlignRight; anchors.verticalCenter: parent.verticalCenter }
   }
 }

@@ -23,154 +23,245 @@ Column {
   signal saveRequested()
   signal playRequested(string id)
   signal removeRequested(string id)
+  signal focusRequested(var item)
   function focusSearch() { searching = true; Qt.callLater(function() { search.forceActiveFocus() }) }
+  function entryDescription(entry) {
+    // Saved links can also be live streams. A stored clock alone does not mean
+    // the source can resume; let the backend identify recordings explicitly.
+    if (entry.is_live === false && entry.position > 5) return "Continue from " + Math.floor(entry.position / 60) + " min"
+    return entry.is_live === true ? "Live YouTube stream" : "Saved YouTube audio"
+  }
+  SkylofiStyle { id: visual; foreground: root.foreground; background: Color.popups.background; accent: Color.accent }
   spacing: Style.space(12)
 
   Row {
     width: parent.width
-    spacing: Style.space(8)
+    spacing: visual.controlGap
     Text {
       width: parent.width - addButton.width - parent.spacing
       anchors.verticalCenter: parent.verticalCenter
-      text: "Your saved links"
-      textFormat: Text.PlainText; color: root.foreground
-      font.family: root.fontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true
+      text: root.entries.length === 0 ? "Your collection" : root.entries.length + (root.entries.length === 1 ? " saved link" : " saved links")
+      textFormat: Text.PlainText; color: visual.muted
+      font.family: root.fontFamily; font.pixelSize: visual.label
       elide: Text.ElideRight
     }
-    Button {
+    SkylofiButton {
+      fontFamily: root.fontFamily
+      animate: root.animate && root.visible
       id: addButton
       objectName: "addYoutube"
       text: root.addingLink ? "Cancel" : "Add link"
       iconText: root.addingLink ? "\uf00d" : "\uf067"
+      height: visual.controlHeight
+      fontSize: visual.label; iconSize: visual.label
       foreground: root.foreground; focusable: true
+      bordered: !root.addingLink
       onClicked: {
         root.addingLink = !root.addingLink
         if (root.addingLink) Qt.callLater(function() { urlInput.forceActiveFocus() })
       }
+      onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
     }
   }
   TextField {
     id: search
     objectName: "librarySearch"
-    width: parent.width
+    width: parent.width; height: visual.controlHeight
     visible: root.searching || root.entries.length > 4
     placeholderText: "Search saved links"
     maximumLength: 160
     foreground: root.foreground
+    font.family: root.fontFamily; font.pixelSize: visual.body
+    onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
     Keys.onEscapePressed: { text = ""; root.searching = false; focus = false }
   }
   BorderSurface {
+    objectName: "addLinkForm"
     width: parent.width
-    visible: height > 0
-    height: root.addingLink || root.entries.length === 0 ? form.implicitHeight + Style.space(24) : 0
-    clip: true
-    radius: Style.cornerRadius
-    color: Qt.alpha(root.foreground, 0.035)
-    borderSpec: Border.controlSpec("normal", root.foreground, Color.accent)
-    opacity: root.addingLink || root.entries.length === 0 ? 1 : 0
-    Behavior on opacity { enabled: root.animate && root.visible; NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+    visible: root.addingLink
+    height: form.implicitHeight + Style.space(28)
+    radius: Math.min(Style.cornerRadius, Style.space(10))
+    color: visual.surface
+    borderSpec: Border.flat(visual.line, 1)
     Column {
       id: form
       anchors.left: parent.left; anchors.right: parent.right
-      anchors.top: parent.top; anchors.margins: Style.space(12)
+      anchors.top: parent.top; anchors.margins: Style.space(14)
       spacing: Style.space(10)
       Text {
         width: parent.width
-        visible: root.entries.length === 0
-        text: "Keep a favourite mix or conversation here."
+        text: "Save a YouTube mix, live stream or conversation."
         textFormat: Text.PlainText; wrapMode: Text.Wrap
-        color: root.muted; font.family: root.fontFamily; font.pixelSize: Style.font.caption
+        color: visual.muted; font.family: root.fontFamily; font.pixelSize: visual.caption
       }
-      TextField {
-        id: urlInput
-        objectName: "youtubeUrl"
+      Column {
         width: parent.width
-        placeholderText: "Paste a YouTube link"
-        maximumLength: 2048
-        foreground: root.foreground
-        Accessible.name: "YouTube link"
-        onAccepted: if (!root.saving && text.trim().length > 0) root.saveRequested()
-        Keys.onEscapePressed: { focus = false; root.addingLink = false }
+        spacing: Style.space(4)
+        Text {
+          text: "YouTube link"
+          textFormat: Text.PlainText; color: visual.muted
+          font.family: root.fontFamily; font.pixelSize: visual.caption
+        }
+        TextField {
+          id: urlInput
+          objectName: "youtubeUrl"
+          width: parent.width; height: visual.controlHeight
+          placeholderText: "Paste a YouTube link"
+          maximumLength: 2048
+          foreground: root.foreground
+          font.family: root.fontFamily; font.pixelSize: visual.body
+          Accessible.name: "YouTube link"
+          onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+          onAccepted: if (!root.saving && text.trim().length > 0) root.saveRequested()
+          Keys.onEscapePressed: { focus = false; root.addingLink = false }
+        }
       }
-      TextField {
-        id: titleInput
-        objectName: "youtubeTitle"
+      Column {
         width: parent.width
-        placeholderText: "Name · optional"
-        maximumLength: 160
-        foreground: root.foreground
-        Accessible.name: "Link name, optional"
-        onAccepted: if (!root.saving && urlInput.text.trim().length > 0) root.saveRequested()
-        Keys.onEscapePressed: { focus = false; root.addingLink = false }
+        spacing: Style.space(4)
+        Text {
+          text: "Name (optional)"
+          textFormat: Text.PlainText; color: visual.muted
+          font.family: root.fontFamily; font.pixelSize: visual.caption
+        }
+        TextField {
+          id: titleInput
+          objectName: "youtubeTitle"
+          width: parent.width; height: visual.controlHeight
+          placeholderText: "e.g. Morning jazz"
+          maximumLength: 160
+          foreground: root.foreground
+          font.family: root.fontFamily; font.pixelSize: visual.body
+          Accessible.name: "Link name, optional"
+          onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+          onAccepted: if (!root.saving && urlInput.text.trim().length > 0) root.saveRequested()
+          Keys.onEscapePressed: { focus = false; root.addingLink = false }
+        }
       }
-      Button {
+      SkylofiButton {
+        fontFamily: root.fontFamily
+        animate: root.animate && root.visible
         objectName: "saveYoutube"
-        width: parent.width
+        width: parent.width; height: visual.controlHeight
         text: root.saving ? "Saving…" : "Save link"
-        iconText: "\uf067"
-        bordered: true; selected: urlInput.text.trim().length > 0
+        selected: true
         enabled: !root.saving && urlInput.text.trim().length > 0
-        opacity: enabled ? 1 : 0.5
+        opacity: enabled ? 1 : 0.45
+        fontSize: visual.body
         foreground: root.foreground; focusable: true
         onClicked: root.saveRequested()
+        onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
       }
+    }
+  }
+  Column {
+    width: parent.width
+    visible: root.entries.length === 0 && !root.addingLink
+    spacing: Style.space(6)
+    Text {
+      width: parent.width
+      text: "Keep your favourites here"
+      textFormat: Text.PlainText; color: root.foreground
+      font.family: root.fontFamily; font.pixelSize: visual.body
+    }
+    Text {
+      width: parent.width
+      text: "Add a YouTube link to choose it alongside your radio stations."
+      textFormat: Text.PlainText; wrapMode: Text.Wrap
+      color: visual.muted
+      font.family: root.fontFamily; font.pixelSize: visual.caption
     }
   }
   Text {
     width: parent.width
     visible: !root.available || root.message.length > 0
-    text: !root.available ? "YouTube playback needs yt-dlp. You can save links now." : root.message
+    text: !root.available ? "Install yt-dlp to play YouTube audio. You can still save links." : root.message
     textFormat: Text.PlainText; wrapMode: Text.Wrap
-    color: root.failed ? Color.urgent : root.muted
-    font.family: root.fontFamily; font.pixelSize: Style.font.caption
+    color: root.failed ? Color.urgent : visual.muted
+    font.family: root.fontFamily; font.pixelSize: visual.caption
   }
-  Repeater {
-    model: root.entries
-    Column {
-      required property var modelData
-      objectName: "libraryEntry-" + modelData.id
-      width: root.width
-      visible: (modelData.name || "").toLowerCase().indexOf(search.text.trim().toLowerCase()) >= 0
-      spacing: Style.space(6)
-      Row {
-        width: parent.width
+  Column {
+    width: parent.width
+    spacing: Style.space(2)
+    Repeater {
+      model: root.entries
+      Column {
+        required property var modelData
+        objectName: "libraryEntry-" + modelData.id
+        width: root.width
+        visible: (modelData.name || "").toLowerCase().indexOf(search.text.trim().toLowerCase()) >= 0
         spacing: Style.space(6)
-        StationRow {
-          width: parent.width - removeButton.width - parent.spacing
-          name: modelData.name
-          description: modelData.position > 5 ? "Continue from " + Math.floor(modelData.position / 60) + " min" : "YouTube audio"
-          glyph: "\uf144"
-          current: root.selectedId === modelData.id
-          playing: current && root.playing
-          animate: root.animate && root.visible
-          foreground: root.foreground; fontFamily: root.fontFamily
-          onActivated: root.playRequested(modelData.id)
+        Row {
+          width: parent.width
+          spacing: Style.space(4)
+          StationRow {
+            width: parent.width - removeButton.width - parent.spacing
+            name: modelData.name
+            description: root.entryDescription(modelData)
+            glyph: "\uf144"
+            current: root.selectedId === modelData.id
+            playing: current && root.playing
+            animate: root.animate && root.visible
+            foreground: root.foreground; fontFamily: root.fontFamily
+            onActivated: root.playRequested(modelData.id)
+            onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+          }
+          SkylofiButton {
+            fontFamily: root.fontFamily
+            animate: root.animate && root.visible
+            id: removeButton
+            objectName: "removeYoutube-" + modelData.id
+            width: Style.space(28); height: Style.space(32)
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: "\uf1f8"; iconSize: visual.caption
+            tooltipText: "Remove saved link"
+            foreground: visual.muted; focusable: true
+            Accessible.name: "Remove " + modelData.name
+            onClicked: root.pendingRemoval = root.pendingRemoval === modelData.id ? "" : modelData.id
+            onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+          }
         }
-        Button {
-          id: removeButton
-          objectName: "removeYoutube-" + modelData.id
-          width: Style.space(30); height: Style.space(32)
-          anchors.verticalCenter: parent.verticalCenter
-          iconText: "\uf00d"; iconSize: Style.font.caption
-          tooltipText: "Remove saved link"
-          foreground: root.muted; focusable: true
-          Accessible.name: "Remove " + modelData.name
-          onClicked: root.pendingRemoval = root.pendingRemoval === modelData.id ? "" : modelData.id
-        }
-      }
-      Row {
-        visible: root.pendingRemoval === modelData.id
-        width: parent.width
-        spacing: Style.space(8)
-        Button {
-          text: "Remove link"
-          objectName: "confirmRemoveYoutube-" + modelData.id
-          foreground: root.foreground; bordered: true; focusable: true
-          onClicked: { root.removeRequested(modelData.id); root.pendingRemoval = "" }
-        }
-        Button {
-          text: "Keep"; foreground: root.muted; focusable: true
-          onClicked: root.pendingRemoval = ""
+        BorderSurface {
+          visible: root.pendingRemoval === modelData.id
+          width: parent.width
+          height: confirmation.implicitHeight + Style.space(20)
+          radius: Math.min(Style.cornerRadius, Style.space(8))
+          color: visual.surface
+          borderSpec: Border.flat(visual.line, 1)
+          Row {
+            id: confirmation
+            anchors.left: parent.left; anchors.right: parent.right
+            anchors.top: parent.top; anchors.margins: Style.space(10)
+            spacing: Style.space(8)
+            Text {
+              width: Math.max(0, parent.width - confirmButton.width - keepButton.width - parent.spacing * 2)
+              anchors.verticalCenter: parent.verticalCenter
+              text: "Remove this link?"
+              textFormat: Text.PlainText; color: visual.muted
+              font.family: root.fontFamily; font.pixelSize: visual.caption
+              wrapMode: Text.Wrap
+            }
+            SkylofiButton {
+              fontFamily: root.fontFamily
+              animate: root.animate && root.visible
+              id: confirmButton
+              text: "Remove"
+              objectName: "confirmRemoveYoutube-" + modelData.id
+              foreground: Color.urgent; bordered: true; focusable: true
+              height: Style.space(32); fontSize: visual.label
+              onClicked: { root.removeRequested(modelData.id); root.pendingRemoval = "" }
+              onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+            }
+            SkylofiButton {
+              fontFamily: root.fontFamily
+              animate: root.animate && root.visible
+              id: keepButton
+              text: "Keep"; foreground: root.foreground; focusable: true
+              height: Style.space(32); fontSize: visual.label
+              onClicked: root.pendingRemoval = ""
+              onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+            }
+          }
         }
       }
     }
@@ -178,7 +269,7 @@ Column {
   Text {
     visible: search.text.length > 0 && root.entries.filter(function(entry) { return (entry.name || "").toLowerCase().indexOf(search.text.trim().toLowerCase()) >= 0 }).length === 0
     width: parent.width
-    text: "No saved links found."
-    color: root.muted; font.family: root.fontFamily; font.pixelSize: Style.font.bodySmall
+    text: "No matching saved links."
+    color: visual.muted; font.family: root.fontFamily; font.pixelSize: visual.body
   }
 }

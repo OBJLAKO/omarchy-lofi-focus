@@ -1,0 +1,89 @@
+{
+  "method": "ffprobe container durations/sample rate/channels for bundled local files. Decoded f32 is an upper planning estimate at original rate/channels; not a running Rust mixer measurement.",
+  "assets": [
+    {
+      "path": "assets/birds.ogg",
+      "duration_seconds": 127.804807,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 1970722,
+      "decoded_f32_bytes": 45089536
+    },
+    {
+      "path": "assets/fireplace.ogg",
+      "duration_seconds": 25.537596,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 325065,
+      "decoded_f32_bytes": 9009664
+    },
+    {
+      "path": "assets/night.ogg",
+      "duration_seconds": 47.320635,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 475970,
+      "decoded_f32_bytes": 16694720
+    },
+    {
+      "path": "assets/rain.ogg",
+      "duration_seconds": 124.577778,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 3133874,
+      "decoded_f32_bytes": 43951040
+    },
+    {
+      "path": "assets/storm.ogg",
+      "duration_seconds": 25.663673,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 486147,
+      "decoded_f32_bytes": 9054144
+    },
+    {
+      "path": "assets/stream.ogg",
+      "duration_seconds": 143.528866,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 2815288,
+      "decoded_f32_bytes": 50636984
+    },
+    {
+      "path": "assets/tent-rain.ogg",
+      "duration_seconds": 84.550385,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 1368313,
+      "decoded_f32_bytes": 29829376
+    },
+    {
+      "path": "assets/waves.ogg",
+      "duration_seconds": 118.034263,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 2765739,
+      "decoded_f32_bytes": 41642488
+    },
+    {
+      "path": "assets/wind.ogg",
+      "duration_seconds": 14.839955,
+      "codec": "vorbis",
+      "sample_rate": 44100,
+      "channels": 2,
+      "compressed_bytes": 289537,
+      "decoded_f32_bytes": 5235536
+    }
+  ],
+  "total_compressed_mib": 12.999205589294434,
+  "total_f32_mib": 239.50909423828125,
+  "streaming_2_second_f32_mib": 6.05621337890625
+}

@@ -66,8 +66,8 @@ fn observed_properties(channel: &str) -> &'static [&'static str] {
             "pause",
             "media-title",
             "eof-reached",
-            "metadata",
             "idle-active",
+            "seekable",
         ]
     }
 }

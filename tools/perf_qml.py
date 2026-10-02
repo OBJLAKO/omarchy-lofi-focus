@@ -40,6 +40,7 @@ Item {
  property bool open
  property bool centerOnBar
  property var focusTarget
+ property int padding
  property real contentWidth
  property real contentHeight
  width: parent.width
@@ -121,6 +122,8 @@ Window {
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--python-source', type=Path, required=True)
+    parser.add_argument('--baseline-label', default='python_original_qml')
+    parser.add_argument('--current-label', default='rust_redesign_qml')
     parser.add_argument('--seconds', type=float, default=15)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -129,10 +132,10 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     report = {'method': 'Actual QML; fixture playing state and animations on; offscreen Qt renderer, 478x696 viewport; disposable Quickshell process per scenario; installed Omarchy UI types and user theme; layer-shell plumbing replaced by visible/open Item; no backend, audio or BarWidget; private no-activation bus; two seconds settling. This measures process CPU and memory, not GPU, FPS or shared desktop shell memory.',
               'qml_source_sha256': {label: {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(source.glob('*.qml'))}
-                                    for label, source in (('python_original_qml', args.python_source), ('rust_redesign_qml', SOURCE))},
+                                    for label, source in ((args.baseline_label, args.python_source), (args.current_label, SOURCE))},
               'cases': []}
     for phase in ('closed', 'listening', 'settings'):
-        for label, source in (('python_original_qml', args.python_source), ('rust_redesign_qml', SOURCE)):
+        for label, source in ((args.baseline_label, args.python_source), (args.current_label, SOURCE)):
             print(label + ': ' + phase, flush=True)
             result = measure(source, phase, args.seconds)
             result['source'] = label

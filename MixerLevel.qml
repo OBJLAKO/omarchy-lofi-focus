@@ -2,37 +2,45 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 
-// Native slider with a large pointer target and explicit keyboard controls.
-Row {
+// A readable label and numeric level above a full-width track. The persistent
+// dock uses the same control in one compact row.
+FocusScope {
   id: row
   property QtObject bar: null
   property string label: ""
   property real value: 0
-  property real labelWidth: Style.space(76)
+  property real labelWidth: Style.space(80)
+  property bool compact: false
   property bool removable: false
+  readonly property bool inlineLevel: compact && width >= labelWidth + Style.space(removable ? 146 : 110)
   property bool animate: true
   property color foreground: Color.foreground
   property string fontFamily: Style.font.family
   signal edited(int value)
   signal removeRequested()
-  spacing: Style.space(10)
+  implicitHeight: inlineLevel ? Style.space(36) : Style.space(54)
+  SkylofiStyle { id: visual; foreground: row.foreground; background: Color.popups.background; accent: Color.accent }
   Text {
-    width: row.labelWidth
+    id: labelText
+    width: row.inlineLevel ? row.labelWidth : parent.width - percentage.width - (row.removable ? removeButton.width + Style.space(8) : 0) - Style.space(10)
+    y: row.inlineLevel ? (parent.height - height) / 2 : Style.space(2)
     text: row.label; textFormat: Text.PlainText
     color: row.foreground
-    font.family: row.fontFamily; font.pixelSize: Style.font.bodySmall
+    font.family: row.fontFamily; font.pixelSize: visual.label
     elide: Text.ElideRight
-    anchors.verticalCenter: parent.verticalCenter
   }
-  PanelSlider {
+  SkylofiSlider {
     id: slider
     objectName: "levelSlider"
-    width: Math.max(Style.space(40), row.width - row.labelWidth - percentage.width - row.spacing * (row.removable ? 3 : 2) - (row.removable ? removeButton.width : 0))
-    implicitHeight: Style.space(34)
+    animate: row.animate
+    x: row.inlineLevel ? row.labelWidth + Style.space(10) : 0
+    y: row.inlineLevel ? 0 : Style.space(22)
+    width: Math.max(Style.space(40), row.width - x - (row.inlineLevel ? percentage.width + Style.space(10) + (row.removable ? removeButton.width + Style.space(8) : 0) : 0))
+    height: Style.space(32)
     bar: row.bar
-    trackColor: Qt.alpha(row.foreground, 0.16)
-    fillColor: row.foreground
-    knobColor: row.foreground
+    trackColor: visual.sliderTrack
+    fillColor: Color.accent
+    knobColor: Color.accent
     minimum: 0; maximum: 100; step: 5; integer: true
     value: row.value
     activeFocusOnTab: true
@@ -46,34 +54,32 @@ Row {
       else if (event.key === Qt.Key_End) { row.edited(100); event.accepted = true }
     }
     onReleased: function(value) { row.edited(value) }
-    anchors.verticalCenter: parent.verticalCenter
-    Rectangle {
-      anchors.fill: parent; anchors.margins: -2
-      visible: slider.activeFocus
-      color: "transparent"; radius: Style.cornerRadius
-      border.color: Color.accent; border.width: 1
-    }
+
   }
   Text {
     id: percentage
-    width: Style.space(36)
+    x: parent.width - width - (row.removable ? removeButton.width + Style.space(8) : 0)
+    y: row.inlineLevel ? (parent.height - height) / 2 : Style.space(2)
+    width: Style.space(40)
     text: Math.round(slider.dragging ? slider.liveValue : row.value) + "%"
-    color: Qt.alpha(row.foreground, 0.7)
-    font.family: row.fontFamily; font.pixelSize: Style.font.caption
+    color: visual.muted
+    font.family: row.fontFamily; font.pixelSize: visual.label
     horizontalAlignment: Text.AlignRight
-    anchors.verticalCenter: parent.verticalCenter
   }
-  Button {
+  SkylofiButton {
+    fontFamily: row.fontFamily
+    animate: row.animate && row.visible
     id: removeButton
     visible: row.removable
-    width: Style.space(30); height: Style.space(30)
-    iconText: "\uf00d"; iconSize: Style.font.caption
-    foreground: Qt.alpha(row.foreground, 0.7)
+    x: parent.width - width
+    y: row.inlineLevel ? (parent.height - height) / 2 : -Style.space(4)
+    width: Style.space(28); height: Style.space(28)
+    iconText: "\uf00d"; iconSize: visual.caption
+    foreground: visual.muted
     horizontalPadding: 0; verticalPadding: 0
     focusable: true
     tooltipText: "Remove " + row.label
     Accessible.name: tooltipText
     onClicked: row.removeRequested()
-    anchors.verticalCenter: parent.verticalCenter
   }
 }

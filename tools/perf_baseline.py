@@ -355,6 +355,7 @@ def main():
     parser.add_argument('--source', type=Path, default=SOURCE, help='Pinned source snapshot or worktree')
     parser.add_argument('--backend', choices=('python', 'rust'), default='python')
     parser.add_argument('--native-binary', type=Path, help='Explicit already-built Rust executable')
+    parser.add_argument('--build-identity', default='perf-results/native-build.json', help='Source/binary identity report for this build')
     args = parser.parse_args()
     if not os.environ.get('DBUS_SESSION_BUS_ADDRESS'):
         parser.error('Run through the private test dbus-run-session first')
@@ -364,7 +365,7 @@ def main():
         parser.error('Rust measurement requires --native-binary; implicit builds are prohibited')
     args.output.parent.mkdir(parents=True, exist_ok=True)
     result = {'git_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=SOURCE, text=True).strip(),
-              'provenance_note': 'Git HEAD identifies the base revision, not uncommitted Rust source. Python reference comes from the explicit source snapshot; Rust identity is native_binary_sha256 and perf-results/native-build.json source hashes.',
+              'provenance_note': 'Git HEAD identifies the base revision, not uncommitted Rust source. Python reference comes from the explicit source snapshot; Rust identity is native_binary_sha256 and ' + args.build_identity + ' source hashes.',
               'source_path': str(args.source.resolve()), 'backend': args.backend,
               'source_hashes': {name: hashlib.sha256((args.source / name).read_bytes()).hexdigest() for name in ('lofi_backend.py', 'lofi_duck.py', 'stations.json')},
               'native_binary_sha256': hashlib.sha256(args.native_binary.read_bytes()).hexdigest() if args.native_binary else None,

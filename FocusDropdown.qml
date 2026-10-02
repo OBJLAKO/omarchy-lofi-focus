@@ -22,6 +22,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import QtQuick
+import Quickshell
 import QtQuick.Controls as QQC
 import qs.Commons
 import qs.Ui
@@ -39,7 +40,7 @@ import qs.Ui
 // immediately). Down arrow from the search jumps to the first match;
 // Up from the first match returns to the search. Enter selects, Esc
 // closes (and clears the filter).
-Item {
+FocusScope {
   id: root
 
   property string label: ""
@@ -48,6 +49,9 @@ Item {
   property string placeholderText: "Search..."
   property string emptyText: "No matches"
   property string triggerLabel: ""
+  // Restrict transient pickers to their panel rather than the full-screen
+  // layer-shell overlay. The list can be wider than a compact Add trigger.
+  property Item popupBoundary: null
 
   property color foreground: Color.popups.text
   property color background: Color.popups.background
@@ -55,12 +59,14 @@ Item {
   property color accent: Color.accent
   readonly property var popupBorderSpec: Border.localOrSurfaceSpec("popups", "border", popupBorder, Color.popups.border, Style.normalBorderWidth)
   property string fontFamily: Style.font.family
-  property int rowHeight: Style.spacing.controlHeight
-  property int popupRowHeight: Style.spacing.popupRowHeight
+  property int rowHeight: Style.space(36)
+  property int popupRowHeight: Style.space(42)
   property int popupMinHeight: Style.spacing.searchablePopupMinHeight
   property bool showLabel: true
   property bool showDescriptions: true
   property bool animate: true
+  onAnimateChanged: if (!animate) { triggerFeedback.complete(); chevronFeedback.complete() }
+  onVisibleChanged: if (!visible) { popup.close(); triggerFeedback.complete(); chevronFeedback.complete() }
 
   // Panel-cursor flag. When true, the trigger renders the shared
   // hover-cursor state. Active Qt focus defaults to the same visuals.
@@ -122,9 +128,9 @@ Item {
       textFormat: Text.PlainText
       visible: root.showLabel && root.label !== ""
       text: root.label
-      color: Qt.darker(root.foreground, 1.4)
+      color: Qt.alpha(root.foreground, 0.76)
       font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
+      font.pixelSize: Math.round(11 * Style.fontScale)
       font.bold: true
     }
 
@@ -140,6 +146,10 @@ Item {
 
       color: Style.controlFill(trigger._focused, trigger._hot, root.foreground, root.accent)
       borderSpec: _borderSpec
+      Behavior on color {
+        enabled: root.animate && root.visible
+        ColorAnimation { id: triggerFeedback; duration: 100 }
+      }
 
       activeFocusOnTab: true
       Accessible.role: Accessible.ComboBox
@@ -168,21 +178,26 @@ Item {
         anchors.leftMargin: trigger.borderLeft + Style.spacing.controlPaddingX
         anchors.rightMargin: trigger.borderRight + Style.spacing.md
         text: root.currentLabel() || root.triggerLabel || root.placeholderText
-        color: (root.currentLabel() || root.triggerLabel) ? root.foreground : Qt.darker(root.foreground, 1.5)
+        color: (root.currentLabel() || root.triggerLabel) ? root.foreground : Qt.alpha(root.foreground, 0.76)
         font.family: root.fontFamily
-        font.pixelSize: Style.font.body
+        font.pixelSize: Math.round(13 * Style.fontScale)
         elide: Text.ElideRight
       }
 
       Text {
         id: chevron
+        rotation: popup.opened ? 180 : 0
+        Behavior on rotation {
+          enabled: root.animate && root.visible
+          NumberAnimation { id: chevronFeedback; duration: 140; easing.type: Easing.OutCubic }
+        }
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: trigger.borderRight + Style.spacing.controlGap
-        text: "󰅀"
-        color: Qt.darker(root.foreground, 1.2)
+        text: "\uf107"
+        color: Qt.alpha(root.foreground, 0.76)
         font.family: root.fontFamily
-        font.pixelSize: Style.font.body
+        font.pixelSize: Math.round(13 * Style.fontScale)
       }
 
       MouseArea {
@@ -194,15 +209,31 @@ Item {
         }
       }
 
+      TransformWatcher {
+        id: triggerTransform
+        a: trigger
+        b: root.popupBoundary || root
+      }
+
       QQC.Popup {
         id: popup
         objectName: "focusDropdownPopup"
-        x: 0
-        y: trigger.height + Style.spacing.xxs
-        width: trigger.width
-        implicitHeight: Math.max(root.popupMinHeight,
-                                 Math.min(resultList.contentHeight + Style.space(50),
-                                          root.popupRowHeight * 6 + 5 * Style.spacing.labelGap + Style.space(50)))
+        readonly property real edge: Style.space(8)
+        readonly property var boundary: root.popupBoundary
+        readonly property point triggerOrigin: {
+          triggerTransform.transform
+          return boundary ? trigger.mapToItem(boundary, 0, 0) : Qt.point(0, 0)
+        }
+        readonly property real desiredHeight: Math.max(Style.space(130), Math.min(resultList.contentHeight + Style.space(54), root.popupRowHeight * 6 + Style.space(54)))
+        width: boundary ? Math.min(Math.max(trigger.width, Style.space(280)), boundary.width - edge * 2) : trigger.width
+        implicitHeight: boundary ? Math.min(desiredHeight, Math.max(Style.space(80), boundary.height - edge * 2)) : desiredHeight
+        x: boundary ? Math.max(edge - triggerOrigin.x, Math.min(0, boundary.width - edge - triggerOrigin.x - width)) : 0
+        y: {
+          var below = trigger.height + Style.space(4)
+          if (!boundary || triggerOrigin.y + below + height <= boundary.height - edge) return below
+          if (triggerOrigin.y - height - Style.space(4) >= edge) return -height - Style.space(4)
+          return edge - triggerOrigin.y
+        }
         padding: Style.spacing.hairline
         leftPadding: Border.left(root.popupBorderSpec) + Style.spacing.hairline
         rightPadding: Border.right(root.popupBorderSpec) + Style.spacing.hairline
@@ -248,7 +279,7 @@ Item {
               foreground: root.foreground
               accent: root.accent
               font.family: root.fontFamily
-              font.pixelSize: Style.font.body
+              font.pixelSize: Math.round(13 * Style.fontScale)
 
               onTextChanged: {
                 root.recomputeFiltered()
@@ -283,16 +314,16 @@ Item {
 
           Item {
             width: parent.width
-            height: popup.height - searchHeader.height - Style.spacing.xxs - 1
+            height: Math.max(0, popup.availableHeight - searchHeader.height - 1)
 
             Text {
               textFormat: Text.PlainText
               anchors.centerIn: parent
               visible: resultList.count === 0
               text: root.emptyText
-              color: Qt.darker(root.foreground, 1.6)
+              color: Qt.alpha(root.foreground, 0.76)
               font.family: root.fontFamily
-              font.pixelSize: Style.font.body
+              font.pixelSize: Math.round(13 * Style.fontScale)
             }
 
             ListView {
@@ -360,7 +391,7 @@ Item {
                     text: root.optionLabel(modelData)
                     color: index === resultList.currentIndex ? Style.hoverStateColor(root.foreground, root.accent) : root.foreground
                     font.family: root.fontFamily
-                    font.pixelSize: Style.font.body
+                    font.pixelSize: Math.round(13 * Style.fontScale)
                     elide: Text.ElideRight
                     width: parent.width
                   }
@@ -368,9 +399,9 @@ Item {
                     textFormat: Text.PlainText
                     visible: root.showDescriptions && text !== ""
                     text: root.optionDescription(modelData)
-                    color: Qt.darker(root.foreground, 1.5)
+                    color: Qt.alpha(root.foreground, 0.76)
                     font.family: root.fontFamily
-                    font.pixelSize: Style.font.caption
+                    font.pixelSize: Math.round(11 * Style.fontScale)
                     elide: Text.ElideRight
                     width: parent.width
                   }

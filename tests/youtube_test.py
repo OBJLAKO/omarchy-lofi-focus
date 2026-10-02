@@ -11,6 +11,7 @@ import time
 import unittest
 import wave
 import signal
+import socket
 
 import player_test
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -93,7 +94,7 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.addCleanup(self.server.shutdown)
         payload = dict(id='BaW_jenozKc', title='Offline test conversation',
                        url=f'http://127.0.0.1:{self.server.server_port}/tone.wav',
-                       ext='wav', protocol='http', duration=90)
+                       ext='wav', protocol='http', duration=90, is_live=False)
         self.extractor_log = self.base/'extractor-args.json'
         self.extractor_pid = self.base/'extractor.pid'
         self.helper_pid = self.base/'helper.pid'
@@ -112,7 +113,10 @@ class YoutubeIntegrationTest(unittest.TestCase):
                   f'    helper = subprocess.Popen([sys.executable, "-c", code, os.environ.get("LOFI_TEST_EXTRACTOR_TREE", "0"), {str(self.tree_pids)!r}, code])\n'
                   f'    Path({str(self.helper_pid)!r}).write_text(str(helper.pid))\n'
                   'time.sleep(float(os.environ.get("LOFI_TEST_EXTRACTOR_DELAY", "0")))\n'
-                  f'print({json.dumps(payload)!r})\n')
+                  f'payload = json.loads({json.dumps(payload)!r})\n'
+                  'if os.environ.get("LOFI_TEST_EXTRACTOR_LIVE"): payload["is_live"] = True\n'
+                  'if os.environ.get("LOFI_TEST_EXTRACTOR_UNKNOWN"): payload.pop("is_live", None)\n'
+                  'print(json.dumps(payload))\n')
         (self.bin/'yt-dlp').write_text(script)
         (self.bin/'yt-dlp').chmod(0o755)
         self.action('ui', 'fade', 'off')
@@ -121,6 +125,13 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.action('youtube-add', URL)
         self.action('start', ID)
         self.wait_for(lambda: self.status()['main_state'] == 'playing', timeout=10)
+
+    def finish_fixture_stream(self):
+        # Reach EOF in the silent 90-second mpv fixture. This bypasses the
+        # application's seek policy solely to simulate a transport ending.
+        with socket.socket(socket.AF_UNIX) as client:
+            client.connect(str(self.base/'runtime/sky.lofi/sockets/main.sock'))
+            client.sendall((json.dumps({'command':['seek',89,'absolute']}) + '\n').encode())
 
     def test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature(self):
         catalog_path = self.plugin/'stations.json'
@@ -133,6 +144,11 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.wait_for(lambda: self.status()['main_state'] == 'playing')
         self.assertEqual(self.status()['category'], 'youtube')
         self.assertFalse(self.status()['mix'])
+        if self.backend == 'rust':
+            self.assertFalse(self.status()['can_seek'])
+            self.assertEqual(self.status()['source_kind'], 'radio')
+            self.assertIsNone(self.status()['main_duration'])
+            self.assertNotEqual(self.action('seek', '25', check=False).returncode, 0)
         self.assertTrue(any(layer['running'] for layer in self.status()['nature_layers'] if layer['id'] == 'noise-rain'))
         self.action('stop')
 
@@ -152,6 +168,11 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.start_video()
         state = self.status()
         self.assertEqual(state['category'], 'youtube')
+        if self.backend == 'rust':
+            self.wait_for(lambda: self.status()['can_seek'])
+            self.assertGreater(self.status()['main_duration'], 0)
+            self.assertEqual(self.status()['source_kind'], 'recording')
+            self.assertEqual(self.status()['category_name'], 'YouTube')
         self.assertFalse(state['bg_running'])
         self.assertTrue(state['noise_running'])
         rain = self.pid('nature-noise-rain')
@@ -174,6 +195,52 @@ class YoutubeIntegrationTest(unittest.TestCase):
         self.assertEqual(self.status()['category'], 'lofi')
         self.assertTrue(self.status()['bg_running'])
         self.assertTrue(self.status()['noise_running'])
+
+    @unittest.skipUnless(os.environ.get('LOFI_TEST_BACKEND') == 'rust', 'Native capability policy')
+    def test_radio_duration_does_not_enable_seek_or_mpris_timeline(self):
+        self.action('start', 'lofi-kalizo')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        self.assertGreater(self.prop('main', 'duration'), 0)
+        self.assertTrue(self.prop('main', 'seekable'))
+        state = self.status()
+        self.assertFalse(state['can_seek'])
+        self.assertIsNone(state['main_duration'])
+        result = self.action('seek', '25', check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('live radio', result.stderr)
+        reply = subprocess.run(['gdbus', 'call', '--session', '--dest', 'org.mpris.MediaPlayer2.sky.lofi',
+            '--object-path', '/org/mpris/MediaPlayer2', '--method', 'org.freedesktop.DBus.Properties.Get',
+            'org.mpris.MediaPlayer2.Player', 'CanSeek'], env=self.env, capture_output=True, text=True, check=True)
+        self.assertIn('false', reply.stdout)
+        self.finish_fixture_stream()
+        self.wait_for(lambda: self.status()['main_state'] == 'reconnecting')
+        self.assertNotEqual(self.status()['main_state'], 'ended')
+
+    @unittest.skipUnless(os.environ.get('LOFI_TEST_BACKEND') == 'rust', 'Native capability policy')
+    def test_saved_live_youtube_has_no_recording_controls(self):
+        self.env['LOFI_TEST_EXTRACTOR_LIVE'] = '1'
+        self.action('shutdown')
+        self.start_video()
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        self.assertFalse(self.status()['can_seek'])
+        self.assertEqual(self.status()['source_kind'], 'live')
+        self.assertIsNone(self.status()['main_duration'])
+        self.assertNotEqual(self.action('seek', '25', check=False).returncode, 0)
+        # Simulate a live transport ending through mpv's private fixture IPC.
+        # Application seek remains forbidden; this event must reconnect, never Replay.
+        self.finish_fixture_stream()
+        self.wait_for(lambda: self.status()['main_state'] == 'reconnecting', timeout=8)
+        self.assertNotEqual(self.status()['main_state'], 'ended')
+
+    @unittest.skipUnless(os.environ.get('LOFI_TEST_BACKEND') == 'rust', 'Native capability policy')
+    def test_unknown_saved_source_does_not_guess_recording_from_duration(self):
+        self.env['LOFI_TEST_EXTRACTOR_UNKNOWN'] = '1'
+        self.action('shutdown')
+        self.start_video()
+        self.assertGreater(self.prop('main', 'duration'), 0)
+        self.assertFalse(self.status()['can_seek'])
+        self.assertEqual(self.status()['source_kind'], 'unknown')
+        self.assertIsNone(self.status()['main_duration'])
 
     def test_end_does_not_trigger_radio_recovery_and_can_replay(self):
         self.start_video()
