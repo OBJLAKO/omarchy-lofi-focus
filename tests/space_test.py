@@ -5,6 +5,7 @@ import shutil
 import time
 import unittest
 from player_test import PlayerTest
+from backend_fixture import SOURCE
 
 NATIVE = os.environ.get('LOFI_TEST_BACKEND') == 'rust'
 
@@ -18,6 +19,25 @@ class SpaceTest(PlayerTest):
 
     # Inherited transport regressions inspect mpv nature sockets. Run only the
     # new cases here; those legacy cases retain their separate fixture.
+    def test_every_bundled_sound_opens_in_the_native_decoder(self):
+        catalog = json.loads((self.plugin / 'stations.json').read_text())
+        full = json.loads((SOURCE / 'stations.json').read_text())
+        sounds = next(c['stations'] for c in full['categories'] if c['id'] == 'ambience')
+        next(c for c in catalog['categories'] if c['id'] == 'ambience')['stations'] = sounds
+        (self.plugin / 'stations.json').write_text(json.dumps(catalog))
+        self.assertEqual(len(sounds), 32)
+        self.action('ui', 'fade', 'off')
+        self.action('vol', 'master', '0')
+        self.action('bg', 'off')
+        self.action('play')
+        for sound in sounds:
+            with self.subTest(sound=sound['id']):
+                self.action('nature', sound['id'], 'on')
+                time.sleep(0.05)
+                layer = next(l for l in self.status()['nature_layers'] if l['id'] == sound['id'])
+                self.assertTrue(layer['running'])
+                self.action('nature', sound['id'], 'off')
+
     def test_saved_scene_preserves_master_and_stopped_intent(self):
         self.action('nature', 'noise-rain', 'on')
         self.action('vol', 'noise-rain', '61')
