@@ -1,3 +1,16 @@
+# 3.5.0 · development preview · 2026-10-07
+
+- Add reusable named scenes; application preserves play/pause/stop and master level.
+- Add independent, smooth Living mix envelopes with per-layer locks.
+- Add Sound space: distance, stereo position, width, soft boundaries, room presets,
+  shared reflections and optional echo.
+- Replace local ambience subprocesses with one Rust output mixer and bounded,
+  cancellable streaming decoders; preserve online audio supervision.
+- Expand the offline library from 9 to 32 credited and procedural sounds.
+- Add validated private imports for Ogg, WAV, FLAC and MP3, with bounded storage.
+- Restore Voice controls for the built-in YouTube-backed Radio presets.
+- Preserve existing preferences and desktop appearance controls.
+
 # 3.0.1 · 2026-10-02
 
 - Keep slider focus outlines and enlarged thumbs inside their controls; fix

@@ -13,6 +13,29 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def supplemental_notices(package, base):
+    """Use preserved upstream text only when its pin matches the crate archive."""
+    directory = ROOT / 'docs/native/supplemental-licenses' / (package['name'] + '-' + package['version'])
+    source = directory / 'SOURCE.json'
+    if not source.is_file():
+        return []
+    record = json.loads(source.read_text())
+    vcs = json.loads((base / '.cargo_vcs_info.json').read_text())
+    if (record.get('crate') != package['name'] or record.get('version') != package['version']
+            or record.get('upstreamCommit') != vcs.get('git', {}).get('sha1')):
+        raise RuntimeError('Supplemental notice does not match crate source: ' + package['name'])
+    result = []
+    for entry in record['files']:
+        filename = entry['file']
+        if Path(filename).name != filename or not filename.upper().startswith(('LICENSE', 'LICENCE', 'COPYING', 'NOTICE')):
+            raise RuntimeError('Invalid supplemental notice path: ' + filename)
+        path = directory / filename
+        if hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
+            raise RuntimeError('Supplemental notice checksum mismatch: ' + str(path))
+        result.append((path, str(path.relative_to(ROOT)), entry['sourceURL']))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cargo', default='cargo')
@@ -43,6 +66,13 @@ def main():
                              and not any(part in ('target', '.git') for part in p.relative_to(base).parts)})
         if package.get('license_file'):
             candidates.append(base / package['license_file'])
+        labels = {}
+        origins = []
+        if not any(path.is_file() for path in candidates):
+            for path, label, origin in supplemental_notices(package, base):
+                candidates.append(path)
+                labels[path] = label
+                origins.append(origin)
         references = []
         for path in dict.fromkeys(candidates):
             try:
@@ -52,20 +82,21 @@ def main():
             digest = hashlib.sha256(text.encode()).hexdigest()
             if digest not in documents:
                 documents[digest] = text
-            references.append((str(path.relative_to(base)), digest))
+            references.append((labels[path] if path in labels else str(path.relative_to(base)), digest))
         if not references:
             missing.append(package['name'] + '@' + package['version'])
-        packages.append((package, references))
+        packages.append((package, references, origins))
     if missing:
         raise RuntimeError('No packaged notice text for: ' + ', '.join(missing))
     lines = ['Skylofi native dependency notices',
              'Collected from the x86_64 Linux dependency graph in native/Cargo.lock.',
              'Original notice texts are reproduced without modification.',
              'Identical documents are included once and referenced by SHA256.', '']
-    for package, references in packages:
+    for package, references, origins in packages:
         lines.extend([package['name'] + ' ' + package['version'],
                       'Declared license: ' + str(package.get('license')),
                       'Source: https://crates.io/crates/' + package['name'] + '/' + package['version']])
+        lines.extend('Supplemental upstream notice: ' + origin for origin in origins)
         lines.extend('  ' + name + ' => ' + digest for name, digest in references)
         lines.append('')
     for digest, text in documents.items():

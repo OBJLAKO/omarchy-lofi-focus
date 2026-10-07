@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "sky.lofi",
   "name": "Skylofi",
-  "version": "3.0.1",
+  "version": "3.5.0",
   "author": "OBJLAKO",
   "license": "MIT",
-  "description": "A quiet listening space: radio, saved YouTube audio and a personal nature mix, with a native Rust controller.",
+  "description": "A quiet sound space: radio, saved YouTube audio, reusable scenes and spatial ambience with a native Rust mixer.",
   "keywords": [
     "lofi",
     "youtube",
@@ -14,7 +14,10 @@
     "podcasts",
     "ambient",
     "focus",
-    "voxtype"
+    "voxtype",
+    "soundscape",
+    "scenes",
+    "spatial"
   ],
   "kinds": [
     "bar-widget"
@@ -25,7 +28,7 @@
   },
   "barWidget": {
     "displayName": "Skylofi",
-    "description": "Radio, saved YouTube audio and a personal nature mix.",
+    "description": "Radio, voice, saved scenes and spatial ambience.",
     "category": "Media",
     "allowMultiple": false,
     "defaultSection": "right"

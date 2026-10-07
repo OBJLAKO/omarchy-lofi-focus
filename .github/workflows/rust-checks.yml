@@ -1,7 +1,7 @@
 name: Rust backend checks
 on:
   push:
-    branches: [rustTest, dev, main, 'release/**']
+    branches: ['3.5', rustTest, dev, main, 'release/**']
   pull_request:
     branches: [rustTest, dev, main]
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
       - name: Install build and silent integration dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpv dbus python3-gi openssl build-essential pkg-config
+          sudo apt-get install -y mpv dbus python3-gi openssl build-essential pkg-config libasound2-dev
           rustup toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy
           rustup override set 1.99.0
       - name: Format, lint and unit tests
@@ -39,7 +39,7 @@ jobs:
           LOFI_TEST_BACKEND: rust
           SKYLOFI_NATIVE: ${{ github.workspace }}/../skylofi-rust-target/release/skylofi
         run: |
-          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test
+          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test space_test.SpaceTest
       - name: Python reference regressions
         env:
           LOFI_TEST_BACKEND: python

@@ -1,8 +1,8 @@
-# Skylofi 3
+# Skylofi 3.5
 
 A lo-fi radio and nature-sound mixer for **Omarchy**, with a native **Rust**
-controller and a theme-aware QML interface. Choose a soundtrack, add a little
-rain, and keep your listening space close in the bar.
+controller, local audio mixer and a theme-aware QML interface. Choose a soundtrack,
+place your ambient layers, save a scene and let its levels drift gently.
 
 [Marketplace](https://omarchyplugins.com/plugin.html?id=sky.lofi) ·
 [Install](#install) · [See it in action](#make-it-your-space) ·
@@ -20,11 +20,12 @@ omarchy plugin add https://github.com/OBJLAKO/omarchy-lofi-focus.git --enable
 
 The command installs the repository's current upstream version. The
 [marketplace listing](https://omarchyplugins.com/plugin.html?id=sky.lofi)
-currently shows the earlier **Lofi Focus** release; the Skylofi 3 native-binary
-update is [awaiting maintainer review](https://github.com/omacom/omarchy-plugin-marketplace/issues/9719).
+has a reviewed 3.0.1 snapshot. This 3.5 development branch needs its own exact-commit
+verification before publication; [the previous review](https://github.com/omacom/omarchy-plugin-marketplace/issues/9719)
+does not cover new code or binaries.
 
 **Requirements:** Omarchy's plugin-capable Quickshell shell, mpv and session
-D-Bus. YouTube playback additionally needs yt-dlp and a supported JavaScript
+D-Bus and ALSA (normally routed through Omarchy's PipeWire). YouTube playback additionally needs yt-dlp and a supported JavaScript
 runtime, such as Deno. No account or API key is needed; private and restricted
 videos are not supported.
 
@@ -48,9 +49,23 @@ seeking and saved playback position.
 <summary><strong>Mix — build your own atmosphere</strong></summary>
 
 Balance the soundtrack, an optional voice and your nature sounds independently.
-Add rain, tent rain, wind, thunderstorm, fireplace, ocean waves, a stream, birds
-or crickets. Each layer has its own level; **All sounds** adjusts the complete mix.
-The nine nature recordings are bundled locally.
+The offline library contains **32 sounds**: nine credited recordings and 23
+distinct procedural textures generated in Rust. Up to 16 ambient layers can play
+together. Each layer has its own level; **All sounds** adjusts the complete mix.
+
+Save a named scene to remember the soundtrack, voice, layers and acoustic settings.
+Applying a scene preserves playback intent and overall volume. **Living mix**
+gently varies each unlocked layer independently below its chosen level; zero stays
+silent and disabling motion smoothly restores the chosen balance.
+
+Open **Sound space** to place sources left/right and near/far. Choose a room preset,
+then refine width, muffling, room reflections and echo. **Outside** places a sound
+behind a soft acoustic boundary. The stage depicts stereo position and depth;
+it does not simulate binaural front/back localization.
+
+Import your own Ogg, WAV, FLAC or MP3 recordings into a private library. Source files
+are copied, so moving the original does not break a scene. See the
+[library and sound provenance](docs/library-3.5.md).
 
 ![Mix demo: layer nature sounds and adjust their individual levels](docs/showcase/mix-demo.gif)
 
@@ -68,7 +83,7 @@ theme and fonts.
 
 </details>
 
-The clips render the actual QML interface with controlled sample state. They
+The clips illustrate the earlier 3.0 interface with controlled sample state. They
 show interaction and motion, rather than remote-stream loading times or audio.
 The cover is promotional artwork based on interface references.
 
@@ -98,17 +113,29 @@ the default configuration.
 The QML interface runs inside Omarchy's Quickshell host and keeps a persistent
 local connection to the Rust controller. Rust manages settings, process
 supervision, cached IPC state, recovery, the library, fades, dictation ducking,
-RSS podcasts and MPRIS. **mpv still decodes the audio**; yt-dlp extracts YouTube
-streams. The preserved Python implementation is a benchmark and regression
-reference, outside the normal runtime path.
+RSS podcasts and MPRIS. Local ambience uses **one Rust/Kira mixer**, bounded
+streaming decoders, shared room reverb and delay, and smoothed layer controls.
+mpv handles online music and voice; yt-dlp extracts YouTube streams. The preserved
+Python implementation and the explicit mpv ambience mode are legacy regression
+references, outside the normal 3.5 runtime path.
 
-The bundled native executable is built and tested on Ubuntu 24.04. Matching
-source, locked dependencies, checksums and build identity ship with it. See
+The 3.5 preview executable is locally built and validated on this Omarchy system.
+The Ubuntu 24.04 workflow includes the new ALSA build dependency and still needs
+to run before a distribution release. Matching source, locked dependencies,
+checksums and build identity ship with the preview. See
 [native distribution](docs/RUST-PUBLISHING.md) and the
 [audio-engine evaluation](docs/AUDIO-ENGINE-EVALUATION.md) for the architecture
 and runtime requirements.
 
 ## Measured with care
+
+The 3.5 local-output smoke run measured **65.46 MiB total PSS** with nine
+ambient layers, versus **384.01 MiB** with nine separate mpv players. Sixteen
+layers with effects used **79.72 MiB** and **10.9% of one logical CPU core**.
+The output paths differ, and the native path used more CPU in this run.
+Twenty rapid stop/start cycles returned to the original thread and file-descriptor
+counts after output cleanup. See the [3.5 measurements and limits](docs/PERFORMANCE-3.5.md)
+and [security/publication review](docs/3.5-SECURITY-REVIEW.md).
 
 The preserved prototype comparison used real mpv with silent output, local
 audio and three active channels:
@@ -123,7 +150,8 @@ median applied volume timing. These are identified alpha builds, not a fresh
 benchmark of every release binary. The changes combine Rust, a resident
 controller, caching and event handling; they do not isolate language choice.
 Timings measure local control, not speaker latency or internet startup, and mpv
-remains the largest audio-memory cost.
+was the largest audio-memory cost in that earlier architecture. These historical
+figures do not measure the 3.5 local mixer.
 
 Read the [original comparison and raw evidence](docs/PERFORMANCE.md),
 [earlier alpha.2 interface measurements](docs/PERFORMANCE-V2.md) and
@@ -134,7 +162,8 @@ The current interface and playback-motion changes have separate
 <details>
 <summary><strong>Development, storage and CLI</strong></summary>
 
-Building requires Rust 1.99.0. Build output stays outside the plugin's watched
+Building requires Rust 1.99.0, pkg-config and ALSA development headers
+(`libasound2-dev` on Ubuntu). Build output stays outside the plugin's watched
 directory; the runtime uses the bundled executable or an explicit
 `SKYLOFI_NATIVE` developer path.
 
@@ -147,7 +176,8 @@ omarchy plugin validate .
 
 The [Rust workflow](.github/workflows/rust-checks.yml) runs format, Clippy,
 unit tests and isolated real-mpv integration tests, then records the tested
-native artifact. Fixtures use private state and D-Bus with silent audio.
+native artifact. Fixtures use private state and D-Bus with silent audio; mixer
+tests also exercise a device-free renderer and allocation tracking.
 [Release validation](docs/RELEASE-3.0.md) and the performance reports retain
 test results, build identities and reproduction commands.
 

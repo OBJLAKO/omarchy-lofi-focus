@@ -1,12 +1,50 @@
 # Audio engine evaluation
 
-Decision for this revision: keep mpv for network radio, podcasts and YouTube;
-keep all Skylofi control and source-capability logic in Rust. The strongest
-candidate for a later measured change is one Rust mixer for the nine bundled
-nature layers. Replacing the entire network player is not justified by the
-current evidence. Nothing here replaces or reconfigures the system mpv.
+Skylofi 3.5 implements a native Rust mixer for local ambience. Kira 0.12.5
+owns one output through CPAL 0.18.2; Symphonia 0.6.1 decodes enabled local
+files in cancellable workers and rtrb 0.4.0 carries PCM through bounded queues.
+Network radio, podcasts and YouTube continue to use mpv, with yt-dlp for
+YouTube extraction. The installed system mpv is not reconfigured.
 
-## What the measurements actually show
+## Implemented 3.5 local path
+
+The bundled library contains **32 offline sounds**, with private local imports
+available separately. The mixer supports **16 active local layers**, sixteen
+reusable source tracks and two shared wet-only buses for reverb and echo.
+Distance affects gain and filtering; each layer also has position, width,
+softness, reflections and echo controls. Parameters are finite, bounded and
+smoothed over 45 ms; the final output guard removes nonfinite frames and
+attenuates peaks above 0.98.
+
+Each active decoder has a fixed **16,384-frame** stereo queue: about 0.37 seconds
+at 44.1 kHz and **about 2 MiB of queue storage at the 16-layer limit**. This excludes
+codec state, decoded packet scratch, tracks, effects and the system output.
+Clip duration does not increase queue capacity. Only active sounds own decoders,
+Pause suspends decoder production and silences the output. Clearing a stopped
+or empty mix cancels all decoder workers; the controller retains one silent
+output for a 600 ms idle grace so a quick restart can reuse it, then drops that
+output. Kira's CPAL stream manager checks pending destruction every 500 ms;
+device teardown completes asynchronously after the drop. The measured final
+twenty-cycle run returned thread/FD counts to the stopped baseline without
+decoder threads. File I/O and decoding stay outside the render callback.
+
+The implementation is in [audio.rs](../native/src/audio.rs), with scene and slow
+level movement in [room.rs](../native/src/room.rs). The
+[library inventory](library-3.5-inventory.json) records measured asset formats,
+levels and provenance. The [3.5 performance report](PERFORMANCE-3.5.md) records
+CPU/PSS and lifetime measurements from the implemented mixer; the older values
+below do not describe this path. Unit and silent-device checks cannot establish
+physical output latency, underruns on every device, or listening comfort.
+
+## Historical evaluation before the 3.5 mixer
+
+The following evaluation describes the alpha.1/3.0 controller and its nine
+local layers, which still ran in separate mpv processes. Its measurements led
+to the local mixer work above. Alternative-library comparisons and memory
+budgets below are historical planning evidence, not measurements or adoption
+claims for the current 3.5 implementation.
+
+## What the earlier measurements showed
 
 The alpha.1 [controlled comparisons](PERFORMANCE.md) already reduced applied
 three-channel volume latency to a median 0.82 ms through the resident Rust
@@ -22,7 +60,7 @@ equal decoder CPU with the old and new controllers.
 
 ## Practical alternatives
 
-| Approach | Potential benefit | Cost and limitation | Decision |
+| Approach | Potential benefit | Cost and limitation | Historical decision |
 | --- | --- | --- | --- |
 | Rust controller + mpv processes | Current tested radio/YouTube/seek/recovery support and process isolation | Each active local layer adds an audio instance | Keep for the current design revision |
 | Rust + embedded libmpv | Removes process/socket boundaries; may share some resources between handles | Still uses mpv's decoding stack; instance state and buffering remain; a crash affects its host process | Benchmark before adopting |
@@ -88,9 +126,10 @@ without first rebuilding YouTube extraction, live-radio timing and network
 recovery. An all-source replacement should follow only after its own codec,
 streaming and reliability tests pass.
 
-## Source capabilities are already Rust-owned
+## Rust-owned network source capabilities
 
-This revision adds a bounded Rust proxy around the existing yt-dlp invocation.
+The 3.0 implementation added a bounded Rust proxy around the yt-dlp invocation;
+3.5 retains it.
 It runs extraction once, forwards the original JSON to mpv, and reports only
 the source kind to the matching controller generation. Live and unknown sources
 never gain a seek timeline from a decoder's growing buffer duration. The proxy

@@ -1,0 +1,30 @@
+{
+  "mode": "advisory-database-version-range-check",
+  "checkedAt": "2026-10-07T17:25:15.732912+00:00",
+  "database": "https://github.com/rustsec/advisory-db",
+  "databaseCommit": "b8a1a33e246a0a9a3b5f377248c41a503defec74",
+  "lockfileSHA256": "bec9a96ad234a36746cd29ce28903433c174808330b4378345c3cee9a77247f5",
+  "registryPackages": 297,
+  "distinctRegistryNames": 282,
+  "matchingNonwithdrawnAdvisoryPackagePairs": 78,
+  "versionRequirementChecks": 168,
+  "semverEvaluator": "Rust semver 1.0.28 built offline from local registry source",
+  "affected": [
+    {
+      "id": "RUSTSEC-2024-0384",
+      "package": "instant",
+      "version": "0.1.13",
+      "date": "2024-09-01",
+      "title": "`instant` is unmaintained",
+      "patched": [],
+      "unaffected": [],
+      "informational": "unmaintained",
+      "url": "https://rustsec.org/advisories/RUSTSEC-2024-0384.html"
+    }
+  ],
+  "limitations": [
+    "This is a direct RustSec advisory-version-range comparison, not cargo-audit certification.",
+    "All registry package versions in Cargo.lock checked including multiple versions and target-specific packages; reachability reviewed separately.",
+    "No crates.io yanked-package or license-policy check."
+  ]
+}

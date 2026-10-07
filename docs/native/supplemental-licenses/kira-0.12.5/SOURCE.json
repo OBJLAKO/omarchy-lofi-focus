@@ -1,0 +1,21 @@
+{
+  "crate": "kira",
+  "version": "0.12.5",
+  "upstreamRepository": "https://github.com/tesselode/kira",
+  "upstreamCommit": "74b3ef0fd8bd15f90e3b469208ee741f04374a62",
+  "reason": "License texts omitted from the published crates.io package; pinned using its .cargo_vcs_info.json",
+  "files": [
+    {
+      "file": "LICENSE-MIT",
+      "upstreamPath": "LICENSE-MIT",
+      "sourceURL": "https://github.com/tesselode/kira/blob/74b3ef0fd8bd15f90e3b469208ee741f04374a62/LICENSE-MIT",
+      "sha256": "1d075e895672c131d6adda4c0d03933e4162ca732d8c99b0cc497af884b8e703"
+    },
+    {
+      "file": "LICENSE-APACHE",
+      "upstreamPath": "LICENSE-APACHE",
+      "sourceURL": "https://github.com/tesselode/kira/blob/74b3ef0fd8bd15f90e3b469208ee741f04374a62/LICENSE-APACHE",
+      "sha256": "85bb5389360900e5ef360073a906f7ff6c2866995743242671091f376fe2c92d"
+    }
+  ]
+}
