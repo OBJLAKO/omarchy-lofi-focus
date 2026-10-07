@@ -14,12 +14,14 @@ Window {
     id: voiceHost
     property string statusJson: ""
     property var lastArguments: []
+    property var argumentsHistory: []
     signal actionFinished(var arguments, int exitCode, string message)
-    function runAction(args) { lastArguments = args }
+    function runAction(args) { lastArguments = args; argumentsHistory = argumentsHistory.concat([args]) }
   }
 
   TestCase {
     name: "FocusPanel"
+    property string phase: ""
     when: true
 
     function test_instantRevealPersists() {
@@ -152,6 +154,116 @@ Window {
       compare(panel.voiceFailed, false)
     }
 
+    function test_scenesRoomAndLivingMixPreservePausedPlaybackAndUserLevels() {
+      panel.hostWidget = voiceHost
+      panel.showView(1)
+      panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
+      panel.applyStatus(JSON.stringify({running:true,paused:true,spatial_available:true,
+        scenes:[{id:"scene-calm",name:"Calm room"}],scene_id:"scene-calm",scene_dirty:true,
+        room:{preset:"cafe",size:60,softness:45,reflections:35},
+        wander:{enabled:true,amount:30},
+        nature_layers:[{id:"noise-rain",enabled:true,volume:40,effective_volume:18,
+          distance:75,pan:-35,width:85,softness:55,reflections:20,echo:0,outside:true,living:true}]}))
+      phase = "status fields"
+      compare(panel.spatialAvailable,true)
+      compare(panel.sceneId,"scene-calm")
+      compare(panel.sceneDirty,true)
+      compare(panel.roomState.preset,"cafe")
+      compare(panel.wanderEnabled,true)
+      compare(panel.wanderAmount,30)
+      compare(panel.natureLayer("noise-rain").volume,40)
+      compare(panel.natureLayer("noise-rain").effective_volume,18)
+      phase = "effective nature readout"
+      var space = findChild(panel,"roomEditor")
+      compare(space.positionText(panel.natureLayer("noise-rain")),"Outside · Far · Left")
+      phase = "scene actions"
+      var scenes = findChild(panel,"sceneControls")
+      compare(scenes.currentScene.name,"Calm room")
+      scenes.applyRequested("scene-calm")
+      compare(voiceHost.lastArguments,["scene-apply","scene-calm"])
+      scenes.saveRequested("Evening room")
+      compare(voiceHost.lastArguments,["scene-save","Evening room"])
+      scenes.confirmingRemoval = true
+      findChild(scenes,"sceneRemoveConfirm").clicked()
+      compare(voiceHost.lastArguments,["scene-remove","scene-calm"])
+      phase = "living mix"
+      findChild(panel,"livingMixToggle").toggled()
+      compare(voiceHost.lastArguments,["wander","off"])
+      compare(panel.wanderEnabled,false)
+      findChild(panel,"livingMixAmount").edited(75)
+      compare(voiceHost.lastArguments,["wander-amount","75"])
+      phase = "room preset"
+      findChild(panel,"roomPresetPicker").changed("hall")
+      compare(voiceHost.lastArguments,["room","preset","hall"])
+      compare(panel.playerPaused,true)
+      compare(panel.natureLayer("noise-rain").volume,40)
+      // Native policy is explicit; older statuses hide the new controls.
+      panel.applyStatus(JSON.stringify({running:false,paused:false}))
+      compare(panel.spatialAvailable,false)
+      panel.hostWidget = null
+    }
+
+    function test_spatialEditorUsesLayerIdsAndKeepsSelectionOnStatusUpdates() {
+      panel.hostWidget = voiceHost
+      panel.showView(1)
+      panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"},{id:"noise-fireplace",name:"Fireplace"}]}]
+      panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:30,living:true},
+          {id:"noise-fireplace",enabled:true,volume:20}]}))
+      panel.spatialEditorOpen = true
+      var editor = findChild(panel,"roomEditor")
+      compare(editor.currentLayer.id,"noise-rain")
+      findChild(editor,"spaceDistance").edited(90)
+      compare(voiceHost.lastArguments,["layer","noise-rain","distance","90"])
+      findChild(editor,"spacePan").edited(-30)
+      compare(voiceHost.lastArguments,["layer","noise-rain","pan","-30"])
+      findChild(editor,"spaceOutside").toggled()
+      compare(voiceHost.lastArguments,["layer","noise-rain","outside","on"])
+      findChild(editor,"spaceLiving").toggled()
+      compare(voiceHost.lastArguments,["layer","noise-rain","living","off"])
+      editor.roomEdited("size",90)
+      compare(voiceHost.lastArguments,["room","size","90"])
+      voiceHost.argumentsHistory = []
+      editor.positionEdited("noise-fireplace",35,60)
+      compare(voiceHost.argumentsHistory,[["layer","noise-fireplace","pan","35"],["layer","noise-fireplace","distance","60"]])
+      compare(panel.selectedNatureId,"noise-fireplace")
+      panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:30},
+          {id:"noise-fireplace",enabled:true,volume:20,pan:35,distance:60}]}))
+      compare(editor.currentLayer.id,"noise-fireplace")
+      compare(editor.currentLayer.pan,35)
+      // Removing the selected source picks a remaining source safely.
+      panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:30}]}))
+      compare(panel.selectedNatureId,"noise-rain")
+      compare(editor.currentLayer.id,"noise-rain")
+      panel.hostWidget = null
+    }
+
+    function test_importedSoundsExtendThePickerAndUsePrivateLibraryCommands() {
+      panel.hostWidget = voiceHost
+      panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
+      panel.applyStatus(JSON.stringify({running:false,paused:false,spatial_available:true,
+        imported_sounds:[{id:"imported-rain",name:"My rain"}],nature_layers:[]}))
+      compare(panel.noiseOptions.length,2)
+      compare(panel.noiseOptions[1].value,"imported-rain")
+      compare(panel.noiseOptions[1].label,"My rain")
+      var importer = findChild(panel,"soundImport")
+      compare(importer.filePath("file:///tmp/My%20rain.ogg"),"/tmp/My rain.ogg")
+      importer.expanded = true
+      findChild(importer,"soundImportPath").text = "/tmp/My rain.ogg"
+      findChild(importer,"soundImportTitle").text = "Rain on the porch"
+      findChild(importer,"soundImportConfirm").clicked()
+      compare(voiceHost.lastArguments,["sound-import","/tmp/My rain.ogg","Rain on the porch"])
+      compare(importer.expanded,false)
+      panel.pendingSoundRemoval = "imported-rain"
+      findChild(panel,"soundRemoveConfirm").clicked()
+      compare(voiceHost.lastArguments,["sound-remove","imported-rain"])
+      compare(panel.pendingSoundRemoval,"")
+      compare(panel.playerRunning,false)
+      panel.hostWidget = null
+    }
+
     function test_closedPanelStopsDecorativeMotion() {
       panel.close()
       panel.animationsEnabled = true
@@ -168,7 +280,7 @@ Window {
     }
 
     function cleanup() {
-      if (qtest_results.failed) console.error("PANEL FAILURE", qtest_results.functionName)
+      if (qtest_results.failed) console.error("PANEL FAILURE", qtest_results.functionName, phase)
     }
 
     function cleanupTestCase() {
