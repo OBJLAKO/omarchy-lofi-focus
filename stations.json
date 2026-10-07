@@ -220,61 +220,416 @@
     },
     {
       "id": "ambience",
-      "name": "Nature sounds",
+      "name": "Ambience",
       "stations": [
         {
           "id": "noise-rain",
           "name": "Rain",
           "description": "Local seamless loop · no network needed",
-          "url": "assets/rain.ogg"
+          "url": "assets/rain.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "weather"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-wind",
           "name": "Wind",
           "description": "Local seamless loop · no network needed",
-          "url": "assets/wind.ogg"
+          "url": "assets/wind.ogg",
+          "family": "Wind",
+          "tags": [
+            "wind",
+            "air"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-storm",
           "name": "Thunderstorm",
           "description": "Local seamless loop · no network needed",
-          "url": "assets/storm.ogg"
+          "url": "assets/storm.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "thunder",
+            "weather"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-fireplace",
           "name": "Fireplace",
           "description": "Local seamless loop · no network needed",
-          "url": "assets/fireplace.ogg"
+          "url": "assets/fireplace.ogg",
+          "family": "Fire",
+          "tags": [
+            "fire",
+            "warm"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-waves",
           "name": "Ocean waves",
           "description": "Local seamless loop · no network needed",
-          "url": "assets/waves.ogg"
+          "url": "assets/waves.ogg",
+          "family": "Water",
+          "tags": [
+            "ocean",
+            "waves"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-tent-rain",
           "name": "Tent rain",
           "description": "Raindrops on canvas · offline loop",
-          "url": "assets/tent-rain.ogg"
+          "url": "assets/tent-rain.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "tent",
+            "canvas"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-stream",
           "name": "Forest stream",
           "description": "A small stream in the woods · offline loop",
-          "url": "assets/stream.ogg"
+          "url": "assets/stream.ogg",
+          "family": "Water",
+          "tags": [
+            "stream",
+            "forest"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-birds",
           "name": "Morning birds",
           "description": "Wood thrush and woodland birds · offline loop",
-          "url": "assets/birds.ogg"
+          "url": "assets/birds.ogg",
+          "family": "Forest",
+          "tags": [
+            "birds",
+            "morning"
+          ],
+          "origin": "field-recording"
         },
         {
           "id": "noise-night",
           "name": "Night crickets",
           "description": "Quiet summer-night crickets · offline loop",
-          "url": "assets/night.ogg"
+          "url": "assets/night.ogg",
+          "family": "Night",
+          "tags": [
+            "crickets",
+            "night"
+          ],
+          "origin": "field-recording"
+        },
+        {
+          "id": "noise-drizzle",
+          "name": "Soft drizzle",
+          "description": "Fine, delicate rain with scattered droplets · synthesized offline loop",
+          "url": "assets/drizzle.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "light",
+            "drizzle"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-window-rain",
+          "name": "Window rain",
+          "description": "Muted rainfall and small glass-like drops · synthesized offline loop",
+          "url": "assets/window-rain.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "window",
+            "glass"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-roof-rain",
+          "name": "Rain on a roof",
+          "description": "Dense soft taps over a warm rain bed · synthesized offline loop",
+          "url": "assets/roof-rain.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "roof",
+            "shelter"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-downpour",
+          "name": "Deep downpour",
+          "description": "Dense rainfall with a deeper rushing bed · synthesized offline loop",
+          "url": "assets/downpour.ogg",
+          "family": "Rain",
+          "tags": [
+            "rain",
+            "heavy",
+            "weather"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-leaf-wind",
+          "name": "Wind in leaves",
+          "description": "Light rustling air with soft leafy textures · synthesized offline loop",
+          "url": "assets/leaf-wind.ogg",
+          "family": "Wind",
+          "tags": [
+            "wind",
+            "leaves",
+            "rustle"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-pine-wind",
+          "name": "Wind through pines",
+          "description": "Low, flowing air and faint whistling tones · synthesized offline loop",
+          "url": "assets/pine-wind.ogg",
+          "family": "Wind",
+          "tags": [
+            "wind",
+            "pines",
+            "forest"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-winter-wind",
+          "name": "Winter wind",
+          "description": "Cold airy gusts over a deep rumble · synthesized offline loop",
+          "url": "assets/winter-wind.ogg",
+          "family": "Wind",
+          "tags": [
+            "wind",
+            "winter",
+            "gusts"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-river",
+          "name": "Wide river",
+          "description": "Flowing water with low, irregular bubbling · synthesized offline loop",
+          "url": "assets/river.ogg",
+          "family": "Water",
+          "tags": [
+            "river",
+            "flow",
+            "water"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-waterfall",
+          "name": "Waterfall",
+          "description": "Broad water roar with a soft low foundation · synthesized offline loop",
+          "url": "assets/waterfall.ogg",
+          "family": "Water",
+          "tags": [
+            "waterfall",
+            "roar",
+            "water"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-harbour-water",
+          "name": "Harbour water",
+          "description": "Slow water swells with occasional low bubbles · synthesized offline loop",
+          "url": "assets/harbour-water.ogg",
+          "family": "Water",
+          "tags": [
+            "harbour",
+            "waves",
+            "water"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-water-drops",
+          "name": "Scattered water drops",
+          "description": "Sparse resonant droplets with quiet space between · synthesized offline loop",
+          "url": "assets/water-drops.ogg",
+          "family": "Water",
+          "tags": [
+            "drops",
+            "water",
+            "sparse"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-campfire",
+          "name": "Campfire",
+          "description": "Low fire texture and varied gentle crackles · synthesized offline loop",
+          "url": "assets/campfire.ogg",
+          "family": "Fire",
+          "tags": [
+            "fire",
+            "campfire",
+            "crackle"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-embers",
+          "name": "Glowing embers",
+          "description": "Soft, close warmth with occasional tiny pops · synthesized offline loop",
+          "url": "assets/embers.ogg",
+          "family": "Fire",
+          "tags": [
+            "fire",
+            "embers",
+            "warm"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-desk-fan",
+          "name": "Desk fan",
+          "description": "Steady motor hum with lightly moving air · synthesized offline loop",
+          "url": "assets/desk-fan.ogg",
+          "family": "Home",
+          "tags": [
+            "fan",
+            "motor",
+            "home"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-air-vent",
+          "name": "Soft ventilation",
+          "description": "Smooth filtered air and a faint mechanical hum · synthesized offline loop",
+          "url": "assets/air-vent.ogg",
+          "family": "Home",
+          "tags": [
+            "ventilation",
+            "air",
+            "home"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-train-cabin",
+          "name": "Night train",
+          "description": "Low rolling texture and irregular soft bumps · synthesized offline loop",
+          "url": "assets/train-cabin.ogg",
+          "family": "Travel",
+          "tags": [
+            "train",
+            "travel",
+            "rumble"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-cabin-hum",
+          "name": "Air cabin",
+          "description": "Steady low cabin wash with a subtle tonal hum · synthesized offline loop",
+          "url": "assets/cabin-hum.ogg",
+          "family": "Travel",
+          "tags": [
+            "cabin",
+            "travel",
+            "air"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-brown-noise",
+          "name": "Brown noise",
+          "description": "Deep noise with a gently falling spectrum · synthesized offline loop",
+          "url": "assets/brown-noise.ogg",
+          "family": "Textures",
+          "tags": [
+            "noise",
+            "brown",
+            "deep"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-pink-noise",
+          "name": "Pink noise",
+          "description": "Balanced noise with a soft warm spectrum · synthesized offline loop",
+          "url": "assets/pink-noise.ogg",
+          "family": "Textures",
+          "tags": [
+            "noise",
+            "pink",
+            "warm"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-white-noise",
+          "name": "White noise",
+          "description": "Soft band-limited broadband noise · synthesized offline loop",
+          "url": "assets/white-noise.ogg",
+          "family": "Textures",
+          "tags": [
+            "noise",
+            "white",
+            "broadband"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-tape-hiss",
+          "name": "Tape air",
+          "description": "Fine analog-inspired air with slow variation · synthesized offline loop",
+          "url": "assets/tape-hiss.ogg",
+          "family": "Textures",
+          "tags": [
+            "tape",
+            "hiss",
+            "texture"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-vinyl-texture",
+          "name": "Vinyl texture",
+          "description": "A quiet surface texture with rare soft ticks · synthesized offline loop",
+          "url": "assets/vinyl-texture.ogg",
+          "family": "Textures",
+          "tags": [
+            "vinyl",
+            "surface",
+            "texture"
+          ],
+          "origin": "procedural"
+        },
+        {
+          "id": "noise-soft-drone",
+          "name": "Soft drone",
+          "description": "A low harmonic bed with a very slow swell · synthesized offline loop",
+          "url": "assets/soft-drone.ogg",
+          "family": "Textures",
+          "tags": [
+            "drone",
+            "tone",
+            "soft"
+          ],
+          "origin": "procedural"
         }
       ]
     }

@@ -50,3 +50,33 @@ users do not need it to install or play the sounds.
 [b]atrim=end=2,asetpts=PTS-STARTPTS[head];
 [tail][head]acrossfade=d=2:c1=qsin:c2=qsin[out]
 ```
+
+## Original procedural ambience for Skylofi 3.5
+
+The following 23 sound assets are original synthesized audio by OBJLAKO,
+released under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+They contain no downloaded samples, field recordings, speech, or third-party
+music. Names such as "Window rain" and "Night train" describe the synthesized
+texture; they do not identify a real recording location or real vehicle.
+The nine recordings credited above retain their existing licenses and bytes.
+
+| Files under `assets/` | Original source | License |
+| --- | --- | --- |
+| drizzle.ogg, window-rain.ogg, roof-rain.ogg, downpour.ogg | OBJLAKO — seeded noise, resonant drops and rain textures | CC0 1.0 |
+| leaf-wind.ogg, pine-wind.ogg, winter-wind.ogg | OBJLAKO — filtered air, rustle and gust envelopes | CC0 1.0 |
+| river.ogg, waterfall.ogg, harbour-water.ogg, water-drops.ogg | OBJLAKO — flowing noise, wave envelopes and resonant bubbles | CC0 1.0 |
+| campfire.ogg, embers.ogg | OBJLAKO — low noise and independently varied crackles | CC0 1.0 |
+| desk-fan.ogg, air-vent.ogg, train-cabin.ogg, cabin-hum.ogg | OBJLAKO — mechanical hum, filtered air and soft motion textures | CC0 1.0 |
+| brown-noise.ogg, pink-noise.ogg, white-noise.ogg, tape-hiss.ogg, vinyl-texture.ogg, soft-drone.ogg | OBJLAKO — original colored noise and harmonic textures | CC0 1.0 |
+
+The maintainer generator [tools/generate-ambience.rs](tools/generate-ambience.rs)
+is MIT-licensed source, separate from the CC0 audio it creates. It uses only the
+Rust standard library; the installed FFmpeg encodes Ogg Vorbis during asset
+preparation. Neither compilation nor FFmpeg is needed during plugin playback.
+
+All new files are 69-second 44.1 kHz stereo Vorbis loops, with a three-second
+equal-power overlap, DC removal and quiet level matching. The continuous beds
+target −31 dBFS RMS before encoding; sparse drops remain quieter, with bounded
+peaks. Source parameters and seeds are included in the generator. Measured
+decoded levels and SHA-256 hashes are stored in
+[the library inventory](docs/library-3.5-inventory.json).
