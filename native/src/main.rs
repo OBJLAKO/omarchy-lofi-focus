@@ -1,9 +1,12 @@
+mod audio;
 mod config;
 mod engine;
 mod extractor;
 mod feed;
+mod library;
 mod mpris;
 mod process;
+mod room;
 mod transport;
 use config::{write_bytes, write_json, Paths};
 use engine::Engine;

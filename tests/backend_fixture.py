@@ -28,4 +28,7 @@ def prepare_backend(plugin, env):
         native.chmod(0o755)
         env['SKYLOFI_NATIVE'] = str(native)
     env['PYTHONDONTWRITEBYTECODE'] = '1'
+    # These legacy regressions inspect real mpv IPC/process ownership.
+    # The shared Rust mixer has separate mock-output and real-output checks.
+    env['SKYLOFI_NATURE_ENGINE'] = 'mpv'
     return backend

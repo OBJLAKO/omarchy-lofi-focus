@@ -1,6 +1,6 @@
 [package]
 name = "skylofi"
-version = "3.0.1"
+version = "3.5.0"
 edition = "2021"
 rust-version = "1.99"
 license = "MIT"
@@ -8,11 +8,14 @@ description = "Event-driven Skylofi controller for the Omarchy shell"
 
 [dependencies]
 libc = "0.2"
+kira = { version = "0.12.5", default-features = false, features = ["cpal", "symphonia", "ogg", "vorbis", "wav", "pcm", "flac", "mp3"] }
 notify = "7.0"
-quick-xml = "0.37"
+quick-xml = "0.41"
+rtrb = "0.4"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots"] }
 serde_json = "1.0"
 signal-hook = "0.3"
+symphonia = { version = "0.6.1", default-features = false, features = ["ogg", "vorbis", "wav", "pcm", "flac", "mp3"] }
 toml = "0.8"
 url = "2.5"
 zbus = "4.4"

@@ -1,6 +1,8 @@
 use crate::{
+    audio::{LayerParams, LocalAudio, RoomParams},
     config::{self, enabled, number, preferences, Catalog, Paths, Station},
     process::{self, Process},
+    room,
     transport::{self, Mpv},
     Event,
 };
@@ -76,6 +78,13 @@ pub struct Engine {
     pub revision: u64,
     youtube_available: bool,
     cancellation_failed: bool,
+    wander: room::Wander,
+    wander_updated: Instant,
+    local_audio: Option<LocalAudio>,
+    native_nature: bool,
+    local_gain: f64,
+    local_fade: Option<Fade>,
+    local_idle: Option<Instant>,
 }
 impl Engine {
     pub fn new(paths: Paths, events: SyncSender<Event>) -> Result<Self, String> {
@@ -134,6 +143,18 @@ impl Engine {
             revision: 0,
             youtube_available: config::which("yt-dlp").is_some(),
             cancellation_failed: false,
+            wander: room::Wander::new(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_nanos() as u64,
+            ),
+            wander_updated: now,
+            local_audio: None,
+            native_nature: std::env::var("SKYLOFI_NATURE_ENGINE").as_deref() != Ok("mpv"),
+            local_gain: 1.0,
+            local_fade: None,
+            local_idle: None,
         };
         engine.refresh_recording();
         if let Err(error) = engine.persist() {
@@ -190,6 +211,14 @@ impl Engine {
         }
     }
     fn alive(&self, channel: &str) -> bool {
+        if self.native_nature {
+            if let Some(id) = channel.strip_prefix("nature-") {
+                return self
+                    .local_audio
+                    .as_ref()
+                    .is_some_and(|audio| audio.contains(id));
+            }
+        }
         self.channels
             .get(channel)
             .is_some_and(|c| c.process.alive())
@@ -220,9 +249,30 @@ impl Engine {
         }
     }
     fn volume(&self, channel: &str) -> f64 {
-        self.base(channel) * number(&self.settings, "masterVolume") / 100.0 * self.duck_gain
+        let living = channel
+            .strip_prefix("nature-")
+            .map(|id| self.wander.gain(id))
+            .unwrap_or(1.0);
+        self.base(channel) * number(&self.settings, "masterVolume") / 100.0
+            * self.duck_gain
+            * living
     }
     fn stop_channel(&mut self, channel: &str) -> bool {
+        if self.native_nature {
+            if let Some(id) = channel.strip_prefix("nature-") {
+                if let Some(audio) = &mut self.local_audio {
+                    audio.remove(id);
+                }
+                if self
+                    .local_audio
+                    .as_ref()
+                    .is_some_and(|audio| audio.is_empty())
+                {
+                    self.retire_local_output();
+                }
+                return true;
+            }
+        }
         if let Some(mut process) = self.channels.remove(channel) {
             if process.youtube {
                 if let Err(error) = process.process.terminate_tree() {
@@ -513,6 +563,17 @@ impl Engine {
             result
         }
     }
+    fn retire_local_output(&mut self) {
+        if let Some(audio) = &mut self.local_audio {
+            audio.clear();
+            // CPAL teardown is asynchronous. Reuse one silent output during a
+            // short burst of stop/start commands instead of spawning tails.
+            self.local_idle
+                .get_or_insert_with(|| Instant::now() + Duration::from_millis(600));
+            self.local_gain = 0.0;
+            self.local_fade = None;
+        }
+    }
     fn cancel_feed(&mut self) {
         if let Some(process) = self.feed_process.take() {
             process.terminate();
@@ -524,6 +585,79 @@ impl Engine {
             return Ok(());
         }
         if let Some(station) = self.catalog.entries.get(id).cloned() {
+            if self.native_nature {
+                let root = fs::canonicalize(&self.paths.root).map_err(|e| e.to_string())?;
+                let imported = station.kind == "imported";
+                let source = if imported {
+                    self.paths.state.join("sounds").join(&station.url)
+                } else {
+                    root.join(&station.url)
+                };
+                let path =
+                    fs::canonicalize(source).map_err(|e| format!("Sound unavailable: {e}"))?;
+                let allowed = if imported {
+                    self.paths.state.join("sounds")
+                } else {
+                    root.join("assets")
+                };
+                if !path.starts_with(allowed) || !path.is_file() {
+                    return Err("Ambient files must be inside the owned audio library.".into());
+                }
+                let params = self.local_layer(id);
+                let room = self.local_room();
+                let fresh = self
+                    .local_audio
+                    .as_ref()
+                    .is_none_or(|audio| audio.is_empty());
+                if self.local_audio.is_none() {
+                    let audio = if std::env::var("SKYLOFI_AUDIO_OUTPUT").as_deref() == Ok("mock") {
+                        LocalAudio::new_mock()?
+                    } else {
+                        LocalAudio::new()?
+                    };
+                    self.local_audio = Some(audio);
+                }
+                self.local_idle = None;
+                if fresh {
+                    self.local_gain = if self.mode == "playing" && self.fades_enabled() {
+                        0.0
+                    } else {
+                        1.0
+                    };
+                    if self.local_gain == 0.0 {
+                        self.local_fade = Some(Fade {
+                            from: 0.0,
+                            to: 1.0,
+                            started: Instant::now(),
+                            duration: self.fade_duration(false),
+                            await_ready: false,
+                        });
+                    }
+                }
+                let paused = self.mode == "paused";
+                let master = number(&self.settings, "masterVolume") / 100.0
+                    * self.duck_gain
+                    * self.local_gain;
+                self.local_audio.as_mut().unwrap().set_master(master);
+                let result = self
+                    .local_audio
+                    .as_mut()
+                    .unwrap()
+                    .play(id, &path, params, room, paused);
+                if let Err(error) = result {
+                    if self
+                        .local_audio
+                        .as_ref()
+                        .is_some_and(|audio| audio.is_empty())
+                    {
+                        self.retire_local_output();
+                    }
+                    return Err(error);
+                }
+                self.apply_volumes();
+                self.changed();
+                return Ok(());
+            }
             self.spawn(&format!("nature-{id}"), &station, true)
         } else {
             Ok(())
@@ -531,6 +665,16 @@ impl Engine {
     }
     fn fade_channel(&mut self, key: &str, to: f64, out: bool) {
         let duration = self.fade_duration(out);
+        if self.native_nature && key.starts_with("nature-") {
+            self.local_fade = Some(Fade {
+                from: self.local_gain,
+                to,
+                started: Instant::now(),
+                duration,
+                await_ready: false,
+            });
+            return;
+        }
         if let Some(channel) = self.channels.get_mut(key) {
             channel.fade = Some(Fade {
                 from: channel.gain,
@@ -594,6 +738,9 @@ impl Engine {
         for key in self.channels.keys() {
             self.ipc(key, json!(["set_property", "pause", false]));
         }
+        if let Some(audio) = &mut self.local_audio {
+            audio.set_paused(false);
+        }
         let _ = fs::remove_file(self.paths.runtime.join("paused.flag"));
         self.next_maintenance = Instant::now();
         self.next_bookmark = Instant::now() + Duration::from_secs(10);
@@ -627,6 +774,15 @@ impl Engine {
             self.pending = None;
             self.commit_transport(action);
         } else {
+            if self.local_audio.is_some() {
+                self.local_fade = Some(Fade {
+                    from: self.local_gain,
+                    to: 0.0,
+                    started: Instant::now(),
+                    duration,
+                    await_ready: false,
+                });
+            }
             for key in self.channels.keys().cloned().collect::<Vec<_>>() {
                 self.fade_channel(&key, 0.0, true);
             }
@@ -636,11 +792,18 @@ impl Engine {
     }
     fn commit_transport(&mut self, action: &str) {
         if action == "pause" {
+            if let Some(audio) = &mut self.local_audio {
+                audio.set_paused(true);
+            }
             for key in self.channels.keys() {
                 self.ipc(key, json!(["set_property", "pause", true]));
             }
             let _ = config::write_bytes(&self.paths.runtime.join("paused.flag"), b"");
         } else {
+            self.retire_local_output();
+            self.local_fade = None;
+            self.local_gain = if self.local_audio.is_some() { 0.0 } else { 1.0 };
+            self.wander.clear();
             for key in self.channels.keys().cloned().collect::<Vec<_>>() {
                 self.stop_channel(&key);
             }
@@ -653,6 +816,10 @@ impl Engine {
     pub fn shutdown(&mut self) -> Result<(), String> {
         self.cancellation_failed = false;
         self.transport("stop", true);
+        if let Some(mut audio) = self.local_audio.take() {
+            audio.stop();
+        }
+        self.local_idle = None;
         self.persist()?;
         if self.cancellation_failed {
             Err(self.error.clone())
@@ -688,6 +855,166 @@ impl Engine {
                 return Ok(());
             }
             "status" => return Ok(()),
+            "wander" => {
+                let choice = args.get(1).map(String::as_str).unwrap_or("toggle");
+                let enabled = match choice {
+                    "on" => true,
+                    "off" => false,
+                    "toggle" => self.settings["wander"]["enabled"] != true,
+                    _ => return Err("wander takes on/off/toggle".into()),
+                };
+                self.settings["wander"]["enabled"] = json!(enabled);
+                self.wander_updated = Instant::now();
+            }
+            "wander-amount" => {
+                self.settings["wander"]["amount"] =
+                    json!(Self::bounded_argument(arg(1)?, 0.0, 100.0)?);
+            }
+            "room" => {
+                let key = arg(1)?;
+                if key == "preset" {
+                    self.settings["room"] = room::preset(arg(2)?).ok_or("Unknown room preset")?;
+                } else if ["size", "softness", "reflections"].contains(&key) {
+                    self.settings["room"][key] =
+                        json!(Self::bounded_argument(arg(2)?, 0.0, 100.0)?);
+                } else {
+                    return Err("Unknown room parameter".into());
+                }
+            }
+            "layer" => {
+                let id = arg(1)?;
+                let key = arg(2)?;
+                if !self.catalog.nature.iter().any(|s| s == id) {
+                    return Err("Unknown ambience sound".into());
+                }
+                let value = if ["outside", "living"].contains(&key) {
+                    json!(match arg(3)? {
+                        "on" => true,
+                        "off" => false,
+                        _ => return Err("Layer switch takes on/off".into()),
+                    })
+                } else if [
+                    "distance",
+                    "pan",
+                    "width",
+                    "softness",
+                    "reflections",
+                    "echo",
+                ]
+                .contains(&key)
+                {
+                    json!(Self::bounded_argument(
+                        arg(3)?,
+                        if key == "pan" { -100.0 } else { 0.0 },
+                        100.0
+                    )?)
+                } else {
+                    return Err("Unknown layer parameter".into());
+                };
+                self.ensure_layer(id);
+                self.settings["natureLayers"][id][key] = value;
+            }
+            "scene-save" => {
+                let name = config::clean_title(arg(1)?)
+                    .chars()
+                    .take(40)
+                    .collect::<String>();
+                if name.is_empty() {
+                    return Err("Give the scene a name.".into());
+                }
+                let scene = room::snapshot(&self.settings, &self.station);
+                room::validate(&scene, &self.catalog)?;
+                let entries = self.settings["scenes"].as_array_mut().unwrap();
+                let id = if let Some(old) = entries.iter_mut().find(|s| s["name"] == name) {
+                    old["state"] = scene;
+                    old["id"].as_str().unwrap().to_owned()
+                } else {
+                    if entries.len() >= room::MAX_SCENES {
+                        return Err("Scene library is full (32 scenes). Remove one first.".into());
+                    }
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_nanos();
+                    let id = format!("scene-{now:x}");
+                    entries.push(json!({"id":id,"name":name,"state":scene}));
+                    id
+                };
+                self.settings["sceneId"] = json!(id);
+            }
+            "scene-remove" => {
+                let id = arg(1)?;
+                if !self.settings["scenes"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|s| s["id"] == id)
+                {
+                    return Err("Unknown scene".into());
+                }
+                self.settings["scenes"]
+                    .as_array_mut()
+                    .unwrap()
+                    .retain(|s| s["id"] != id);
+                if self.settings["sceneId"] == id {
+                    self.settings["sceneId"] = json!("");
+                }
+            }
+            "scene-apply" => self.apply_scene(arg(1)?)?,
+            "sound-import" => {
+                if !self.native_nature {
+                    return Err("Sound import requires the Rust audio engine.".into());
+                }
+                let id = crate::library::import(
+                    &self.paths,
+                    &mut self.settings,
+                    arg(1)?,
+                    args.get(2).map(String::as_str),
+                )?;
+                self.reload_catalog();
+                self.ensure_layer(&id);
+                let active = self.settings["natureLayers"]
+                    .as_object()
+                    .unwrap()
+                    .values()
+                    .filter(|s| s["enabled"] == true)
+                    .count();
+                if active < room::MAX_LAYERS {
+                    self.settings["natureLayers"][&id]["enabled"] = json!(true);
+                    if self.mode != "stopped" {
+                        self.start_nature(&id)?;
+                    }
+                }
+            }
+            "sound-remove" => {
+                let id = arg(1)?;
+                let entry = self.settings["importedSounds"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|s| s["id"] == id)
+                    .ok_or("Only imported sounds can be removed.")?
+                    .clone();
+                let file = entry["file"].as_str().unwrap();
+                if !crate::library::safe_file(id, file) {
+                    return Err("Invalid imported sound identity.".into());
+                }
+                self.stop_channel(&format!("nature-{id}"));
+                match fs::remove_file(self.paths.state.join("sounds").join(file)) {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(format!("Cannot remove sound: {e}")),
+                }
+                self.settings["importedSounds"]
+                    .as_array_mut()
+                    .unwrap()
+                    .retain(|s| s["id"] != id);
+                self.settings["natureLayers"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove(id);
+                self.reload_catalog();
+            }
             "start" | "station" => self.begin(Some(arg(1)?))?,
             "play" | "resume" => self.begin(args.get(1).map(String::as_str))?,
             "toggle" => {
@@ -795,6 +1122,21 @@ impl Engine {
                     "toggle" => self.settings["natureLayers"][id]["enabled"] != true,
                     _ => return Err("nature takes on/off/toggle".into()),
                 };
+                if value
+                    && self.settings["natureLayers"][id]["enabled"] != true
+                    && self.settings["natureLayers"]
+                        .as_object()
+                        .unwrap()
+                        .values()
+                        .filter(|v| v["enabled"] == true)
+                        .count()
+                        >= room::MAX_LAYERS
+                {
+                    return Err(format!(
+                        "Up to {} sounds can play together.",
+                        room::MAX_LAYERS
+                    ));
+                }
                 self.settings["natureLayers"][id]["enabled"] = json!(value);
                 if value && self.mode != "stopped" {
                     if !self.alive(&format!("nature-{id}")) {
@@ -950,6 +1292,8 @@ impl Engine {
                     self.settings[key] = json!(value);
                 }
                 if !self.fades_enabled() {
+                    self.local_fade = None;
+                    self.local_gain = if self.mode == "playing" { 1.0 } else { 0.0 };
                     for channel in self.channels.values_mut() {
                         channel.fade = None;
                         channel.gain = if self.mode == "playing" { 1.0 } else { 0.0 };
@@ -983,11 +1327,87 @@ impl Engine {
     }
     fn ensure_layer(&mut self, id: &str) {
         if !self.settings["natureLayers"][id].is_object() {
-            self.settings["natureLayers"][id] = json!({"enabled":false,"volume":25});
+            self.settings["natureLayers"][id] = room::layer(&json!({"enabled":false,"volume":25}));
         }
     }
+    fn bounded_argument(input: &str, min: f64, max: f64) -> Result<f64, String> {
+        input
+            .parse::<f64>()
+            .ok()
+            .filter(|v| v.is_finite() && *v >= min && *v <= max)
+            .ok_or_else(|| format!("Value must be between {min} and {max}."))
+    }
+    fn apply_scene(&mut self, id: &str) -> Result<(), String> {
+        let scene = self.settings["scenes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["id"] == id)
+            .ok_or("Unknown scene")?["state"]
+            .clone();
+        room::validate(&scene, &self.catalog)?;
+        let station = scene["station"].as_str().unwrap().to_owned();
+        let changed_main = station != self.station;
+        let changed_bg = scene["bgStation"] != self.settings["bgStation"]
+            || scene["mix"] != self.settings["mix"]
+            || changed_main;
+        let previous = self.settings.clone();
+        let previous_station = self.station.clone();
+        for key in [
+            "bgStation",
+            "mix",
+            "mainVolume",
+            "bgVolume",
+            "natureLayers",
+            "room",
+            "wander",
+        ] {
+            self.settings[key] = scene[key].clone();
+        }
+        self.station = station.clone();
+        self.settings["defaultStation"] = json!(station);
+        self.settings["sceneId"] = json!(id);
+        if self.mode != "stopped" {
+            if changed_main {
+                if let Err(e) = self.start_main(true) {
+                    self.settings = previous;
+                    self.station = previous_station;
+                    return Err(e);
+                }
+            }
+            if changed_bg {
+                self.feed_token += 1;
+                self.feed_loading = false;
+                self.cancel_feed();
+                self.stop_channel("bg");
+                if let Err(e) = self.start_bg() {
+                    self.bg_error = e;
+                }
+            }
+            for sound in self.catalog.nature.clone() {
+                let key = format!("nature-{sound}");
+                if self.settings["natureLayers"][&sound]["enabled"] == true {
+                    if !self.alive(&key) {
+                        if let Err(e) = self.start_nature(&sound) {
+                            self.error = e;
+                        }
+                    }
+                } else {
+                    self.stop_channel(&key);
+                }
+            }
+        }
+        self.wander_updated = Instant::now();
+        Ok(())
+    }
     fn reload_catalog(&mut self) {
+        let previous_nature = self.catalog.nature.clone();
         self.catalog = Catalog::load(&self.paths.root, &self.settings);
+        for id in previous_nature {
+            if !self.catalog.nature.contains(&id) {
+                self.stop_channel(&format!("nature-{id}"));
+            }
+        }
         if !self.catalog.music.contains(&self.station) {
             if !self.stop_channel("main") {
                 return;
@@ -1093,6 +1513,25 @@ impl Engine {
         }
     }
     fn apply_volumes(&mut self) {
+        if self.local_audio.is_some() {
+            let room = self.local_room();
+            let params: Vec<_> = self
+                .catalog
+                .nature
+                .iter()
+                .filter(|id| self.alive(&format!("nature-{id}")))
+                .map(|id| (id.clone(), self.local_layer(id)))
+                .collect();
+            let gain =
+                number(&self.settings, "masterVolume") / 100.0 * self.duck_gain * self.local_gain;
+            if let Some(audio) = &mut self.local_audio {
+                audio.set_room(room);
+                audio.set_master(gain);
+                for (id, params) in params {
+                    audio.set_params(&id, params);
+                }
+            }
+        }
         for key in self.channels.keys().cloned().collect::<Vec<_>>() {
             let volume = self.volume(&key) * self.channels[&key].gain;
             let channel = self.channels.get_mut(&key).unwrap();
@@ -1106,6 +1545,28 @@ impl Engine {
                     }
                 }
             }
+        }
+    }
+    fn local_layer(&self, id: &str) -> LayerParams {
+        let v = room::layer(&self.settings["natureLayers"][id]);
+        LayerParams {
+            volume: config::level(&v["volume"], 25.0) / 100.0 * self.wander.gain(id),
+            pan: v["pan"].as_f64().unwrap_or(0.0) / 100.0,
+            distance: config::level(&v["distance"], 0.0) / 100.0,
+            reflections: config::level(&v["reflections"], 25.0) / 100.0,
+            softness: config::level(&v["softness"], 0.0) / 100.0,
+            width: config::level(&v["width"], 100.0) / 100.0,
+            echo: config::level(&v["echo"], 0.0) / 100.0,
+            outside: v["outside"] == true,
+        }
+    }
+    fn local_room(&self) -> RoomParams {
+        let v = &self.settings["room"];
+        RoomParams {
+            preset: v["preset"].as_str().unwrap_or("cozy").to_owned(),
+            size: config::level(&v["size"], 35.0) / 100.0,
+            softness: config::level(&v["softness"], 55.0) / 100.0,
+            reflections: config::level(&v["reflections"], 25.0) / 100.0,
         }
     }
     pub fn connected(&mut self, key: String, generation: u64, ipc: Mpv) {
@@ -1265,6 +1726,32 @@ impl Engine {
     }
     pub fn tick(&mut self) {
         let now = Instant::now();
+        if self.local_idle.is_some_and(|deadline| now >= deadline) {
+            if let Some(mut audio) = self.local_audio.take() {
+                audio.stop();
+            }
+            self.local_idle = None;
+            self.local_gain = 1.0;
+        }
+        if let Some(fade) = &self.local_fade {
+            let p = if fade.duration.is_zero() {
+                1.0
+            } else {
+                (now.duration_since(fade.started).as_secs_f64() / fade.duration.as_secs_f64())
+                    .min(1.0)
+            };
+            self.local_gain = fade.from + (fade.to - fade.from) * ease(p);
+            if p >= 1.0 {
+                self.local_fade = None;
+            }
+        }
+        let delta = now
+            .saturating_duration_since(self.wander_updated)
+            .as_secs_f64();
+        self.wander_updated = now;
+        if self.mode == "playing" && self.wander.step(delta, &self.settings) {
+            self.changed();
+        }
         if self.duck_gain != self.duck_target {
             let progress = (now.duration_since(self.duck_started).as_secs_f64() / 0.25).min(1.0);
             self.duck_gain = self.duck_from + (self.duck_target - self.duck_from) * ease(progress);
@@ -1372,6 +1859,7 @@ impl Engine {
     pub fn next_wakeup(&self) -> Duration {
         let mut duration = Duration::from_secs(3600);
         if self.duck_gain != self.duck_target
+            || self.local_fade.is_some()
             || self
                 .channels
                 .values()
@@ -1380,6 +1868,9 @@ impl Engine {
             duration = Duration::from_millis(30);
         }
         let now = Instant::now();
+        if let Some(deadline) = self.local_idle {
+            duration = duration.min(deadline.saturating_duration_since(now));
+        }
         if self.mode == "playing" {
             duration = duration.min(self.next_maintenance.saturating_duration_since(now));
         }
@@ -1466,6 +1957,44 @@ impl Engine {
         status["can_seek"] = Value::Bool(can_seek);
         status["source_kind"] = json!(self.source_kind());
         status["voice_available"] = Value::Bool(self.voice_available());
+        status["room"] = self.settings["room"].clone();
+        status["wander"] = self.settings["wander"].clone();
+        status["scenes"] = json!(self.settings["scenes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| json!({"id":s["id"],"name":s["name"]}))
+            .collect::<Vec<_>>());
+        status["scene_id"] = self.settings["sceneId"].clone();
+        status["scene_dirty"] = json!(room::dirty(&self.settings, &self.station));
+        status["spatial_available"] = json!(self.native_nature);
+        status["nature_engine"] = json!(if self.native_nature { "rust" } else { "mpv" });
+        status["imported_sounds"] = json!(self.settings["importedSounds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| json!({"id":s["id"],"name":s["name"]}))
+            .collect::<Vec<_>>());
+        for entry in status["nature_layers"].as_array_mut().unwrap() {
+            let id = entry["id"].as_str().unwrap().to_owned();
+            let config = room::layer(&self.settings["natureLayers"][&id]);
+            for key in [
+                "distance",
+                "pan",
+                "width",
+                "softness",
+                "reflections",
+                "echo",
+                "outside",
+                "living",
+            ] {
+                entry[key] = config[key].clone();
+            }
+            entry["effective_volume"] = json!(
+                config::level(&self.settings["natureLayers"][&id]["volume"], 25.0)
+                    * self.wander.gain(&id)
+            );
+        }
         for (target, source) in [
             ("animations", "animations"),
             ("reveal_animations", "revealAnimations"),
@@ -1510,6 +2039,9 @@ impl Engine {
 }
 impl Drop for Engine {
     fn drop(&mut self) {
+        if let Some(mut audio) = self.local_audio.take() {
+            audio.stop();
+        }
         self.cancel_feed();
         for key in self.channels.keys().cloned().collect::<Vec<_>>() {
             self.stop_channel(&key);

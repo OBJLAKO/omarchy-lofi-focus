@@ -32,7 +32,11 @@ class PlayerTest(unittest.TestCase):
             f.writeframes(b'\x00\x00' * 8000)
         catalog = json.loads((self.plugin / 'stations.json').read_text())
         for cat in catalog['categories']:
-            if cat['id'] == 'ambience': continue
+            if cat['id'] == 'ambience':
+                # Keep the historical nine-layer subprocess stress fixture.
+                # The larger catalog and native mixer are verified separately.
+                cat['stations'] = cat['stations'][:9]
+                continue
             for st in cat['stations']:
                 st['url'] = str(wav); st.pop('kind', None)
         (self.plugin / 'stations.json').write_text(json.dumps(catalog))

@@ -261,7 +261,7 @@ pub fn preferences(mut value: Value) -> Value {
     if let Some(source) = value["natureLayers"].as_object() {
         for (id, layer) in source {
             if valid_id(id) && id.starts_with("noise-") && layer.is_object() {
-                layers.insert(id.clone(), json!({"enabled":layer["enabled"] == true,"volume":level(&layer["volume"],25.0)}));
+                layers.insert(id.clone(), crate::room::layer(layer));
             }
         }
     }
@@ -303,6 +303,8 @@ pub fn preferences(mut value: Value) -> Value {
         }
     }
     value["youtube"] = json!(videos);
+    crate::room::normalize(&mut value);
+    crate::library::normalize(&mut value);
     value
 }
 #[derive(Clone)]
@@ -364,6 +366,26 @@ impl Catalog {
                     catalog.nature.push(id.into());
                 }
             }
+        }
+        for entry in settings["importedSounds"].as_array().into_iter().flatten() {
+            let id = entry["id"].as_str().unwrap_or("");
+            let file = entry["file"].as_str().unwrap_or("");
+            if !valid_id(id) || !crate::library::safe_file(id, file) {
+                continue;
+            }
+            catalog.entries.insert(
+                id.into(),
+                Station {
+                    id: id.into(),
+                    name: clean_title(entry["name"].as_str().unwrap_or("Imported sound")),
+                    url: file.into(),
+                    category: "ambience".into(),
+                    category_name: "Your sounds".into(),
+                    kind: "imported".into(),
+                    position: 0.0,
+                },
+            );
+            catalog.nature.push(id.into());
         }
         for entry in settings["youtube"].as_array().into_iter().flatten() {
             let id = entry["id"].as_str().unwrap().to_owned();
