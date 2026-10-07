@@ -471,6 +471,27 @@ class RecoveryScheduleTest(unittest.TestCase):
                     backend.resolve_feed(self.player, 'voice-changelog', 'old')
                 self.player.spawn.assert_not_called()
 
+    def test_feed_result_accepts_builtin_youtube_radio_but_rejects_saved_source(self):
+        self.player.settings['youtube'] = [dict(url='https://www.youtube.com/watch?v=BaW_jenozKc')]
+        for music, mode, accepted in [('lofi-girl-study', 'playing', True),
+                                       ('lofi-girl-study', 'paused', True),
+                                       ('youtube-BaW_jenozKc', 'playing', False)]:
+            with self.subTest(music=music, mode=mode):
+                self.player.settings.update(mix=True, bgStation='voice-changelog')
+                self.player.session.update(station=music, mode=mode, feed_token='pending')
+                self.player.save()
+                self.player.release()
+                self.player.spawn.reset_mock()
+                with mock.patch.object(backend, 'resolve_playlist'):
+                    backend.resolve_feed(self.player, 'voice-changelog', 'pending')
+                if accepted:
+                    self.player.spawn.assert_called_once()
+                    self.assertEqual(self.player.spawn.call_args.args[0], 'bg')
+                    self.assertEqual(self.player.spawn.call_args.kwargs['paused'], mode == 'paused')
+                    self.assertEqual(self.player.session['feed_token'], '')
+                else:
+                    self.player.spawn.assert_not_called()
+
     def test_worker_refreshes_catalog_before_retry(self):
         catalog_dir = Path(self.temp.name)/'new-catalog'
         catalog_dir.mkdir()

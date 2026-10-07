@@ -18,6 +18,7 @@ BarWidget {
   property string backgroundState: "stopped"
   property var natureLayers: []
   property bool animationsEnabled: true
+  property bool ultraMode: false
   property bool equalizerEnabled: true
   property string stationName: ""
   property string categoryName: ""
@@ -210,6 +211,15 @@ BarWidget {
   }
   Component.onCompleted: backend.running = true
 
+  FileView {
+    path: Quickshell.env("HOME") + "/.local/state/sky-power-profile/appearance-active"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.ultraMode = text().trim() !== "" && text().trim() === Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")
+    onLoadFailed: root.ultraMode = false
+  }
+
   Loader {
     id: panelLoader
     active: true
@@ -268,7 +278,7 @@ BarWidget {
       anchors.verticalCenterOffset: Style.space(2)
       width: Style.space(7); height: Style.space(7)
       active: root.playbackActive
-      animate: root.animationsEnabled && root.equalizerEnabled
+      animate: root.animationsEnabled && root.equalizerEnabled && !root.ultraMode
       visible: root.playbackActive
       ink: headphones.ink
     }

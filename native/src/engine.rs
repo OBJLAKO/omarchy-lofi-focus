@@ -168,6 +168,15 @@ impl Engine {
             .get(&self.station)
             .is_some_and(|s| s.kind == "youtube" || s.category == "youtube")
     }
+    fn voice_available(&self) -> bool {
+        // The Radio catalog includes YouTube-backed Lofi Girl streams.
+        // Only saved YouTube audio takes the foreground voice slot.
+        !self
+            .catalog
+            .entries
+            .get(&self.station)
+            .is_some_and(|s| s.category == "youtube")
+    }
     fn fades_enabled(&self) -> bool {
         enabled(&self.settings, "fadeEnabled") && number(&self.settings, "fadeSeconds") > 0.0
     }
@@ -427,7 +436,7 @@ impl Engine {
     }
     fn start_bg(&mut self) -> Result<(), String> {
         self.bg_error.clear();
-        if self.youtube() || !enabled(&self.settings, "mix") {
+        if !self.voice_available() || !enabled(&self.settings, "mix") {
             return Ok(());
         }
         let Some(station) = self
@@ -564,7 +573,7 @@ impl Engine {
         } else {
             self.fade_channel("main", 1.0, false);
         }
-        if self.youtube() {
+        if !self.voice_available() {
             self.feed_token += 1;
             self.feed_loading = false;
             self.cancel_feed();
@@ -1192,7 +1201,7 @@ impl Engine {
         self.changed();
     }
     pub fn feed_ready(&mut self, token: u64, result: Result<std::path::PathBuf, String>) {
-        if token != self.feed_token || self.mode == "stopped" || self.youtube() {
+        if token != self.feed_token || self.mode == "stopped" || !self.voice_available() {
             return;
         }
         self.feed_loading = false;
@@ -1446,7 +1455,7 @@ impl Engine {
             "station":self.station,"name":main.map(|s|s.name.as_str()).unwrap_or("No sources available"),"category":if self.youtube() {"youtube"} else {main.map(|s|s.category.as_str()).unwrap_or("")},
             "category_name":main.map(|s|if s.kind=="youtube" && s.category != "youtube" {"YouTube live"} else {s.category_name.as_str()}).unwrap_or(""),"url":main.map(|s|s.url.as_str()).unwrap_or(""),
             "main_volume":self.settings["mainVolume"],"bg_volume":self.settings["bgVolume"],"master_volume":self.settings["masterVolume"],"ducking":self.settings["ducking"],
-            "bg_station":bg.map(|s|s.id.as_str()).unwrap_or(""),"bg_name":bg.map(|s|s.name.as_str()).unwrap_or(""),"bg_running":self.alive("bg"),"mix":enabled(&self.settings,"mix") && !self.youtube(),
+            "bg_station":bg.map(|s|s.id.as_str()).unwrap_or(""),"bg_name":bg.map(|s|s.name.as_str()).unwrap_or(""),"bg_running":self.alive("bg"),"mix":enabled(&self.settings,"mix") && self.voice_available(),
             "nature_layers":layers,"youtube_entries":self.settings["youtube"],"youtube_available":self.youtube_available,"nature_volume":self.settings["natureVolume"],"noise_volume":self.settings["natureVolume"],
             "noise_station":selected,"noise_running":layers.iter().any(|e|e["running"]==true),"index":self.catalog.music.iter().position(|s|s==&self.station).unwrap_or(0),"count":self.catalog.music.len(),
             "main_title":self.prop("main","media-title"),"bg_title":self.prop("bg","media-title"),"main_position":self.prop("main","time-pos"),"main_duration":if can_seek {self.prop("main","duration")} else {Value::Null},
@@ -1456,6 +1465,7 @@ impl Engine {
         });
         status["can_seek"] = Value::Bool(can_seek);
         status["source_kind"] = json!(self.source_kind());
+        status["voice_available"] = Value::Bool(self.voice_available());
         for (target, source) in [
             ("animations", "animations"),
             ("reveal_animations", "revealAnimations"),

@@ -13,12 +13,27 @@ Panel {
 
   property var anchorItem: null
   property var hostWidget: null
+  property bool standaloneUltraMode: false
+  readonly property bool ultraMode: hostWidget && "ultraMode" in hostWidget
+    ? hostWidget.ultraMode : standaloneUltraMode
   readonly property var barIdentity: hostWidget || root
+
+  // Normal panels share the bar's watcher. Standalone previews/popouts use
+  // this fallback without changing the saved animation preferences.
+  FileView {
+    path: root.hostWidget ? "" : Quickshell.env("HOME") + "/.local/state/sky-power-profile/appearance-active"
+    watchChanges: !root.hostWidget
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.standaloneUltraMode = text().trim() !== "" && text().trim() === Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")
+    onLoadFailed: root.standaloneUltraMode = false
+  }
 
   // ---- Player state, mirrored from status.json
   property bool playerRunning: false
   property bool musicRunning: false
   property bool voiceRunning: false
+  property bool voiceAvailable: true
   property bool playerPaused: false
   property string playerStationId: ""
   property string playerName: ""
@@ -79,7 +94,7 @@ Panel {
   // master switch is a setting, the collapse state itself is a transient view.
   property var collapsed: ({})
 
-  readonly property bool motionOn: animationsEnabled
+  readonly property bool motionOn: animationsEnabled && !ultraMode
   readonly property bool liveMotion: motionOn && opened
   readonly property bool steamOn: false
   readonly property bool glowOn: false
@@ -97,8 +112,8 @@ Panel {
   )
   readonly property bool musicConnecting: mainState === "connecting" || mainState === "reconnecting"
   readonly property bool sessionActive: playerRunning || musicConnecting
-  readonly property bool voiceLoading: mixOn && !youtubeSelected && bgState === "loading"
-  readonly property bool voiceFailed: mixOn && !youtubeSelected && !voiceLoading && bgState !== "playing" && bgError.length > 0
+  readonly property bool voiceLoading: mixOn && voiceAvailable && bgState === "loading"
+  readonly property bool voiceFailed: mixOn && voiceAvailable && !voiceLoading && bgState !== "playing" && bgError.length > 0
   readonly property string voiceMessage: voiceLoading ? "Loading podcast…" : voiceFailed ? bgError : ""
   readonly property int enabledNatureCount: natureLayers.filter(function(layer) { return layer.enabled }).length
   // ---- Stations
@@ -238,6 +253,8 @@ Panel {
       root.canSeek = state.can_seek === true
       root.sourceKind = ["radio", "recording", "live", "unknown"].indexOf(state.source_kind) >= 0
         ? state.source_kind : root.canSeek ? "recording" : root.playerCategory === "lofi" ? "radio" : "unknown"
+      root.voiceAvailable = typeof state.voice_available === "boolean" ? state.voice_available
+        : root.sourceKind === "radio" || !root.youtubeSelected
       root.animationsEnabled = state.animations !== false
       root.revealEnabled = state.reveal_animations !== false
       root.steamEnabled = state.steam_animation !== false
@@ -589,7 +606,7 @@ Panel {
                 showLabel: false; options: root.backgroundOptions
                 animate: root.liveMotion
                 value: root.mixOn ? root.bgStation : "off"
-                enabled: !root.youtubeSelected
+                enabled: root.voiceAvailable
                 opacity: enabled ? 1 : 0.45
                 foreground: root.contentForeground; fontFamily: root.contentFontFamily
                 placeholderText: "Search voices and podcasts"
@@ -597,7 +614,8 @@ Panel {
                 onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
               }
               Caption {
-                visible: root.youtubeSelected
+                objectName: "voiceAvailabilityHint"
+                visible: !root.voiceAvailable
                 text: "Voice is available with radio. Switch to Radio in Listen to use it."
               }
               Row {
@@ -623,7 +641,8 @@ Panel {
               }
               Disclosure {
                 width: parent.width
-                expanded: root.mixOn && !root.youtubeSelected
+                objectName: "voiceLevelDisclosure"
+                expanded: root.mixOn && root.voiceAvailable
                 MixerLevel {
                   width: parent.width
                   compact: true; labelWidth: Style.space(90)

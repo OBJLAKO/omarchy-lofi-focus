@@ -133,17 +133,41 @@ class YoutubeIntegrationTest(unittest.TestCase):
             client.connect(str(self.base/'runtime/sky.lofi/sockets/main.sock'))
             client.sendall((json.dumps({'command':['seek',89,'absolute']}) + '\n').encode())
 
-    def test_builtin_youtube_station_uses_safe_extractor_and_keeps_nature(self):
+    def add_builtin_youtube_station(self):
         catalog_path = self.plugin/'stations.json'
         catalog = json.loads(catalog_path.read_text())
         catalog['categories'][0]['stations'].append(dict(id='lofi-girl-test', name='Lofi Girl test', kind='youtube', url=URL))
         catalog_path.write_text(json.dumps(catalog))
+
+    def test_builtin_youtube_station_uses_safe_extractor_and_keeps_voice_and_nature(self):
+        self.add_builtin_youtube_station()
         self.action('ui', 'fade', 'off')
         self.action('nature', 'noise-rain', 'on')
+        self.action('mix', 'off')
         self.action('start', 'lofi-girl-test')
         self.wait_for(lambda: self.status()['main_state'] == 'playing')
         self.assertEqual(self.status()['category'], 'youtube')
+        self.assertTrue(self.status()['voice_available'])
         self.assertFalse(self.status()['mix'])
+        self.action('bg', 'voice-changelog')
+        self.wait_for(lambda: self.status()['bg_running'] and self.prop('bg', 'pause') is False)
+        self.assertTrue(self.status()['mix'])
+        bg = self.pid('bg')
+        rain = self.pid('nature-noise-rain')
+        self.action('pause')
+        self.wait_for(lambda: self.prop('bg', 'pause') is True)
+        self.action('resume')
+        self.wait_for(lambda: self.prop('bg', 'pause') is False)
+        self.assertEqual(self.pid('bg'), bg)
+        self.assertEqual(self.pid('nature-noise-rain'), rain)
+        self.action('mix', 'off')
+        self.assertFalse(self.status()['bg_running'])
+        self.action('mix', 'on')
+        self.wait_for(lambda: self.status()['bg_running'])
+        args = json.loads(self.extractor_log.read_text())
+        for flag in ('--ignore-config', '--no-plugin-dirs', '--no-remote-components', '--no-playlist'):
+            self.assertIn(flag, args)
+        self.assertEqual(args[-1], URL)
         if self.backend == 'rust':
             self.assertFalse(self.status()['can_seek'])
             self.assertEqual(self.status()['source_kind'], 'radio')
@@ -151,6 +175,81 @@ class YoutubeIntegrationTest(unittest.TestCase):
             self.assertNotEqual(self.action('seek', '25', check=False).returncode, 0)
         self.assertTrue(any(layer['running'] for layer in self.status()['nature_layers'] if layer['id'] == 'noise-rain'))
         self.action('stop')
+
+    @unittest.skipUnless(os.environ.get('LOFI_TEST_BACKEND') == 'rust', 'Native asynchronous podcast worker')
+    def test_builtin_youtube_radio_resolves_podcast_voice_while_playing_and_paused(self):
+        self.add_builtin_youtube_station()
+        self.action('mix', 'off')
+        catalog_path = self.plugin/'stations.json'
+        catalog = json.loads(catalog_path.read_text())
+        for category in catalog['categories']:
+            for station in category['stations']:
+                if station['id'] == 'voice-changelog':
+                    station.update(kind='podcast', url='https://podcast.invalid/feed.xml')
+        catalog_path.write_text(json.dumps(catalog))
+        # Restart the private daemon so the podcast catalog is loaded before
+        # playback. Its real async worker consumes a fresh offline feed cache.
+        self.action('shutdown')
+        playlist = self.base/'runtime/sky.lofi/feed-voice-changelog.m3u'
+        playlist.parent.mkdir(parents=True, exist_ok=True)
+        playlist.write_text('#EXTM3U\n' + str(self.base/'tone.wav') + '\n')
+        self.action('start', 'lofi-girl-test')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing')
+        self.action('bg', 'voice-changelog')
+        self.wait_for(lambda: self.status()['bg_running']
+                      and self.prop('bg', 'time-pos') >= 0
+                      and self.prop('bg', 'pause') is False)
+        state = self.status()
+        self.assertTrue(state['voice_available'])
+        self.assertTrue(state['mix'])
+        self.assertTrue(state['bg_running'])
+        self.assertEqual(state['bg_station'], 'voice-changelog')
+        self.assertEqual(state['bg_error'], '')
+        self.assertEqual(playlist.read_text(), '#EXTM3U\n' + str(self.base/'tone.wav') + '\n')
+        original_bg = self.pid('bg')
+
+        # Reselecting while paused must start the newly resolved podcast in
+        # the existing paused mode, rather than dropping the async result.
+        self.action('pause')
+        self.action('bg', 'voice-changelog')
+        self.wait_for(lambda: self.status()['bg_running']
+                      and self.prop('bg', 'time-pos') >= 0
+                      and self.prop('bg', 'pause') is True)
+        state = self.status()
+        self.assertTrue(state['voice_available'])
+        self.assertTrue(state['mix'])
+        self.assertTrue(state['bg_running'])
+        self.assertTrue(state['paused'])
+        self.assertEqual(state['bg_error'], '')
+        self.assertNotEqual(self.pid('bg'), original_bg)
+        paused_bg = self.pid('bg')
+        self.action('resume')
+        self.wait_for(lambda: self.prop('bg', 'pause') is False)
+        self.assertEqual(self.pid('bg'), paused_bg)
+
+    def test_switching_between_builtin_radio_and_saved_youtube_preserves_voice_choice(self):
+        self.add_builtin_youtube_station()
+        self.action('nature', 'noise-rain', 'on')
+        self.action('bg', 'voice-changelog')
+        self.action('start', 'lofi-girl-test')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing' and self.status()['bg_running'])
+        rain = self.pid('nature-noise-rain')
+        self.start_video()
+        state = self.status()
+        self.assertFalse(state['voice_available'])
+        self.assertFalse(state['mix'])
+        self.assertFalse(state['bg_running'])
+        self.assertEqual(state['bg_station'], 'voice-changelog')
+        self.assertEqual(self.pid('nature-noise-rain'), rain)
+        self.action('mix', 'on')
+        self.assertFalse(self.status()['bg_running'])
+        self.action('start', 'lofi-girl-test')
+        self.wait_for(lambda: self.status()['main_state'] == 'playing' and self.status()['bg_running'])
+        state = self.status()
+        self.assertTrue(state['voice_available'])
+        self.assertTrue(state['mix'])
+        self.assertEqual(state['bg_station'], 'voice-changelog')
+        self.assertEqual(self.pid('nature-noise-rain'), rain)
 
     def test_save_reopen_deduplicate_and_remove_without_playback(self):
         self.action('youtube-add', URL, 'Long conversation')

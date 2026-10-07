@@ -103,6 +103,55 @@ Window {
       panel.hostWidget = null
     }
 
+    function test_radioTransportAllowsVoiceAndSavedYoutubeSuspendsIt() {
+      panel.showView(1)
+      var picker = findChild(panel, "voicePicker")
+      var hint = findChild(panel, "voiceAvailabilityHint")
+      var level = findChild(panel, "voiceLevelDisclosure")
+      verify(picker !== null)
+      verify(hint !== null)
+      verify(level !== null)
+
+      // Catalog radio presets can use a YouTube transport. Older backends
+      // identify them by source_kind even though category is "youtube".
+      panel.applyStatus(JSON.stringify({running:true,paused:false,category:"youtube",
+        source_kind:"radio",mix:true,bg_state:"loading"}))
+      compare(panel.voiceAvailable, true)
+      compare(picker.enabled, true)
+      compare(hint.visible, false)
+      compare(level.expanded, true)
+      compare(panel.voiceLoading, true)
+
+      // New status communicates the policy directly, including failure UI.
+      panel.applyStatus(JSON.stringify({running:true,paused:false,category:"youtube",
+        source_kind:"live",voice_available:true,mix:true,bg_state:"stopped",
+        bg_error:"Podcast unavailable: feed unavailable"}))
+      compare(panel.voiceAvailable, true)
+      compare(picker.enabled, true)
+      compare(hint.visible, false)
+      compare(level.expanded, true)
+      compare(panel.voiceFailed, true)
+
+      // Saved links keep their voice restriction; explicit policy wins over
+      // a generic radio classification from the audio decoder.
+      panel.applyStatus(JSON.stringify({running:true,paused:false,category:"lofi",
+        source_kind:"radio",voice_available:false,mix:true,bg_state:"loading"}))
+      compare(panel.voiceAvailable, false)
+      compare(picker.enabled, false)
+      compare(hint.visible, true)
+      compare(level.expanded, false)
+      compare(panel.voiceLoading, false)
+      compare(panel.voiceFailed, false)
+      compare(panel.voiceMessage, "")
+
+      // Compatibility with statuses predating voice_available is retained.
+      panel.applyStatus(JSON.stringify({running:true,paused:false,category:"youtube",
+        source_kind:"recording",mix:true,bg_state:"stopped",bg_error:"Unavailable"}))
+      compare(panel.voiceAvailable, false)
+      compare(picker.enabled, false)
+      compare(panel.voiceFailed, false)
+    }
+
     function test_closedPanelStopsDecorativeMotion() {
       panel.close()
       panel.animationsEnabled = true

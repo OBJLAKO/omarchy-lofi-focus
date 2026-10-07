@@ -150,6 +150,12 @@ class Player:
         station = self.stations.get(self.session.get('station'), {})
         return station.get('category') == 'youtube' or station.get('kind') == 'youtube'
 
+    def voice_available(self):
+        # Built-in radio can use YouTube extraction and still accept voice.
+        # Saved YouTube sources keep their dedicated listening policy.
+        station = self.stations.get(self.session.get('station'), {})
+        return station.get('category') != 'youtube'
+
     def remember_youtube(self, force=False):
         if not self.is_youtube() or not self.alive('main'):
             return
@@ -641,7 +647,7 @@ class Player:
 
     def start_bg(self):
         station = self.stations.get(self.settings.get('bgStation'))
-        if self.is_youtube() or not self.settings.get('mix') or not station or station['category'] in ('lofi', 'ambience', 'youtube'):
+        if not self.voice_available() or not self.settings.get('mix') or not station or station['category'] in ('lofi', 'ambience', 'youtube'):
             return
         url = station['url']
         if station.get('kind') == 'podcast':
@@ -700,7 +706,7 @@ class Player:
             # Resuming: the stream is still loaded and silent after its fade
             # out, so unpause it and glide back to level.
             self.fade_in_channel('main', self.fade_in_seconds())
-        if self.is_youtube():
+        if not self.voice_available():
             self.session['feed_token'] = ''
             self.stop_channel('feed')
             self.stop_channel('bg')
@@ -903,7 +909,8 @@ class Player:
                      main_volume=self.settings['mainVolume'], bg_volume=self.settings['bgVolume'],
                      master_volume=self.settings['masterVolume'], ducking=self.settings['ducking'],
                      bg_station=bg.get('id', ''), bg_name=bg.get('name', ''), bg_running=self.alive('bg'),
-                     mix=self.settings.get('mix', False) and not self.is_youtube(), nature_layers=layers,
+                     voice_available=self.voice_available(),
+                     mix=self.settings.get('mix', False) and self.voice_available(), nature_layers=layers,
                      youtube_entries=self.settings.get('youtube', []), youtube_available=bool(shutil.which('yt-dlp')),
                      nature_volume=self.settings['natureVolume'], noise_volume=self.settings['natureVolume'],
                      noise_station=selected[0] if selected else 'off', noise_running=any(s['running'] for s in layers),
@@ -1160,7 +1167,7 @@ def resolve_feed(player, id, token):
             signal.alarm(0)
     player.acquire()
     try:
-        if (player.session['mode'] != 'stopped' and not player.is_youtube() and player.settings.get('mix')
+        if (player.session['mode'] != 'stopped' and player.voice_available() and player.settings.get('mix')
                 and player.settings.get('bgStation') == id and player.session.get('feed_token') == token):
             player.spawn('bg', cache, player.effective(player.settings['bgVolume']),
                          paused=player.session['mode'] == 'paused')
