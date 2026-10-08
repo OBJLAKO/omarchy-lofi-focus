@@ -1,9 +1,9 @@
 # Native Rust and Omarchy publication
 
 Research date: 2026-10-08. Release policy rechecked against official marketplace
-source `ccaedd642b93d65ca4881ea4aaaecf9b63f2151e`. The pinned local static
-preflight is recorded in [the live-controls review](3.5-LIVE-CONTROLS-REVIEW.md); it
-does not grant marketplace approval.
+source `92758f8aa9a7a466433a1877cba3e60f66679267`. The pinned local static
+preflight and stable distribution evidence are recorded in the
+[3.5 release review](RELEASE-3.5.md). Marketplace approval remains separate.
 
 The Omarchy shell loads the plugin's QML entry point. QML remains the interface;
 Rust provides the controller and local mixer through local IPC. This also
@@ -36,19 +36,19 @@ A release build made on a compatible Linux runner is preferable to a binary
 linked against a developer machine's newer libc. Document architecture and
 runtime library requirements; add an ARM build only after it has been tested.
 
-The locally packaged 3.5.0 release executable was inspected with `readelf -h`,
+The Ubuntu CI-built 3.5.0 release executable was inspected with `readelf -h`,
 `readelf -d` and `readelf --version-info`. It is an ELF64 x86_64 GNU/Linux PIE,
 with `DT_NEEDED` entries for `libasound.so.2`, `libgcc_s.so.1`, `libm.so.6`,
 `libc.so.6` and `ld-linux-x86-64.so.2`. Mandatory glibc symbol versions reach
 **2.34**; its GLIBC_2.39 references are marked **WEAK**, so they are not mandatory
 requirements. This is not a static or cross-platform binary. The ALSA runtime
 library is now required by the local CPAL output, and building requires the
-ALSA development package (`libasound2-dev` on Ubuntu). Local validation uses
-this Omarchy machine; the Ubuntu 24.04 CI build is a separate distribution
-compatibility check, not an already completed run. Reinspect the packaged ELF
-if it is rebuilt on another system.
+ALSA development package (`libasound2-dev` on Ubuntu). The [Ubuntu 24.04 distribution run](https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37741826698)
+passed its build and regressions; the same executable is tested again on this
+Omarchy machine. [Build identity](../bin/BUILD-IDENTITY.json) identifies the exact
+CI input and source hashes. Reinspect the ELF when rebuilding it.
 
-The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/ccaedd642b93d65ca4881ea4aaaecf9b63f2151e/SECURITY.md)
+The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/92758f8aa9a7a466433a1877cba3e60f66679267/SECURITY.md)
 does not categorically prohibit Rust. Bundled executable files are classified as
 `bundled-executable-binary`, requiring maintainer review. A build involving remote
 source can also require review. Acceptance is a maintainer decision. Preserve
@@ -63,7 +63,7 @@ matching standard-library license/copyright files when changing the toolchain.
 
 ## Updating the existing listing
 
-Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/ccaedd642b93d65ca4881ea4aaaecf9b63f2151e/VERIFICATION.md):
+Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/92758f8aa9a7a466433a1877cba3e60f66679267/VERIFICATION.md):
 
 1. Complete native regressions, UI review and controlled Python/Rust measurements.
 2. Finalize a release commit, including the intended distributable executable,

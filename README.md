@@ -143,7 +143,8 @@ Rust/Kira mixer**, bounded streaming decoders, shared reverb and delay, and
 smoothed controls. mpv handles online music and voices; yt-dlp extracts YouTube
 streams. No account service is required.
 
-The 3.5 live-controls validation passed 32 Rust unit tests, 68 backend integration
+The [3.5 release review](docs/RELEASE-3.5.md) records the tested Ubuntu distribution
+artifact and exact source identity. The live-controls validation passed 32 Rust unit tests, 68 backend integration
 tests and rendered interface checks, including actual pointer drags, delayed
 responses, stable source cards and persistent Solo. Read the
 [live-controls review](docs/3.5-LIVE-CONTROLS-REVIEW.md),

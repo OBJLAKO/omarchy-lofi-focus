@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-08T07:25:35.028295+00:00",
+  "version": "3.5.0",
+  "buildSourceCommit": "012a8e9127daa304a86af87ad0e3028ef3b24c6a",
+  "binarySHA256": "4c10096ae47a056c91b281d1232a74eedac100c7fd7c972c3d70570306262342",
+  "distributionCI": {
+    "url": "https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37741826698",
+    "conclusion": "success",
+    "nativeUnitTests": 32,
+    "nativeIntegrationTests": 68,
+    "pythonReferenceTests": 62
+  },
+  "referenceSecurityCI": {
+    "url": "https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37741826709",
+    "conclusion": "success",
+    "pythonTests": 84,
+    "bandit": "passed"
+  },
+  "sameDistributionBinaryOnOmarchy": {
+    "nativeIntegrations": 68,
+    "seconds": 154.133,
+    "realRustQmlTransportCases": 4,
+    "sourceHashMatches": 14
+  },
+  "unchangedQml": {
+    "panelCases": 17,
+    "pointerLayoutKeyCases": 10,
+    "libraryCases": 7,
+    "geometryCases": 24,
+    "renderVariants": 4,
+    "evidence": "3.5-LIVE-CONTROLS-REVIEW.md"
+  },
+  "rustsec": {
+    "databaseCommit": "b8a1a33e246a0a9a3b5f377248c41a503defec74",
+    "currentHeadRechecked": true,
+    "lockfileSHA256": "bec9a96ad234a36746cd29ce28903433c174808330b4378345c3cee9a77247f5",
+    "lockedComparison": "3.5-rustsec-lock-check.json",
+    "note": "Database HEAD and lockfile unchanged; prior direct advisory comparison retained. No new cargo-audit or yanked-package check."
+  },
+  "scope": "Exact Ubuntu distribution executable; isolated local/silent/mock audio and IPC. Prior performance measurements retain their older executable identity; listening, long soak and marketplace acceptance are separate."
+}
