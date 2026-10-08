@@ -85,7 +85,7 @@ pub struct Engine {
     local_gain: f64,
     local_fade: Option<Fade>,
     local_idle: Option<Instant>,
-    audition: Option<(String, Instant)>,
+    audition: Option<(String, Option<Instant>)>,
 }
 impl Engine {
     pub fn new(paths: Paths, events: SyncSender<Event>) -> Result<Self, String> {
@@ -879,7 +879,7 @@ impl Engine {
             "audition" => {
                 let id = arg(1)?;
                 match arg(2)? {
-                    "on" => {
+                    "on" | "hold" => {
                         if self.mode != "playing"
                             || !self.catalog.nature.iter().any(|s| s == id)
                             || !self.alive(&format!("nature-{id}"))
@@ -890,11 +890,13 @@ impl Engine {
                                     .into(),
                             );
                         }
-                        self.audition =
-                            Some((id.to_owned(), Instant::now() + Duration::from_secs(8)));
+                        self.audition = Some((
+                            id.to_owned(),
+                            (arg(2)? == "on").then(|| Instant::now() + Duration::from_secs(8)),
+                        ));
                     }
                     "off" => self.audition = None,
-                    _ => return Err("audition takes on/off".into()),
+                    _ => return Err("audition takes on/hold/off".into()),
                 }
                 self.apply_volumes();
                 self.changed();
@@ -1364,6 +1366,10 @@ impl Engine {
             "bridge-restart" => {}
             _ => return Err(format!("Unknown command: {command}")),
         }
+        // Keep our saved form identical to the preference reader's form.
+        // Integer slider commands otherwise look like external edits when
+        // inotify reloads them as floats, cancelling runtime-only solo state.
+        self.settings = preferences(std::mem::take(&mut self.settings));
         self.refresh_recording();
         self.apply_volumes();
         self.changed();
@@ -1784,7 +1790,7 @@ impl Engine {
     pub fn tick(&mut self) {
         let now = Instant::now();
         if self.audition.as_ref().is_some_and(|(id, deadline)| {
-            now >= *deadline
+            deadline.is_some_and(|deadline| now >= deadline)
                 || self.settings["natureLayers"][id]["enabled"] != true
                 || !self.alive(&format!("nature-{id}"))
         }) {
@@ -1936,7 +1942,7 @@ impl Engine {
         if let Some(deadline) = self.local_idle {
             duration = duration.min(deadline.saturating_duration_since(now));
         }
-        if let Some((_, deadline)) = &self.audition {
+        if let Some((_, Some(deadline))) = &self.audition {
             duration = duration.min(deadline.saturating_duration_since(now));
         }
         if self.mode == "playing" {

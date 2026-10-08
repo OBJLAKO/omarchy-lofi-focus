@@ -1,8 +1,10 @@
 """3.5 scenes and local Rust mixer, using isolated output and state."""
 import json
 import os
+from pathlib import Path
 import shutil
 import signal
+import socket
 import time
 import unittest
 from player_test import PlayerTest
@@ -199,6 +201,37 @@ class SpaceTest(PlayerTest):
         self.wait_for(lambda: self.status()['audition_id'] == '', timeout=3)
         self.wait_prop('nature-noise-wind', 'volume', 31.5)
 
+    def test_held_solo_survives_live_edits_and_restores_the_saved_mix(self):
+        self.action('ui', 'fade', 'off')
+        self.action('bg', 'off')
+        self.action('nature', 'noise-rain', 'on')
+        self.action('nature', 'noise-wind', 'on')
+        self.action('play')
+        self.wait_for(lambda: all(l['running'] for l in self.status()['nature_layers'] if l['enabled']))
+        self.action('scene-save', 'Persistent solo')
+        path = self.base / 'state/sky.lofi/settings.json'
+        saved = path.read_bytes()
+        self.action('audition', 'noise-rain', 'hold')
+        self.assertEqual(path.read_bytes(), saved, 'Solo is runtime state, not a saved preference')
+        # Own settings writes must not clear isolation through a preference
+        # reload merely because integer commands normalize to JSON floats.
+        for args in [('vol', 'noise-rain', '49'), ('vol', 'master', '68'),
+                     ('room', 'preset', 'cafe'), ('ui', 'duckLevel', '32'),
+                     ('layer', 'noise-rain', 'coverage', '7')]:
+            self.action(*args)
+            time.sleep(0.15)
+            self.assertEqual(self.status()['audition_id'], 'noise-rain', args)
+        time.sleep(8.2)
+        self.assertEqual(self.status()['audition_id'], 'noise-rain', 'Editing solo must not expire after 8 seconds')
+        self.action('audition', 'noise-rain', 'off')
+        self.assertEqual(self.status()['audition_id'], '')
+        rain = next(l for l in self.status()['nature_layers'] if l['id'] == 'noise-rain')
+        self.assertEqual(rain['volume'], 49)
+        self.assertTrue(next(l for l in self.status()['nature_layers'] if l['id'] == 'noise-wind')['enabled'])
+        self.action('audition', 'noise-wind', 'hold')
+        self.action('pause')
+        self.assertEqual(self.status()['audition_id'], '')
+
     def test_removed_active_catalog_source_is_reconciled(self):
         self.action('ui', 'fade', 'off')
         self.action('nature', 'noise-rain', 'on')
@@ -212,6 +245,60 @@ class SpaceTest(PlayerTest):
         self.wait_for(lambda: not any(l['id'] == 'noise-rain' for l in self.status()['nature_layers']))
         self.action('stop')
         self.assertFalse(any(l['running'] for l in self.status()['nature_layers']))
+
+    def test_live_slider_commands_preserve_controller_decoders_and_plugin_files(self):
+        self.action('ui', 'fade', 'off')
+        self.action('bg', 'off')
+        for identity in ('noise-rain', 'noise-wind'):
+            self.action('nature', identity, 'on')
+        self.action('play')
+        self.wait_for(lambda: all(l['running'] for l in self.status()['nature_layers'] if l['enabled']))
+        runtime = self.base / 'runtime/sky.lofi'
+        daemon = (runtime / 'controller.pid').read_text()
+        music = self.pid('main')
+        def decoders():
+            return {task.name for task in (Path('/proc') / daemon.strip() / 'task').iterdir()
+                    if (task / 'comm').read_text().strip() == 'skylofi-decode'}
+        before_decoders = decoders()
+        self.assertEqual(len(before_decoders), 2)
+        self.action('audition', 'noise-rain', 'hold')
+        # Keep one connection, like the QML widget. Every intermediate value
+        # must apply while the gesture is ongoing, with no transport restart.
+        with socket.socket(socket.AF_UNIX) as client:
+            client.settimeout(3)
+            client.connect(str(runtime / 'controller.sock'))
+            with client.makefile('rb') as reader:
+                request = 0
+                for value in (11, 26, 43, 67, 81, 94):
+                    for args in [('vol', 'noise-rain', str(value)),
+                                 ('layer', 'noise-rain', 'coverage', str(value)),
+                                 ('room', 'softness', str(value)),
+                                 ('ui', 'duckLevel', str(value)),
+                                 ('wander-amount', str(value)),
+                                 ('vol', 'master', str(value))]:
+                        request += 1
+                        client.sendall((json.dumps({'id': request, 'args': args}) + '\n').encode())
+                        reply = json.loads(reader.readline(65537))
+                        self.assertEqual(reply['id'], request)
+                        self.assertTrue(reply['ok'], reply)
+                        state = reply['status']
+                        self.assertEqual(state['audition_id'], 'noise-rain')
+                        rain = next(l for l in state['nature_layers'] if l['id'] == 'noise-rain')
+                        actual = (rain['volume'] if args[:2] == ('vol', 'noise-rain') else
+                                  rain['coverage'] if args[0] == 'layer' else
+                                  state['room']['softness'] if args[0] == 'room' else
+                                  state['duck_level'] if args[0] == 'ui' else
+                                  state['wander']['amount'] if args[0] == 'wander-amount' else
+                                  state['master_volume'])
+                        self.assertEqual(actual, value)
+        time.sleep(0.15)
+        self.assertEqual(self.status()['audition_id'], 'noise-rain')
+        self.assertEqual((runtime / 'controller.pid').read_text(), daemon)
+        self.assertEqual(self.pid('main'), music)
+        self.assertEqual(decoders(), before_decoders)
+        after = {str(p.relative_to(self.plugin)): p.read_bytes()
+                 for p in self.plugin.rglob('*') if p.is_file()}
+        self.assertEqual(self.before, after, 'Live edits must not write into the hot-reloaded plugin directory')
 
     def test_import_is_private_validated_and_bundled_files_cannot_be_deleted(self):
         source = self.base / 'a sound.wav'
