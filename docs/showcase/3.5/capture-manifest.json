@@ -1,0 +1,58 @@
+{
+  "scope": "Actual final 3.5 QML, isolated sample state; unmodified captures inside an SVG card; no live/network playback or latency claim.",
+  "capturedOn": "2026-10-08",
+  "qmlSourceCommit": "ecbcd72552d91c052d6dcf16dfb474685f5baa6a",
+  "sourceSHA256": {
+    "BarWidget.qml": "75a0a779879a8d7de95746762f320a71df09fb872243fc0036856b43218f4e89",
+    "CoverageStage.qml": "7a644141acf0b9c256050d5218d8b742eac8a10366cff3f370a7c8249a18ee0c",
+    "FocusDropdown.qml": "4a62eec58a435d1e9b3e5f7124578675b2495b96d6ce8d8dca032963ec74c673",
+    "MixerLevel.qml": "51de6b8f79b570fb815350c44a4b38325849770f2be2a35ad962ef70b4ef4fd9",
+    "Panel.qml": "506afee9e905e8b79f70ebd512fa9367447c32c81c431ec90cc68e87d594dd01",
+    "PlaybackWave.qml": "6066cb5ba05f595cfe963a9e2a3d42c49013424cd46788fc1d455e39f5537cac",
+    "RoomEditor.qml": "43fda7142b8665181b3ff843713dcaacd7dac523a79bbe4674d5f8e8651e7b48",
+    "SceneControls.qml": "5b993a7cb55198e73cfa81a5c80d7fe128879f4168e46199b4a7c3d05a35e7ea",
+    "SkylofiButton.qml": "d236b458caf1dc9101c5cd2763445df7751b22913b2c314dfcda3c875078a370",
+    "SkylofiSlider.qml": "760ccb7933d435d080703d3561180607c6e67c301d3f17366f89603d67ba2c60",
+    "SkylofiStyle.qml": "0dd853550c9cce8cad944280f912995627395363fc4587bef2ad550dccbfc3bd",
+    "SkylofiSwitch.qml": "c705c62d139f4c7cf4c548af4399d0be417b13034147e31ff701feed8efb3068",
+    "SoundControl.qml": "5801f9138195091b85177c4c7bc13a4e58fb3b6a7851f725f4c659e8a673dfa9",
+    "SoundImport.qml": "48dc8c47fe477c64e0835a4e4c8441c0994e6a232f1a261e7e3c8170bf573f3e",
+    "SourceCard.qml": "bcf575df14499104f6f4bdaf84bababc8b44328f7234d18ff7bb524a54fab211",
+    "SourceControls.qml": "8f1b550ccf8c3fbc82fc408b9c2ae35f7809888c4b4423c1dd0f022ed0a77299",
+    "StationRow.qml": "bf110cf3a3c5bf3e215bbb0cb79f9086f9213d80c6c74760271594aac3c2cc42",
+    "YoutubeLibrary.qml": "f6d27d78759ebd31b1a1fc7a646d45529fa34e859b1a5cb07335d017d6cde65b"
+  },
+  "captures": {
+    "sound-space.png": {
+      "width": 480,
+      "height": 620,
+      "sha256": "bb1a3aa958c3d94cd5c2a2c787176a981bfd3abc633f98c09c81daecab60ae9f"
+    },
+    "source-controls.png": {
+      "width": 480,
+      "height": 620,
+      "sha256": "46cdd8f9927c1661c60e9dbad55c526e62dcdfa1b2678b4680ed3f6f114156ca"
+    },
+    "mix.png": {
+      "width": 480,
+      "height": 620,
+      "sha256": "095d1f8512264249af3f3ad35634840856e5a3198a34aad7bfb6db0e5c9bcfdc"
+    }
+  },
+  "exports": {
+    "cover.png": {
+      "width": 1280,
+      "height": 640,
+      "bytes": 160107,
+      "sha256": "400a77bb352edb873a3e53fa746dfe9bc5cb4147f5913a685ee6c2f08f824c14"
+    },
+    "social-preview.jpg": {
+      "width": 1280,
+      "height": 640,
+      "bytes": 79449,
+      "sha256": "e4cb4e9f2748fec3ec1c79a441a6091f79c2ba0e888428d5e3c08f8a00560f25"
+    }
+  },
+  "layoutSHA256": "57c93bc18bbf46f8bc5058377c4637d1954b1e399247e1c27919ff638396050c",
+  "previewIdenticalTo": "docs/showcase/3.5/cover.png"
+}

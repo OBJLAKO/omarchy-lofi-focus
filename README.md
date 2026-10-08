@@ -1,14 +1,33 @@
 # Skylofi 3.5
 
-A lo-fi radio and nature-sound mixer for **Omarchy**, with a native **Rust**
-controller, local audio mixer and a theme-aware QML interface. Choose a soundtrack,
-place your ambient layers, save a scene and let its levels drift gently.
+**Make room for focus.** Lo-fi radio, a nearby fire, rain all around you — build
+your own sound space from the Omarchy bar.
 
+[Install](#install) ·
 [Marketplace](https://omarchyplugins.com/plugin.html?id=sky.lofi) ·
-[Install](#install) · [See it in action](#make-it-your-space) ·
-[Performance](#measured-with-care) · [Release notes](CHANGELOG.md)
+[What's new](https://github.com/OBJLAKO/omarchy-lofi-focus/releases/tag/v3.5.0) ·
+[Give it a star](https://github.com/OBJLAKO/omarchy-lofi-focus)
 
-![Skylofi 3 cover: a quiet listening space with the Listen, Mix and Settings interface](docs/showcase/skylofi-v3-cover.png)
+![Skylofi 3.5: Make room for focus. 32 offline sounds, spatial layers, room acoustics, living mixes, saved scenes and Solo, alongside the actual sound-space interface.](docs/showcase/3.5/cover.png)
+
+## Your atmosphere, your way
+
+| Start with… | Make it yours |
+| --- | --- |
+| **A soundtrack** | Lo-fi radio, Lofi Girl presets or your saved public YouTube links. |
+| **32 offline sounds** | Mix rain, fire, wind, water and other textures; import your own recordings. |
+| **A sound space** | Place a fire nearby, spread rain around you and choose the room's acoustics. |
+| **A living mix** | Let each layer rise and fall gently on its own, within the balance you chose. |
+| **A saved scene** | Keep your soundtrack, voices, layers, placement and room together. |
+
+Tune every active sound with **Solo**, then return to the full mix with one click.
+All sliders apply as you drag. The playback dock stays within reach while you
+browse, and the panel follows your Omarchy theme and font.
+
+If Skylofi makes your workday a little calmer,
+[**give the project a star**](https://github.com/OBJLAKO/omarchy-lofi-focus).
+Found a good mix? Share the recipe in an
+[issue](https://github.com/OBJLAKO/omarchy-lofi-focus/issues).
 
 ## Install
 
@@ -18,96 +37,66 @@ On Omarchy with plugin support:
 omarchy plugin add https://github.com/OBJLAKO/omarchy-lofi-focus.git --enable
 ```
 
-The command installs the repository's current upstream version. The
-[marketplace listing](https://omarchyplugins.com/plugin.html?id=sky.lofi)
-has a reviewed 3.0.1 snapshot. This 3.5 development branch needs its own exact-commit
-verification before publication; [the previous review](https://github.com/omacom/omarchy-plugin-marketplace/issues/9719)
-does not cover new code or binaries.
+This installs the current upstream version. Existing `sky.lofi` preferences,
+saved links and scenes migrate automatically. Marketplace updates go through a
+separate maintainer review; see the
+[listing](https://omarchyplugins.com/plugin.html?id=sky.lofi) for its published version.
 
-**Requirements:** Omarchy's plugin-capable Quickshell shell, mpv and session
-D-Bus and ALSA (normally routed through Omarchy's PipeWire). YouTube playback additionally needs yt-dlp and a supported JavaScript
-runtime, such as Deno. No account or API key is needed; private and restricted
-videos are not supported.
+**Requirements:** Omarchy's plugin-capable Quickshell shell, mpv, session D-Bus
+and ALSA, normally routed through PipeWire. Saved YouTube playback also needs
+yt-dlp and a supported JavaScript runtime such as Deno. No account or API key is
+needed; private and restricted videos are not supported.
 
-The repository includes a tested **x86_64 GNU/Linux** executable. Normal
-installation needs no Rust toolchain; the launcher never builds or downloads
-code at runtime. Other architectures need an explicit tested build. The plugin
-ID stays `sky.lofi`; existing preferences and saved links migrate automatically.
+The repository bundles an **x86_64 GNU/Linux** executable. Normal installation
+needs no Rust toolchain; the launcher never builds or downloads code at runtime.
+Other architectures need an explicit tested build. Release provenance and system
+requirements are documented in [native distribution](docs/RUST-PUBLISHING.md).
 
-## Make it your space
+## Build your first space
 
-### Listen
+1. In **Listen**, choose a radio station or add a public YouTube link.
+2. In **Mix**, add a few ambient sounds and choose a room preset.
+3. Expand a sound card. Try **Nearby**, **Distant** or **Around**, then adjust
+   **Volume**, **Distance** and **Coverage** while listening.
+4. Open **Edit overall space** to arrange the sources on the shared map.
+5. Turn on **Living mix** for gentle independent changes, then save your scene.
 
-Pick a lo-fi station or save a public YouTube link to your library. Search makes
-both easy to find, while playback and overall volume stay within reach across
-every tab. Radio stays live; only confirmed recordings expose a timeline,
-seeking and saved playback position.
-
-![Listen demo: choose a soundtrack with a persistent playback dock](docs/showcase/listen-demo.gif)
+A simple starting point: a quiet lo-fi soundtrack, a nearby fireplace,
+surrounding rain and a warm room. The
+[sound-space guide](docs/SOUND-SPACE.md) explains that recipe in more detail.
 
 <details>
-<summary><strong>Mix — build your own atmosphere</strong></summary>
+<summary><strong>See the sound-space editor</strong></summary>
 
-Balance the soundtrack, an optional voice and your nature sounds independently.
-The offline library contains **32 sounds**: nine credited recordings and 23
-distinct procedural textures generated in Rust. Up to 16 ambient layers can play
-together. Each layer has its own level; **All sounds** adjusts the complete mix.
+![Actual Skylofi 3.5 sound-space editor: a nearby fireplace, surrounding rain and wind, with a persistent radio dock.](docs/showcase/3.5/sound-space.png)
 
-Save a named scene to remember the soundtrack, voice, layers and acoustic settings.
-Applying a scene preserves playback intent and overall volume. **Living mix**
-gently varies each unlocked layer independently below its chosen level; zero stays
-silent and disabling motion smoothly restores the chosen balance.
-
-Expand a sound card to adjust **Volume**, **Distance** and **Coverage**. Coverage
-changes continuously from a focused point through a wide source to a surrounding
-stereo texture, including for mono recordings. Try **Nearby**, **Distant** or
-**Around** as starting points. Every card has a visible **Solo** button to edit
-that active sound alone. Isolation stays on until **Back to mix**, Pause, Stop
-or a source/scene change; selecting another card does not end it. Solo never
-changes the other saved levels or enabled sounds.
-
-All sliders apply while dragging, using bounded live updates and an immediate
-final value on release. Routine status updates preserve the card, mouse grab,
-expanded details and scroll position.
-
-Open **Sound space** for a larger shared map: move small source markers left/right
-and near/far, with continuous coverage zones. Choose one room preset; muffling,
-reflections, echo and acoustic boundaries stay under **Details**. The stereo
-diffuser creates an enveloping impression, especially in headphones; it does
-not provide measured HRTF front/back localization or head tracking. Existing
-scenes migrate their former width into coverage and retain levels and placement.
-See the [sound-space guide](docs/SOUND-SPACE.md) for a nearby fire and surrounding
-rain recipe.
-
-Import your own Ogg, WAV, FLAC or MP3 recordings into a private library. Source files
-are copied, so moving the original does not break a scene. See the
-[library and sound provenance](docs/library-3.5.md).
-
-![Mix demo: layer nature sounds and adjust their individual levels](docs/showcase/mix-demo.gif)
+Move a source left/right and near/far, then set how focused or enveloping it
+feels. Room details include softness, reflections and echo. These are stereo
+spatial effects, especially useful in headphones; they do not provide measured
+HRTF front/back localization or head tracking.
 
 </details>
 
 <details>
-<summary><strong>Settings — make it comfortable</strong></summary>
+<summary><strong>Adjust one sound with Solo</strong></summary>
 
-Adjust playback fades, how much audio remains while VoxType records, and
-interface motion. Normal volume returns during transcription. Motion can be
-disabled independently of audio fades, and the panel follows your Omarchy
-theme and fonts.
+![Actual Skylofi 3.5 source editor with Fireplace isolated, live volume and distance controls, and Back to mix.](docs/showcase/3.5/source-controls.png)
 
-![Settings demo: adjust fades, dictation ducking and interface motion](docs/showcase/settings-demo.gif)
+Every active sound has a visible **Solo** button, including collapsed cards.
+Other channels temporarily go quiet without changing their saved levels or
+switches. Isolation stays on until **Back to mix**, Pause, Stop or a source/scene
+change; selecting another card does not end it.
+
+**Living mix** gently varies unlocked layers below their chosen level. Zero
+stays silent; disabling motion smoothly restores your balance. Up to 16 ambient
+layers can play together. **All sounds** controls the complete mix.
 
 </details>
 
-The clips illustrate the earlier 3.0 interface with controlled sample state. They
-show interaction and motion, rather than remote-stream loading times or audio.
-The cover is promotional artwork based on interface references.
-
-Four direct lo-fi stations and four Lofi Girl YouTube presets are included.
-Voice choices cover talk radio, ATC and publisher-hosted podcasts; availability
-depends on the source and network. See [station sources](STATIONS.md) and
-[sound credits](SOUNDS-LICENSES.md). Saved YouTube audio takes the foreground
-channel and suspends the optional voice; nature layers keep playing.
+The images above render the actual 3.5 QML interface with isolated sample state.
+They contain no private library data and make no network or audio-latency claim.
+The cover is a code-native layout around an unmodified interface capture;
+[asset provenance](docs/showcase/3.5/README.md) records its sources.
 
 ## Close at hand
 
@@ -119,72 +108,71 @@ channel and suspends the optional voice; nature layers keep playing.
 | Scroll over the bar icon | Adjust overall volume by 5% |
 | Media keys | Control playback through MPRIS |
 
-Inside the panel, use Tab and keyboard controls; Escape dismisses it. Scrolling
-over an unfocused level control scrolls the page without changing volume.
-VoxType ducking supports its standard state file and a custom state path in
-the default configuration.
+Use Tab and keyboard controls inside the panel; Escape dismisses it. Scrolling
+over an unfocused slider scrolls the page without changing its value. Radio
+stays live; confirmed recordings expose seeking and a saved playback position.
 
-## Rust where it helps
+Settings include playback fades, interface motion and **VoxType ducking**:
+audio becomes quieter while dictating and returns during transcription. Motion
+can be disabled independently of audio fades.
 
-The QML interface runs inside Omarchy's Quickshell host and keeps a persistent
-local connection to the Rust controller. Rust manages settings, process
-supervision, cached IPC state, recovery, the library, fades, dictation ducking,
-RSS podcasts and MPRIS. Local ambience uses **one Rust/Kira mixer**, bounded
-streaming decoders, shared room reverb and delay, and smoothed layer controls.
-mpv handles online music and voice; yt-dlp extracts YouTube streams. The preserved
-Python implementation and the explicit mpv ambience mode are legacy regression
-references, outside the normal 3.5 runtime path.
+<details>
+<summary><strong>Audio sources, private imports and credits</strong></summary>
 
-The 3.5 preview executable is locally built and validated on this Omarchy system.
-The Ubuntu 24.04 workflow includes the new ALSA build dependency and still needs
-to run before a distribution release. Matching source, locked dependencies,
-checksums and build identity ship with the preview. See
-[native distribution](docs/RUST-PUBLISHING.md) and the
-[audio-engine evaluation](docs/AUDIO-ENGINE-EVALUATION.md) for the architecture
-and runtime requirements.
+Four direct lo-fi stations and four Lofi Girl YouTube presets are included.
+Optional voices cover talk radio, ATC and publisher-hosted podcasts; availability
+depends on the source and network. Saved YouTube audio occupies the foreground
+channel and suspends the optional voice; ambient layers keep playing.
+See [station sources](STATIONS.md).
 
-## Measured with care
+The offline library has nine credited recordings and 23 distinct procedural
+textures generated in Rust. Import Ogg, WAV, FLAC or MP3 recordings into your
+private library. Files are copied, so moving the original does not break a scene.
+See the [library guide](docs/library-3.5.md) and
+[individual sound credits and licenses](SOUNDS-LICENSES.md).
 
-The initial 3.5 local-output smoke run measured **65.46 MiB total PSS** with nine
-ambient layers, versus **384.01 MiB** with nine separate mpv players. Sixteen
-layers with the final coverage effects used **78.71–82.95 MiB** and
-**14.99–17.37% of one logical CPU core** in the October 8 short run. Output
-paths and host conditions affect CPU comparisons; these are measured samples,
-not guarantees. Twenty final rapid stop/start cycles returned to the original
-thread and file-descriptor counts after output cleanup. See the
-[3.5 measurements and limits](docs/PERFORMANCE-3.5.md) and
+</details>
+
+<details>
+<summary><strong>Rust engine, validation and measurements</strong></summary>
+
+QML runs inside Omarchy's Quickshell host with a persistent local connection to
+the Rust controller. Rust manages settings, process supervision, the library,
+fades, dictation ducking, podcast feeds and MPRIS. Local ambience uses **one
+Rust/Kira mixer**, bounded streaming decoders, shared reverb and delay, and
+smoothed controls. mpv handles online music and voices; yt-dlp extracts YouTube
+streams. No account service is required.
+
+The 3.5 live-controls validation passed 32 Rust unit tests, 68 backend integration
+tests and rendered interface checks, including actual pointer drags, delayed
+responses, stable source cards and persistent Solo. Read the
+[live-controls review](docs/3.5-LIVE-CONTROLS-REVIEW.md),
 [coverage/security review](docs/3.5-COVERAGE-REVIEW.md) and
-[live-controls follow-up](docs/3.5-LIVE-CONTROLS-REVIEW.md).
+[audio-engine evaluation](docs/AUDIO-ENGINE-EVALUATION.md).
 
-The preserved prototype comparison used real mpv with silent output, local
-audio and three active channels:
+Historical local-output measurements found 65.46 MiB total PSS with nine ambient
+layers, versus 384.01 MiB for nine separate mpv players. A later 16-layer coverage
+build used 78.71–82.95 MiB and 14.99–17.37% of one logical CPU core in a short run;
+20 stop/start cycles returned to the original thread and file-descriptor counts.
+These identified builds and host-dependent samples are not guarantees or fresh
+benchmarks of every release binary. See
+[3.5 measurements and limits](docs/PERFORMANCE-3.5.md).
 
-| Measurement | Previous Python implementation | Rust prototype |
-| --- | ---: | ---: |
-| Persistent control memory, PSS | 29.4 MiB | 4.9 MiB |
-| Volume applied at mpv, median | 154.5 ms via CLI | 0.82 ms via persistent connection |
+The preserved Python implementation and explicit mpv ambience mode are legacy
+regression references, outside the normal 3.5 runtime path. Earlier comparisons
+remain in [original performance evidence](docs/PERFORMANCE.md),
+[alpha.2 measurements](docs/PERFORMANCE-V2.md) and
+[interaction review](docs/DESIGN-V2-REVIEW.md).
 
-The earlier **alpha.2** interface smoke run separately recorded **1.18 ms**
-median applied volume timing. These are identified alpha builds, not a fresh
-benchmark of every release binary. The changes combine Rust, a resident
-controller, caching and event handling; they do not isolate language choice.
-Timings measure local control, not speaker latency or internet startup, and mpv
-was the largest audio-memory cost in that earlier architecture. These historical
-figures do not measure the 3.5 local mixer.
-
-Read the [original comparison and raw evidence](docs/PERFORMANCE.md),
-[earlier alpha.2 interface measurements](docs/PERFORMANCE-V2.md) and
-[independent interaction review](docs/DESIGN-V2-REVIEW.md).
-The current interface and playback-motion changes have separate
-[3.0.1 polish validation](docs/POLISH-3.0.1.md).
+</details>
 
 <details>
 <summary><strong>Development, storage and CLI</strong></summary>
 
 Building requires Rust 1.99.0, pkg-config and ALSA development headers
 (`libasound2-dev` on Ubuntu). Build output stays outside the plugin's watched
-directory; the runtime uses the bundled executable or an explicit
-`SKYLOFI_NATIVE` developer path.
+directory. Use the bundled executable or an explicit `SKYLOFI_NATIVE` developer
+path at runtime.
 
 ```sh
 scripts/build-native.sh
@@ -194,11 +182,9 @@ omarchy plugin validate .
 ```
 
 The [Rust workflow](.github/workflows/rust-checks.yml) runs format, Clippy,
-unit tests and isolated real-mpv integration tests, then records the tested
-native artifact. Fixtures use private state and D-Bus with silent audio; mixer
-tests also exercise a device-free renderer and allocation tracking.
-[Release validation](docs/RELEASE-3.0.md) and the performance reports retain
-test results, build identities and reproduction commands.
+unit tests and isolated real-mpv integrations, then records the tested artifact.
+Fixtures use private state and D-Bus with silent audio; mixer tests also exercise
+a device-free renderer and allocation tracking.
 
 Preferences and the library live in `$XDG_STATE_HOME/sky.lofi/settings.json`
 (normally `~/.local/state/sky.lofi/`). Runtime sockets and logs live in

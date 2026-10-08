@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#202824"/>
+      <stop offset="1" stop-color="#111916"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#88baa9" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#88baa9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#background)"/>
+  <ellipse cx="1008" cy="320" rx="390" ry="370" fill="url(#glow)"/>
+  <path d="M0 594 C210 544 336 656 610 588 S1070 536 1280 596" fill="none" stroke="#80b8a7" stroke-opacity=".09" stroke-width="2"/>
+  <path d="M0 610 C210 560 336 672 610 604 S1070 552 1280 612" fill="none" stroke="#80b8a7" stroke-opacity=".07" stroke-width="2"/>
+  <g font-family="JetBrains Mono, monospace">
+    <text x="58" y="66" fill="#90bdad" font-size="18" letter-spacing="2">A SOUND SPACE FOR OMARCHY</text>
+    <text x="54" y="171" fill="#ecd9aa" font-size="82" font-weight="700">Skylofi</text>
+    <rect x="432" y="120" width="82" height="44" rx="11" fill="#30443c" stroke="#5f8c7d"/>
+    <text x="473" y="150" fill="#b8dbce" font-size="25" text-anchor="middle">3.5</text>
+  </g>
+  <g font-family="Liberation Sans, sans-serif">
+    <text x="58" y="253" fill="#f0e6cf" font-size="46" font-weight="700">Make room for focus.</text>
+    <text x="60" y="318" fill="#c5cabc" font-size="28">Lo-fi radio. A nearby fire.</text>
+    <text x="60" y="358" fill="#c5cabc" font-size="28">Rain all around you.</text>
+    <rect x="58" y="409" width="246" height="46" rx="12" fill="#294138"/>
+    <text x="181" y="440" fill="#b9decd" font-size="24" text-anchor="middle">32 offline sounds</text>
+    <text x="60" y="493" fill="#e3d6b9" font-size="24">Spatial layers · Room acoustics</text>
+    <text x="60" y="529" fill="#e3d6b9" font-size="24">Living mixes · Saved scenes · Solo</text>
+    <text x="60" y="590" fill="#8ea99c" font-size="19">Native Rust ambience. Your Omarchy theme.</text>
+  </g>
+  <rect x="817" y="57" width="408" height="527" rx="14" fill="#000" opacity=".27"/>
+  <image x="805" y="45" width="410" height="530" xlink:href="sound-space.png"/>
+  <text x="1010" y="607" fill="#8ea99c" font-family="Liberation Sans, sans-serif" font-size="17" text-anchor="middle">Actual Skylofi 3.5 interface · sample scene</text>
+</svg>

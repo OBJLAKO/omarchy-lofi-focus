@@ -1,4 +1,4 @@
-# 3.5.0 · development preview · 2026-10-08
+# 3.5.0 · Make room for focus · 2026-10-08
 
 - Refine the room editor with expandable sound cards, three primary controls,
   quick placement presets and a spacious shared map with small source markers.

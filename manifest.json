@@ -5,19 +5,21 @@
   "version": "3.5.0",
   "author": "OBJLAKO",
   "license": "MIT",
-  "description": "A quiet sound space: radio, saved YouTube audio, reusable scenes and spatial ambience with a native Rust mixer.",
+  "description": "Build your own sound space: lo-fi radio, saved YouTube audio, 32 offline sounds, spatial layers, living mixes and scenes.",
   "keywords": [
     "lofi",
+    "focus",
+    "ambient",
+    "soundscape",
+    "radio",
     "youtube",
     "lofi-girl",
-    "radio",
     "podcasts",
-    "ambient",
-    "focus",
-    "voxtype",
-    "soundscape",
+    "nature-sounds",
+    "spatial",
     "scenes",
-    "spatial"
+    "rust",
+    "voxtype"
   ],
   "kinds": [
     "bar-widget"
@@ -28,7 +30,7 @@
   },
   "barWidget": {
     "displayName": "Skylofi",
-    "description": "Radio, voice, saved scenes and spatial ambience.",
+    "description": "Your sound space: lo-fi radio, ambient layers, living mixes and saved scenes.",
     "category": "Media",
     "allowMultiple": false,
     "defaultSection": "right"
