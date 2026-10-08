@@ -58,10 +58,20 @@ Applying a scene preserves playback intent and overall volume. **Living mix**
 gently varies each unlocked layer independently below its chosen level; zero stays
 silent and disabling motion smoothly restores the chosen balance.
 
-Open **Sound space** to place sources left/right and near/far. Choose a room preset,
-then refine width, muffling, room reflections and echo. **Outside** places a sound
-behind a soft acoustic boundary. The stage depicts stereo position and depth;
-it does not simulate binaural front/back localization.
+Expand a sound card to adjust **Volume**, **Distance** and **Coverage**. Coverage
+changes continuously from a focused point through a wide source to a surrounding
+stereo texture, including for mono recordings. Try **Nearby**, **Distant** or
+**Around** as starting points. **Hear only** temporarily isolates an active sound
+for eight seconds, then returns to your mix without changing saved levels.
+
+Open **Sound space** for a larger shared map: move small source markers left/right
+and near/far, with continuous coverage zones. Choose one room preset; muffling,
+reflections, echo and acoustic boundaries stay under **Details**. The stereo
+diffuser creates an enveloping impression, especially in headphones; it does
+not provide measured HRTF front/back localization or head tracking. Existing
+scenes migrate their former width into coverage and retain levels and placement.
+See the [sound-space guide](docs/SOUND-SPACE.md) for a nearby fire and surrounding
+rain recipe.
 
 Import your own Ogg, WAV, FLAC or MP3 recordings into a private library. Source files
 are copied, so moving the original does not break a scene. See the
@@ -129,13 +139,15 @@ and runtime requirements.
 
 ## Measured with care
 
-The 3.5 local-output smoke run measured **65.46 MiB total PSS** with nine
+The initial 3.5 local-output smoke run measured **65.46 MiB total PSS** with nine
 ambient layers, versus **384.01 MiB** with nine separate mpv players. Sixteen
-layers with effects used **79.72 MiB** and **10.9% of one logical CPU core**.
-The output paths differ, and the native path used more CPU in this run.
-Twenty rapid stop/start cycles returned to the original thread and file-descriptor
-counts after output cleanup. See the [3.5 measurements and limits](docs/PERFORMANCE-3.5.md)
-and [security/publication review](docs/3.5-SECURITY-REVIEW.md).
+layers with the final coverage effects used **78.71–82.95 MiB** and
+**14.99–17.37% of one logical CPU core** in the October 8 short run. Output
+paths and host conditions affect CPU comparisons; these are measured samples,
+not guarantees. Twenty final rapid stop/start cycles returned to the original
+thread and file-descriptor counts after output cleanup. See the
+[3.5 measurements and limits](docs/PERFORMANCE-3.5.md) and
+[coverage/security review](docs/3.5-COVERAGE-REVIEW.md).
 
 The preserved prototype comparison used real mpv with silent output, local
 audio and three active channels:

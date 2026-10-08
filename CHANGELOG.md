@@ -1,5 +1,11 @@
-# 3.5.0 · development preview · 2026-10-07
+# 3.5.0 · development preview · 2026-10-08
 
+- Refine the room editor with expandable sound cards, three primary controls,
+  quick placement presets and a spacious shared map with small source markers.
+- Add continuous per-source Coverage from focused point to diffuse stereo,
+  including mono recordings, with preallocated and smoothed Rust processing.
+- Add eight-second solo listening without changing saved mix levels or transport.
+- Migrate prior stereo width once; preserve custom scenes, volumes and placement.
 - Add reusable named scenes; application preserves play/pause/stop and master level.
 - Add independent, smooth Living mix envelopes with per-layer locks.
 - Add Sound space: distance, stereo position, width, soft boundaries, room presets,

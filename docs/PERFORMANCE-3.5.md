@@ -7,6 +7,53 @@ separate mpv instances, a reduction of about **83%**. CPU was higher for the
 native path; this is a resource smoke check, not a claim that Rust decoding is
 faster.
 
+## Final coverage revision — October 8
+
+The [final coverage run](perf/coverage-3.5.json) uses executable
+`c12b04d1929c0d67df1e3303e8c54e3ceeaf4cc616f3f11b9e39ac6edfac0607`,
+after the stable-field bypass and bounded silent diffusion tail optimization.
+Sixteen wet layers use the settings below except that original stereo width
+is 100%; coverage is the variable. Each playing and paused phase samples eight
+seconds. The same private, physically silent CPAL/MPV-null setup is used.
+
+| Coverage | Phase | Entire owned tree CPU, % one core | Entire owned tree PSS, MiB |
+| --- | --- | ---: | ---: |
+| 0, point | Playing | 14.99 | 78.71 |
+| 50, wide | Playing | 17.37 | 80.95 |
+| 100, surrounding | Playing | 16.87 | 82.95 |
+| 100, surrounding | Paused | 7.99 | 83.17 |
+
+The four short delay lines reserve 64 KiB per reusable slot (1 MiB total for
+sixteen). Point and centered default stereo bypass unused diffusion. Exact-zero
+input retains the short diffuse tail for at most 750 ms, then clears its existing
+buffers once and skips that processing. Shared room effects and output stay
+active in Pause; this change does not promise zero paused CPU.
+
+Twenty final rapid cycles each returned the same 100 ms snapshot: 15 threads,
+38 FDs, one reusable output and no decoder workers. Snapshot PSS went from
+15.72 to 16.05 MiB with small warming steps, then stayed at 16.05 MiB for the
+last six cycles. Settled state returned to exactly **10 threads / 15 FDs /
+zero outputs / zero decoders**, matching baseline. It settled 0.93 seconds
+after the last rapid snapshot. Final stopped PSS was 9.88 MiB versus 12.18 MiB
+before cycling. This establishes cleanup of the tested path over 20 cycles,
+not long-term leak freedom or subjective audio quality.
+
+Earlier October 8 measurements are retained as
+[pre-optimization coverage](perf/coverage-3.5-initial.json) and
+[the earlier old-field baseline](perf/coverage-3.5-baseline.json). Their old
+binary used 27.35% of one core while playing, compared with the 10.90% historical
+wet sample below. Host activity, scheduling and output conditions change across
+runs, so the historical table is not an interchangeable baseline for the new
+effects. All reports retain their actual binary hashes and samples.
+
+The [immediately repeated old-field baseline](perf/coverage-3.5-baseline-final.json)
+used the previously bundled `414fdc4a…` executable with the same sixteen wet
+layers and width 100, omitting the unsupported coverage command. It measured
+24.36% / 79.67 MiB while playing and 12.12% / 79.91 MiB paused. This adjacent
+comparison supports the practical bypass change; short sequential samples
+cannot isolate all scheduler/device variation or guarantee those CPU reductions
+on another host. The earlier historical 10.90% value remains separate.
+
 ## Method and executable identity
 
 [The initial raw run](perf/space-3.5.json) samples each phase for ten seconds on
@@ -111,4 +158,6 @@ measurement needs access to the existing local audio-service socket.
 ```sh
 python3 -B tools/perf_space.py --native-binary /path/to/skylofi --seconds 10 --cycles 20 --output docs/perf/space-3.5.json
 python3 -B tools/perf_space.py --native-binary /path/to/skylofi --seconds 10 --cycles 20 --lifecycle-only --output docs/perf/space-3.5-lifecycle.json
+python3 -B tools/perf_coverage.py --native-binary /path/to/final-skylofi --seconds 8 --cycles 20 --output docs/perf/coverage-3.5.json
+python3 -B tools/perf_coverage.py --baseline-only --native-binary /path/to/previous-3.5-skylofi --seconds 8 --output docs/perf/coverage-3.5-baseline-final.json
 ```

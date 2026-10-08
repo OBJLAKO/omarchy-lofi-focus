@@ -1,8 +1,8 @@
 {
   "mode": "advisory-local-working-tree",
-  "scannerSourceCommit": "ccaedd642b93d65ca4881ea4aaaecf9b63f2151e",
+  "scannerSourceCommit": "c82981ef2a52599c3a5545848a3589243ea636fc",
   "policyVersion": "3",
-  "checkedAt": "2026-10-08T03:11:32.805Z",
+  "checkedAt": "2026-10-07T17:32:25.474Z",
   "outcome": "review-required",
   "findings": [],
   "capabilities": [
@@ -14,21 +14,17 @@
         {
           "path": "bin/linux-x86_64/skylofi",
           "line": 1,
-          "snippet": "ELF executable binary (7493088 bytes)"
+          "snippet": "ELF executable binary (7478112 bytes)"
         }
       ]
     }
   ],
-  "selectedFiles": 50,
-  "selectedTextBytes": 417484,
+  "selectedFiles": 45,
+  "selectedTextBytes": 389273,
   "fileHashes": [
     {
       "path": "BarWidget.qml",
       "sha256": "af394f93acbea42468ea4e217dda86f65d19b883bf4b7c0196a4fe39f7e97e98"
-    },
-    {
-      "path": "CoverageStage.qml",
-      "sha256": "7a644141acf0b9c256050d5218d8b742eac8a10366cff3f370a7c8249a18ee0c"
     },
     {
       "path": "FocusDropdown.qml",
@@ -40,7 +36,7 @@
     },
     {
       "path": "Panel.qml",
-      "sha256": "2bb2d976aacca66434ada1ca0134ac3694a24452049080a5783433e90a558d4e"
+      "sha256": "da257491f28c3310ada830e846e226d739efb1c7b2254919a27fd5a79f139e0f"
     },
     {
       "path": "PlaybackWave.qml",
@@ -48,11 +44,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "0bad6910edd83db858a057dc6f40ac74d52b0077b8554a32d9aa97736b15ebe8"
+      "sha256": "785a9829f6c2954caaf509374ae86c24629b1d620cb3f6093bd912a60a8d9425"
     },
     {
       "path": "RoomEditor.qml",
-      "sha256": "43fda7142b8665181b3ff843713dcaacd7dac523a79bbe4674d5f8e8651e7b48"
+      "sha256": "6a075f9bffccb1c8b887453f11a7c4d8fa16c0134301d16d07d66eac27714ce6"
     },
     {
       "path": "SceneControls.qml",
@@ -75,20 +71,8 @@
       "sha256": "c705c62d139f4c7cf4c548af4399d0be417b13034147e31ff701feed8efb3068"
     },
     {
-      "path": "SoundControl.qml",
-      "sha256": "330ed144fed0b6f80e5698e0b3a892ef1b52d43065410aeeb7dfc06f6f59fc95"
-    },
-    {
       "path": "SoundImport.qml",
       "sha256": "48dc8c47fe477c64e0835a4e4c8441c0994e6a232f1a261e7e3c8170bf573f3e"
-    },
-    {
-      "path": "SourceCard.qml",
-      "sha256": "73b7fd7e22a263c777045683526984810ef03d0fe083295867d2ee5ac7359c4c"
-    },
-    {
-      "path": "SourceControls.qml",
-      "sha256": "a105dc8891c45793ad81cb9a1347ee106eabd1f81b78ce69d5dfa65fcaf21a18"
     },
     {
       "path": "StationRow.qml",
@@ -100,11 +84,11 @@
     },
     {
       "path": "bin/SHA256SUMS",
-      "sha256": "a83a1ec6b89b3c603c338a2bb87aa05537b29bd034d3459c4f50df371ed3455e"
+      "sha256": "3a8e35f828f7e5cc185ba5a6a32ffd4c9bb64abf4cee81a7859feb975bb34c51"
     },
     {
       "path": "bin/linux-x86_64/skylofi",
-      "sha256": "c12b04d1929c0d67df1e3303e8c54e3ceeaf4cc616f3f11b9e39ac6edfac0607"
+      "sha256": "414fdc4abd8ca7ff487233b3e7b35422679fdc5952d1ac0200f15049d28ecdda"
     },
     {
       "path": "lofi-feed",
@@ -183,10 +167,6 @@
       "sha256": "4c8487b50e2fb5938e7591731a752a12a837ecd8ca7d842143ba895eb77c0437"
     },
     {
-      "path": "tools/perf_coverage.py",
-      "sha256": "f0990c9313bda0bde91fb76157b3177d853b4f1dab00191a3dbd246834d7d84f"
-    },
-    {
       "path": "tools/perf_live.py",
       "sha256": "9a7b1c411766218c014a45749a33a409fae9410f31fa1e4a9b3e7597775a6e49"
     },
@@ -224,5 +204,12 @@
     }
   ],
   "rustSourceFiles": 12,
-  "note": "Local static pattern analysis only; no exact-commit marketplace evidence or approval. Rust source needs separate review. No community runtime code was executed by this scan."
+  "note": "Local static pattern analysis only; no exact-commit marketplace evidence or approval. Rust source needs separate review. No community runtime code was executed by this scan.",
+  "reviewScope": "Final locally packaged 3.5 preview candidate; advisory working-tree checks, not an exact published-commit marketplace approval.",
+  "bundledNative": {
+    "path": "bin/linux-x86_64/skylofi",
+    "sha256": "414fdc4abd8ca7ff487233b3e7b35422679fdc5952d1ac0200f15049d28ecdda",
+    "version": "3.5.0",
+    "bytes": 7478112
+  }
 }

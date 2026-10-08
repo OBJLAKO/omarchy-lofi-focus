@@ -11,10 +11,20 @@ YouTube extraction. The installed system mpv is not reconfigured.
 The bundled library contains **32 offline sounds**, with private local imports
 available separately. The mixer supports **16 active local layers**, sixteen
 reusable source tracks and two shared wet-only buses for reverb and echo.
-Distance affects gain and filtering; each layer also has position, width,
+Distance affects gain and filtering; each layer also has position, coverage, width,
 softness, reflections and echo controls. Parameters are finite, bounded and
 smoothed over 45 ms; the final output guard removes nonfinite frames and
 attenuates peaks above 0.98.
+
+The coverage refinement adds four preallocated short all-pass lines per reusable
+slot (64 KiB per slot, 1 MiB for sixteen), spreading mono as well as stereo input
+without extra decoder workers or DSP dependencies. Point/Wide/Surrounding are
+continuous stereo diffusion settings, independent of distance. A convex mix
+avoids correlated low-frequency gain increases; the surrounding setting is not
+measured HRTF front/back audio. Settled point/default-stereo settings bypass
+unused diffusion; true-zero input retires its short tail after 750 ms without
+allocating. See the [guide](SOUND-SPACE.md) and
+[scoped review](3.5-COVERAGE-REVIEW.md) for behavior and final checks.
 
 Each active decoder has a fixed **16,384-frame** stereo queue: about 0.37 seconds
 at 44.1 kHz and **about 2 MiB of queue storage at the 16-layer limit**. This excludes

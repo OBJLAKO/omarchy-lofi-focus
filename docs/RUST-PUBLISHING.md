@@ -1,8 +1,8 @@
 # Native Rust and Omarchy publication
 
-Research date: 2026-10-07. Release policy rechecked against official marketplace
-source `c82981ef2a52599c3a5545848a3589243ea636fc`. The pinned local static
-preflight is recorded in [the 3.5 security review](3.5-SECURITY-REVIEW.md); it
+Research date: 2026-10-08. Release policy rechecked against official marketplace
+source `ccaedd642b93d65ca4881ea4aaaecf9b63f2151e`. The pinned local static
+preflight is recorded in [the coverage review](3.5-COVERAGE-REVIEW.md); it
 does not grant marketplace approval.
 
 The Omarchy shell loads the plugin's QML entry point. QML remains the interface;
@@ -48,7 +48,7 @@ this Omarchy machine; the Ubuntu 24.04 CI build is a separate distribution
 compatibility check, not an already completed run. Reinspect the packaged ELF
 if it is rebuilt on another system.
 
-The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/c82981ef2a52599c3a5545848a3589243ea636fc/SECURITY.md)
+The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/ccaedd642b93d65ca4881ea4aaaecf9b63f2151e/SECURITY.md)
 does not categorically prohibit Rust. Bundled executable files are classified as
 `bundled-executable-binary`, requiring maintainer review. A build involving remote
 source can also require review. Acceptance is a maintainer decision. Preserve
@@ -63,7 +63,7 @@ matching standard-library license/copyright files when changing the toolchain.
 
 ## Updating the existing listing
 
-Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/c82981ef2a52599c3a5545848a3589243ea636fc/VERIFICATION.md):
+Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/ccaedd642b93d65ca4881ea4aaaecf9b63f2151e/VERIFICATION.md):
 
 1. Complete native regressions, UI review and controlled Python/Rust measurements.
 2. Finalize a release commit, including the intended distributable executable,
