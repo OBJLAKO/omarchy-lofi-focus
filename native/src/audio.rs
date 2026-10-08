@@ -740,6 +740,9 @@ struct StereoDiffuser {
     left_b: DiffusionAllPass,
     right_a: DiffusionAllPass,
     right_b: DiffusionAllPass,
+    active: bool,
+    silent_frames: usize,
+    tail_frames: usize,
 }
 impl StereoDiffuser {
     fn new() -> Self {
@@ -748,6 +751,9 @@ impl StereoDiffuser {
             left_b: DiffusionAllPass::new(13.9, 0.37),
             right_a: DiffusionAllPass::new(11.7, 0.52),
             right_b: DiffusionAllPass::new(19.1, 0.37),
+            active: false,
+            silent_frames: 0,
+            tail_frames: 36_000,
         }
     }
     fn configure(&mut self, sample_rate: u32) {
@@ -759,6 +765,11 @@ impl StereoDiffuser {
         ] {
             line.configure(sample_rate);
         }
+        // At feedback <= 0.52 and delays below 20ms, this is well beyond the
+        // audible all-pass tail, including maximum-level decoded transients.
+        self.tail_frames = ((f64::from(sample_rate) * 0.75).ceil() as usize).max(1);
+        self.active = false;
+        self.silent_frames = 0;
     }
     fn reset(&mut self) {
         for line in [
@@ -769,11 +780,52 @@ impl StereoDiffuser {
         ] {
             line.reset();
         }
+        self.active = false;
+        self.silent_frames = 0;
+    }
+    fn bypass(&mut self) {
+        if self.active {
+            self.reset();
+        }
     }
     fn process(&mut self, frame: Frame) -> Frame {
+        if frame == Frame::ZERO {
+            if !self.active {
+                return Frame::ZERO;
+            }
+            self.silent_frames += 1;
+            if self.silent_frames >= self.tail_frames {
+                self.reset();
+                return Frame::ZERO;
+            }
+        } else {
+            self.active = true;
+            self.silent_frames = 0;
+        }
         Frame::new(
             self.left_b.process(self.left_a.process(frame.left)),
             self.right_b.process(self.right_a.process(frame.right)),
+        )
+    }
+}
+
+impl StereoField {
+    fn process_frame(&mut self, original: Frame) -> Frame {
+        let direct = self.mix.direct(original);
+        if self.mix.diffuse_gain == 0.0 {
+            // Coverage changes are smoothed before the wet branch is entered.
+            // Clear once when leaving it; unused histories need not stay warm.
+            self.diffuser.bypass();
+            return direct;
+        }
+        let mid = (original.left + original.right) * 0.5;
+        let side = (original.left - original.right) * 0.5 * self.mix.input_width;
+        let diffuse = self.diffuser.process(Frame::new(mid + side, mid - side));
+        Frame::new(
+            direct.left * self.mix.direct_gain
+                + diffuse.left * self.mix.diffuse_left * self.mix.diffuse_gain,
+            direct.right * self.mix.direct_gain
+                + diffuse.right * self.mix.diffuse_right * self.mix.diffuse_gain,
         )
     }
 }
@@ -810,6 +862,22 @@ impl Effect for StereoField {
         }
     }
     fn process(&mut self, input: &mut [Frame], dt: f64, _info: &Info) {
+        if self.current == self.target {
+            if self.mix.diffuse_gain == 0.0 {
+                self.diffuser.bypass();
+                // The migrated default stereo setting is an exact passthrough.
+                if !self.mix.preserve_original {
+                    for frame in input {
+                        *frame = self.mix.direct(*frame);
+                    }
+                }
+            } else {
+                for frame in input {
+                    *frame = self.process_frame(*frame);
+                }
+            }
+            return;
+        }
         let coefficient = 1.0 - (-dt / 0.025).exp();
         for frame in input {
             if self.current != self.target {
@@ -819,23 +887,7 @@ impl Effect for StereoField {
                     approach(self.current.coverage, self.target.coverage, coefficient);
                 self.mix = SpatialMix::new(self.current, self.mono);
             }
-            let original = *frame;
-            let mid = (original.left + original.right) * 0.5;
-            let side = (original.left - original.right) * 0.5 * self.mix.input_width;
-            // Keep histories warm even at Point so widening never starts with
-            // empty delays. Coefficients are cached once transitions settle.
-            let diffuse = self.diffuser.process(Frame::new(mid + side, mid - side));
-            let direct = self.mix.direct(original);
-            *frame = if self.mix.diffuse_gain == 0.0 {
-                direct
-            } else {
-                Frame::new(
-                    direct.left * self.mix.direct_gain
-                        + diffuse.left * self.mix.diffuse_left * self.mix.diffuse_gain,
-                    direct.right * self.mix.direct_gain
-                        + diffuse.right * self.mix.diffuse_right * self.mix.diffuse_gain,
-                )
-            };
+            *frame = self.process_frame(*frame);
         }
     }
 }
@@ -1631,6 +1683,113 @@ mod tests {
             block.iter().all(|frame| *frame == Frame::ZERO),
             "old source diffusion survived replacement"
         );
+    }
+
+    #[test]
+    fn point_and_original_stereo_bypass_delays_then_enter_diffusion_smoothly() {
+        let info = kira::info::MockInfoBuilder::new().build();
+        for (mono, coverage) in [(true, 0.0), (false, 0.0), (false, 0.5)] {
+            let (mut field, mut writer) = spatial(mono, coverage, 0.0);
+            let original = Frame::new(0.8, 0.2);
+            let expected = field.mix.direct(original);
+            let mut block = [original; 128];
+            let audit = Audit::start();
+            for _ in 0..40 {
+                block.fill(original);
+                field.process(&mut block, 1.0 / 48_000.0, &info);
+                assert!(block.iter().all(|frame| *frame == expected));
+            }
+            assert_eq!(audit.finish(), 0);
+            assert!(!field.diffuser.active);
+            assert_eq!(field.diffuser.left_a.cursor, 0);
+            assert_eq!(field.diffuser.right_b.cursor, 0);
+
+            writer.write(SpatialCommand {
+                values: SpatialValues {
+                    coverage: 1.0,
+                    ..SpatialValues::default()
+                },
+                mono,
+                generation: 1,
+            });
+            block.fill(original);
+            let audit = Audit::start();
+            field.on_start_processing();
+            field.process(&mut block, 1.0 / 48_000.0, &info);
+            assert_eq!(audit.finish(), 0);
+            assert!((block[0].left - expected.left).abs() < 0.002);
+            assert!((block[0].right - expected.right).abs() < 0.002);
+            // A stereo Point first widens its direct image; diffusion only
+            // begins after the smoothed coverage crosses Wide (0.5).
+            for _ in 0..30 {
+                block.fill(original);
+                field.process(&mut block, 1.0 / 48_000.0, &info);
+            }
+            assert!(field.diffuser.active);
+
+            writer.write(SpatialCommand {
+                values: SpatialValues {
+                    coverage,
+                    ..SpatialValues::default()
+                },
+                mono,
+                generation: 1,
+            });
+            field.on_start_processing();
+            let audit = Audit::start();
+            for _ in 0..180 {
+                block.fill(original);
+                field.process(&mut block, 1.0 / 48_000.0, &info);
+            }
+            assert_eq!(audit.finish(), 0);
+            assert!(!field.diffuser.active);
+            assert_eq!(field.diffuser.left_a.cursor, 0);
+            assert!(block.iter().all(|frame| *frame == expected));
+        }
+    }
+
+    #[test]
+    fn silent_diffusion_tail_expires_without_allocation_and_restarts_cleanly() {
+        let info = kira::info::MockInfoBuilder::new().build();
+        for rate in [8_000, 44_100, 48_000, 192_000] {
+            let (mut field, _) = spatial(true, 1.0, 0.0);
+            field.on_change_sample_rate(rate);
+            let mut sample = [Frame::from_mono(8.0)];
+            field.process(&mut sample, 1.0 / f64::from(rate), &info);
+            assert!(field.diffuser.active);
+            let tail_frames = field.diffuser.tail_frames;
+            let audit = Audit::start();
+            for frame_index in 0..tail_frames {
+                sample[0] = Frame::ZERO;
+                field.process(&mut sample, 1.0 / f64::from(rate), &info);
+                if frame_index >= tail_frames - 128 {
+                    assert!(sample[0].left.abs() < 1.0e-6);
+                    assert!(sample[0].right.abs() < 1.0e-6);
+                }
+            }
+            assert_eq!(audit.finish(), 0);
+            assert!(!field.diffuser.active);
+            assert_eq!(field.diffuser.silent_frames, 0);
+            assert_eq!(sample[0], Frame::ZERO);
+            let mut block = [Frame::ZERO; 128];
+            let audit = Audit::start();
+            for _ in 0..40 {
+                field.process(&mut block, 1.0 / f64::from(rate), &info);
+            }
+            assert_eq!(audit.finish(), 0);
+            assert!(block.iter().all(|frame| *frame == Frame::ZERO));
+            assert_eq!(field.diffuser.right_b.cursor, 0);
+
+            let (mut fresh, _) = spatial(true, 1.0, 0.0);
+            fresh.on_change_sample_rate(rate);
+            let input = Frame::from_mono(0.2);
+            sample[0] = input;
+            let mut expected = [input];
+            field.process(&mut sample, 1.0 / f64::from(rate), &info);
+            fresh.process(&mut expected, 1.0 / f64::from(rate), &info);
+            assert_eq!(sample, expected, "old tail returned after silence");
+            assert!(field.diffuser.active);
+        }
     }
 
     #[test]
