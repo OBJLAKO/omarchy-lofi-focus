@@ -47,6 +47,13 @@ Item {
   property real trackHeight: Math.max(4, Math.round(Style.spacing.controlHeight * 0.11))
   property real knobSize: Math.max(14, Math.round(Style.spacing.controlHeight * 0.38))
   property real liveValue: value
+  // Latest-value throttle, not a restart-only debounce: audio follows a long
+  // drag at a bounded rate. Release flushes the exact last value immediately.
+  property int updateInterval: 60
+  property bool localValueHeld: false
+  property real pendingValue: value
+  property real lastEditedValue: value
+  property bool editPending: false
 
   // macOS-style notches. When > 1, that many evenly-spaced tick marks are cut
   // into the track (drawn in the panel background color, so only the part
@@ -55,9 +62,43 @@ Item {
   property int tickCount: 0
   property color tickColor: bar ? bar.background : Color.background
 
-  onValueChanged: if (!dragging) liveValue = value
+  onValueChanged: if (!dragging && !localValueHeld) { liveValue = value; lastEditedValue = value }
+  readonly property real displayValue: liveValue
+  function bounded(value) {
+    var result = Math.max(minimum,Math.min(maximum,Number(value)))
+    return integer ? Math.round(result) : result
+  }
+  function flushEdit() {
+    liveUpdate.stop()
+    if (!editPending) return
+    editPending = false
+    if (Math.abs(pendingValue - lastEditedValue) > 0.0001) {
+      lastEditedValue = pendingValue
+      root.edited(pendingValue)
+    }
+  }
+  function queueEdit(value) {
+    pendingValue = bounded(value); editPending = true
+    if (!liveUpdate.running) liveUpdate.start()
+  }
+  function commit(value) {
+    liveValue = bounded(value); localValueHeld = true; valueHold.restart()
+    pendingValue = liveValue; editPending = true; flushEdit()
+  }
+  Timer { id: liveUpdate; interval: root.updateInterval; onTriggered: root.flushEdit() }
+  Timer {
+    id: valueHold; interval: 300
+    onTriggered: { root.localValueHeld = false; if (!root.dragging) { root.liveValue = root.value; root.lastEditedValue = root.value } }
+  }
+  Keys.onLeftPressed: root.commit(root.liveValue - root.step)
+  Keys.onRightPressed: root.commit(root.liveValue + root.step)
+  Keys.onPressed: function(event) {
+    if (event.key === Qt.Key_Home) { root.commit(root.minimum); event.accepted = true }
+    else if (event.key === Qt.Key_End) { root.commit(root.maximum); event.accepted = true }
+  }
 
   signal moved(real value)
+  signal edited(real value)
   signal released(real value)
 
   // Right-click is a secondary action on the whole track — audio uses it to
@@ -166,10 +207,13 @@ Item {
     onPressed: function(mouse) {
       if (mouse.button !== Qt.LeftButton) return
       root.forceActiveFocus(Qt.MouseFocusReason)
+      valueHold.stop(); root.localValueHeld = false
+      root.lastEditedValue = root.value
       root.dragging = true
       var next = valueFromX(mouse.x)
       root.liveValue = next
       root.moved(next)
+      root.queueEdit(next)
     }
     onClicked: function(mouse) {
       if (mouse.button === Qt.RightButton) root.rightClicked()
@@ -179,20 +223,25 @@ Item {
       var next = valueFromX(mouse.x)
       root.liveValue = next
       root.moved(next)
+      root.queueEdit(next)
     }
     onReleased: function(mouse) {
       if (mouse.button !== Qt.LeftButton) return
       root.dragging = false
+      root.localValueHeld = true; valueHold.restart()
+      root.pendingValue = root.liveValue; root.editPending = true; root.flushEdit()
       root.released(root.liveValue)
-      root.liveValue = root.value
     }
-    onCanceled: { root.dragging = false; root.liveValue = root.value }
+    onCanceled: {
+      root.dragging = false
+      root.localValueHeld = true; valueHold.restart(); root.flushEdit()
+    }
     onWheel: function(wheel) {
       if (!root.activeFocus) { wheel.accepted = false; return }
       var delta = wheel.angleDelta.y > 0 ? root.step : -root.step
       var next = Math.max(root.minimum, Math.min(root.maximum, root.liveValue + delta))
       if (root.integer) next = Math.round(next)
-      root.liveValue = next
+      root.commit(next)
       root.moved(next)
       root.released(next)
     }

@@ -64,6 +64,9 @@ Panel {
   property bool natureCardExpanded: true
   property bool roomDetailsOpen: false
   property string auditionId: ""
+  property var editGuards: ({})
+  property string latestStatusRaw: ""
+  onEditGuardsChanged: root.armEditExpiry()
   readonly property var activeNatureLayers: natureLayers.filter(function(layer) { return layer.enabled === true })
   property bool settingsOpen: false
   property bool mixerOpen: false
@@ -244,6 +247,7 @@ Panel {
       if (typeof raw !== "string" || raw.length > 65536) return
       var state = JSON.parse(raw)
       if (typeof state.running !== "boolean" || typeof state.paused !== "boolean") return
+      root.latestStatusRaw = raw
       root.playerRunning = state.running === true
       root.musicRunning = state.main_running === undefined ? root.playerRunning : state.main_running === true
       root.playerPaused = state.paused === true
@@ -259,41 +263,51 @@ Panel {
         : typeof state.error === "string" && state.error.indexOf("Podcast unavailable:") === 0 ? state.error : ""
       root.bgError = backgroundError.replace(/[\r\n\t]+/g, " ").slice(0, 300)
       root.mixOn = state.mix === true
-      root.natureLayers = Array.isArray(state.nature_layers) ? state.nature_layers : []
+      root.natureLayers = (Array.isArray(state.nature_layers) ? state.nature_layers : []).map(function(layer) {
+        var next = Object.assign({},layer)
+        for (var key of ["volume","distance","pan","coverage","width","softness","reflections","echo"])
+          if (layer[key] !== undefined) next[key] = root.editingValue(key === "volume" ? "vol:" + layer.id : "layer:" + layer.id + ":" + key,layer[key])
+        return next
+      })
       root.spatialAvailable = state.spatial_available === true
       root.auditionId = typeof state.audition_id === "string" ? state.audition_id : ""
-      root.importedSounds = Array.isArray(state.imported_sounds) ? state.imported_sounds.filter(function(sound) {
+      var imports = Array.isArray(state.imported_sounds) ? state.imported_sounds.filter(function(sound) {
         return sound && typeof sound.id === "string" && typeof sound.name === "string"
       }).slice(0, 64) : []
+      if (JSON.stringify(imports) !== JSON.stringify(root.importedSounds)) root.importedSounds = imports
       if (root.pendingSoundRemoval && !root.importedSounds.some(function(sound) { return sound.id === root.pendingSoundRemoval }))
         root.pendingSoundRemoval = ""
-      root.scenes = Array.isArray(state.scenes) ? state.scenes.filter(function(scene) {
+      var scenes = Array.isArray(state.scenes) ? state.scenes.filter(function(scene) {
         return scene && typeof scene.id === "string" && typeof scene.name === "string"
       }).slice(0, 32) : []
+      if (JSON.stringify(scenes) !== JSON.stringify(root.scenes)) root.scenes = scenes
       root.sceneId = String(state.scene_id || "")
       root.sceneDirty = state.scene_dirty === true
       var room = state.room && typeof state.room === "object" ? state.room : {}
       root.roomState = {
         preset:["cozy","cafe","outside","hall"].indexOf(room.preset) >= 0 ? room.preset : "cozy",
-        size:clampVolume(room.size,35),softness:clampVolume(room.softness,55),reflections:clampVolume(room.reflections,25)
+        size:root.editingValue("room:size",clampVolume(room.size,35)),
+        softness:root.editingValue("room:softness",clampVolume(room.softness,55)),
+        reflections:root.editingValue("room:reflections",clampVolume(room.reflections,25))
       }
       var wander = state.wander && typeof state.wander === "object" ? state.wander : {}
       root.wanderEnabled = wander.enabled === true
-      root.wanderAmount = clampVolume(wander.amount,20)
+      root.wanderAmount = root.editingValue("wander-amount",clampVolume(wander.amount,20))
       if (!root.activeNatureLayers.some(function(layer) { return layer.id === root.selectedNatureId }))
         root.selectedNatureId = root.activeNatureLayers.length ? root.activeNatureLayers[0].id : ""
       root.mainState = String(state.main_state || (root.musicRunning ? (root.playerPaused ? "paused" : "playing") : "stopped"))
       root.retryIn = Math.max(0, Math.round(Number(state.retry_in) || 0))
       root.ducking = state.ducking !== false
-      root.masterVolume = clampVolume(state.master_volume, 100)
-      root.mainVolume = clampVolume(state.main_volume, 80)
-      root.bgVolume = clampVolume(state.bg_volume, 40)
+      root.masterVolume = root.editingValue("vol:master",clampVolume(state.master_volume,100))
+      root.mainVolume = root.editingValue("vol:main",clampVolume(state.main_volume,80))
+      root.bgVolume = root.editingValue("vol:bg",clampVolume(state.bg_volume,40))
       root.stationIndex = Math.max(0, Math.round(Number(state.index === undefined ? 0 : state.index)) || 0)
       root.stationCount = Math.max(0, Math.round(Number(state.count === undefined ? 0 : state.count)) || 0)
-      root.youtubeEntries = Array.isArray(state.youtube_entries) ? state.youtube_entries : []
+      var entries = Array.isArray(state.youtube_entries) ? state.youtube_entries : []
+      if (JSON.stringify(entries) !== JSON.stringify(root.youtubeEntries)) root.youtubeEntries = entries
       root.youtubeAvailable = state.youtube_available !== false
       root.mainTitle = String(state.main_title || "").replace(/[\r\n\t]+/g, " ").slice(0, 200)
-      root.mainPosition = typeof state.main_position === "number" ? state.main_position : -1
+      root.mainPosition = root.editingValue("seek",typeof state.main_position === "number" ? state.main_position : -1)
       root.mainDuration = typeof state.main_duration === "number" ? state.main_duration : -1
       root.canSeek = state.can_seek === true
       root.sourceKind = ["radio", "recording", "live", "unknown"].indexOf(state.source_kind) >= 0
@@ -306,10 +320,10 @@ Panel {
       root.glowEnabled = state.glow_animation !== false
       root.equalizerEnabled = state.equalizer_animation !== false
       root.fadeEnabled = state.fade_enabled !== false
-      root.fadeSeconds = Math.max(0, Math.min(8, Number(state.fade_seconds === undefined ? 3 : state.fade_seconds) || 0))
+      root.fadeSeconds = root.editingValue("ui:fadeSeconds",Math.max(0,Math.min(8,Number(state.fade_seconds === undefined ? 3 : state.fade_seconds) || 0)))
       root.revealSpeed = Math.max(0, Math.min(3, Number(state.reveal_speed === undefined ? 1 : state.reveal_speed) || 0))
       root.collapsibleSections = state.collapsible_sections !== false
-      root.duckLevel = Math.max(0, Math.min(100, Math.round(Number(state.duck_level === undefined ? 35 : state.duck_level) || 0)))
+      root.duckLevel = root.editingValue("ui:duckLevel",Math.max(0,Math.min(100,Math.round(Number(state.duck_level === undefined ? 35 : state.duck_level) || 0))))
     } catch (error) {
       console.warn("Lofi status parse:", String(error))
       return
@@ -319,7 +333,8 @@ Panel {
   function loadStations(raw) {
     try {
       var data = JSON.parse(raw || "{}")
-      root.categories = Array.isArray(data.categories) ? data.categories : []
+      var categories = Array.isArray(data.categories) ? data.categories : []
+      if (JSON.stringify(categories) !== JSON.stringify(root.categories)) root.categories = categories
     } catch (error) {
       root.categories = []
     }
@@ -345,7 +360,49 @@ Panel {
   }
 
   function runAction(args) {
+    if (args[0] === "scene-apply") root.editGuards = ({})
+    var key = root.numericEditKey(args)
+    if (key) {
+      var now = Date.now(), guards = {}
+      for (var existing in root.editGuards) if (root.editGuards[existing].deadline > now) guards[existing] = root.editGuards[existing]
+      guards[key] = {value:Number(args[args.length - 1]),deadline:now + 1500}
+      root.editGuards = guards
+    }
     if (hostWidget && typeof hostWidget.runAction === "function") hostWidget.runAction(args)
+  }
+  function numericEditKey(args) {
+    if (!args.length || !isFinite(Number(args[args.length - 1]))) return ""
+    if (args[0] === "vol" && args.length === 3) return "vol:" + args[1]
+    if (args[0] === "layer" && args.length === 4) return "layer:" + args[1] + ":" + args[2]
+    if ((args[0] === "room" || args[0] === "ui") && args.length === 3) return args[0] + ":" + args[1]
+    return (args[0] === "seek" || args[0] === "wander-amount") && args.length === 2 ? args[0] : ""
+  }
+  function editingValue(key,value) {
+    var pending = root.editGuards[key]
+    if (!pending) return value
+    // Keep the most recent gesture authoritative briefly even after its ACK:
+    // an older in-flight status can arrive after a newer command reply.
+    if (pending.deadline > Date.now()) return pending.value
+    var guards = Object.assign({},root.editGuards); delete guards[key]; root.editGuards = guards
+    return value
+  }
+  function armEditExpiry() {
+    editExpiry.stop()
+    var deadlines = Object.keys(root.editGuards).map(function(key) { return root.editGuards[key].deadline })
+    if (!deadlines.length) return
+    editExpiry.interval = Math.max(1,Math.min.apply(null,deadlines) - Date.now() + 1)
+    editExpiry.start()
+  }
+  Timer {
+    id: editExpiry
+    onTriggered: {
+      var now = Date.now(), guards = {}
+      for (var key in root.editGuards) if (root.editGuards[key].deadline > now) guards[key] = root.editGuards[key]
+      root.editGuards = guards
+      // Paused/stopped backends may have no next periodic snapshot. Reconcile
+      // the last authoritative status when the temporary gesture guard ends.
+      if (root.latestStatusRaw) root.applyStatus(root.latestStatusRaw)
+    }
   }
 
   function setVolume(channel, value) {
@@ -414,7 +471,7 @@ Panel {
   }
   function auditionNature(id) {
     if (!root.isPlaying) return
-    root.runAction(["audition",id,root.auditionId === id ? "off" : "on"])
+    root.runAction(["audition",id,root.auditionId === id ? "off" : "hold"])
   }
   function setWanderAmount(value) {
     root.wanderAmount = clampVolume(value,20); root.sceneDirty = true
@@ -452,6 +509,12 @@ Panel {
     target: root.hostWidget
     function onStatusJsonChanged() { root.applyStatus(root.hostWidget.statusJson) }
     function onActionFinished(arguments, exitCode, message) {
+      var key = root.numericEditKey(arguments)
+      if (exitCode !== 0 && key && root.editGuards[key]
+          && root.editGuards[key].value === Number(arguments[arguments.length-1])) {
+        var guards = Object.assign({},root.editGuards); delete guards[key]; root.editGuards = guards
+        if (root.latestStatusRaw) root.applyStatus(root.latestStatusRaw)
+      }
       root.youtubeResult(arguments, exitCode, message)
       if (arguments[0] !== "youtube-add") root.actionMessage = exitCode !== 0 ? message : ""
     }
@@ -587,6 +650,33 @@ Panel {
         anchors.bottom: playerDock.top
         anchors.bottomMargin: visual.groupGap
         clip: true
+        Rectangle {
+          id: soloBanner
+          objectName: "soloBanner"
+          anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+          height: Style.space(42); radius: Math.min(Style.cornerRadius,Style.space(6))
+          visible: root.currentView === 1 && root.auditionId.length > 0
+          color: visual.selected; border.width: 1; border.color: Qt.alpha(Color.accent,0.5)
+          Text {
+            x: Style.space(8); anchors.verticalCenter: parent.verticalCenter
+            width: parent.width - returnToMix.width - Style.space(24)
+            text: {
+              var sound = root.noiseOptions.find(function(sound) { return sound.value === root.auditionId })
+              return "Solo · " + (sound ? sound.label : "Sound")
+            }
+            elide: Text.ElideRight; color: root.contentForeground
+            font.family: root.contentFontFamily; font.pixelSize: visual.label
+          }
+          SkylofiButton {
+            id: returnToMix
+            objectName: "soloReturnToMix"
+            anchors.right: parent.right; anchors.rightMargin: Style.space(4)
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Back to mix"; focusable: true; foreground: root.contentForeground
+            fontFamily: root.contentFontFamily; fontSize: visual.caption; animate: root.liveMotion
+            onClicked: root.runAction(["audition",root.auditionId,"off"])
+          }
+        }
         Flickable {
           id: listenScroll
           objectName: "listenScroll"
@@ -679,6 +769,7 @@ Panel {
           id: mixerScroll
           objectName: "mixScroll"
           anchors.fill: parent
+          anchors.topMargin: soloBanner.visible ? soloBanner.height + Style.space(8) : 0
           contentWidth: width; contentHeight: mixColumn.implicitHeight
           visible: root.currentView === 1; clip: true
           onContentHeightChanged: Qt.callLater(function() {
@@ -838,7 +929,12 @@ Panel {
                         onVolumeEdited: function(value) { root.setVolume(modelData.value,value) }
                         onLayerEdited: function(key,value) { root.editLayer(modelData.value,key,value) }
                         onPresetRequested: function(preset) { root.sourcePreset(modelData.value,preset) }
-                        onAuditionRequested: root.auditionNature(modelData.value)
+                        onAuditionRequested: {
+                          if (root.auditionId !== modelData.value) {
+                            root.selectedNatureId = modelData.value; root.natureCardExpanded = true; root.spatialEditorOpen = false
+                          }
+                          root.auditionNature(modelData.value)
+                        }
                         onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
                       }
                       MixerLevel {
@@ -977,22 +1073,22 @@ Panel {
                     font.family: root.contentFontFamily; font.pixelSize: visual.label
                   }
                   SkylofiSlider {
+                    id: variationSlider
+                    objectName: "livingMixSlider"
                     width: parent.width - variationLabel.width - variationReadout.width - parent.spacing * 2
                     height: Style.space(32); minimum: 0; maximum: 100; step: 5; integer: true
                     value: root.wanderAmount; animate: root.liveMotion; bar: root.bar
                     trackColor: visual.sliderTrack; fillColor: Color.accent; knobColor: Color.accent
                     activeFocusOnTab: true; Accessible.role: Accessible.Slider
                     Accessible.name: "Living mix variation"
-                    Accessible.description: root.wanderAmount + " percent"
-                    Keys.onLeftPressed: variationRow.edited(Math.max(0,root.wanderAmount - 5))
-                    Keys.onRightPressed: variationRow.edited(Math.min(100,root.wanderAmount + 5))
-                    onReleased: function(value) { variationRow.edited(value) }
+                    Accessible.description: displayValue + " percent"
+                    onEdited: function(value) { variationRow.edited(value) }
                     onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
                   }
                   Text {
                     id: variationReadout
                     width: Style.space(34); anchors.verticalCenter: parent.verticalCenter
-                    text: root.wanderAmount + "%"; horizontalAlignment: Text.AlignRight
+                    text: variationSlider.displayValue + "%"; horizontalAlignment: Text.AlignRight
                     color: visual.muted; font.family: root.contentFontFamily; font.pixelSize: visual.caption
                   }
                 }
@@ -1098,7 +1194,7 @@ Panel {
                 SettingSlider {
                 objectName: "fadeDuration"
                 label: "Fade duration"; value: root.fadeSeconds
-                minimum: 1; maximum: 8; step: 1; suffix: root.fadeSeconds + " s"
+                minimum: 1; maximum: 8; step: 1; suffix: displayValue + " s"
                 onEdited: function(value) { root.runAction(["ui", "fadeSeconds", String(value)]) }
                 }
               }
@@ -1116,7 +1212,7 @@ Panel {
                 SettingSlider {
                 objectName: "dictationVolume"
                 label: "Volume while dictating"; value: root.duckLevel
-                minimum: 0; maximum: 100; step: 5; suffix: root.duckLevel + "%"
+                minimum: 0; maximum: 100; step: 5; suffix: displayValue + "%"
                 onEdited: function(value) { root.runAction(["ui", "duckLevel", String(value)]) }
                 }
               }
@@ -1210,7 +1306,7 @@ Panel {
             animate: root.liveMotion
             id: stopButton
             objectName: "stopPlayback"
-            text: playerDock.compactControls ? "Stop" : "Stop all"
+            text: playerDock.compactControls || stopAllLabel.advanceWidth > width - horizontalPadding * 2 - Style.space(2) ? "Stop" : "Stop all"
             tooltipText: "Stop all sounds"
             width: playerDock.compactControls ? Style.space(58) : Style.space(72); height: visual.controlHeight
             fontSize: visual.label
@@ -1219,6 +1315,11 @@ Panel {
             foreground: visual.muted; focusable: true
             Accessible.name: "Stop all sounds"
             onClicked: root.runAction(["stop"])
+            TextMetrics {
+              id: stopAllLabel
+              text: "Stop all"
+              font.family: root.contentFontFamily; font.pixelSize: visual.label
+            }
           }
         }
         Column {
@@ -1253,9 +1354,8 @@ Panel {
             fillColor: Color.accent; knobColor: Color.accent
             activeFocusOnTab: true
             Accessible.role: Accessible.Slider; Accessible.name: "Recording position"
-            Keys.onLeftPressed: if (root.hasProgress) root.runAction(["seek", String(Math.max(0, root.mainPosition - 15))])
-            Keys.onRightPressed: if (root.hasProgress) root.runAction(["seek", String(Math.min(root.mainDuration, root.mainPosition + 15))])
-            onReleased: function(value) { if (root.hasProgress) root.runAction(["seek", String(value)]) }
+            updateInterval: 120
+            onEdited: function(value) { if (root.hasProgress) root.runAction(["seek", String(value)]) }
           }
         }
         Row {
@@ -1464,6 +1564,7 @@ Panel {
     property real minimum: 0
     property real maximum: 1
     property real step: 1
+    readonly property real displayValue: settingInput.displayValue
     property string suffix: ""
     property var scrollView: settingsScroll
     signal edited(int value)
@@ -1487,6 +1588,8 @@ Panel {
       }
     }
     SkylofiSlider {
+      id: settingInput
+      objectName: "settingSlider"
       width: parent.width; height: Style.space(30)
       animate: root.liveMotion
       bar: root.bar; minimum: sliderRow.minimum; maximum: sliderRow.maximum; step: sliderRow.step; integer: true
@@ -1494,9 +1597,7 @@ Panel {
       trackColor: visual.line; fillColor: Color.accent; knobColor: Color.accent
       activeFocusOnTab: true
       Accessible.role: Accessible.Slider; Accessible.name: sliderRow.label
-      Keys.onLeftPressed: sliderRow.edited(Math.max(sliderRow.minimum, sliderRow.value - sliderRow.step))
-      Keys.onRightPressed: sliderRow.edited(Math.min(sliderRow.maximum, sliderRow.value + sliderRow.step))
-      onReleased: function(value) { sliderRow.edited(value) }
+      onEdited: function(value) { sliderRow.edited(value) }
       onActiveFocusChanged: if (activeFocus) root.ensureVisible(sliderRow.scrollView, sliderRow)
     }
   }

@@ -78,9 +78,10 @@ Column {
   }
   Text {
     width: parent.width
-    visible: root.dirty
-    text: "Modified · save to keep this mix"
-    textFormat: Text.PlainText; wrapMode: Text.Wrap
+    // A changing dirty flag must not insert/remove a row above a grabbed
+    // fader. Keep this caption on one line with stable geometry.
+    text: root.dirty ? "Modified · save this mix" : root.currentScene ? "Saved scene" : "Save your room and sounds"
+    textFormat: Text.PlainText; elide: Text.ElideRight
     color: visual.muted; font.family: root.fontFamily; font.pixelSize: visual.caption
   }
   Row {

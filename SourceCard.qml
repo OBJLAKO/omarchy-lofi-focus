@@ -12,6 +12,7 @@ Rectangle {
   property bool auditioning: false
   property bool detailsOpen: false
   property bool helpOpen: false
+  readonly property bool compactHeader: width < Style.space(250)
   property QtObject bar: null
   property color foreground: Color.foreground
   property string fontFamily: Style.font.family
@@ -39,12 +40,13 @@ Rectangle {
     id: body
     x: Style.space(10); y: Style.space(10)
     width: parent.width - Style.space(20); spacing: Style.space(10)
-    Row {
-      width: parent.width; spacing: Style.space(6)
+    Item {
+      width: parent.width
+      height: root.compactHeader ? selectButton.height + Style.space(6) + soloButton.height : Math.max(selectButton.height,soloButton.height,removeButton.height)
       Item {
         id: selectButton
         objectName: "sourceSelect-" + (root.sound.id || "")
-        width: parent.width - removeButton.width - parent.spacing
+        width: Math.max(0,parent.width - removeButton.width - Style.space(6) - (root.compactHeader ? 0 : soloButton.width + Style.space(6)))
         height: Math.max(Style.space(38),sourceName.implicitHeight + description.implicitHeight + Style.space(5))
         activeFocusOnTab: true
         Accessible.role: Accessible.Button; Accessible.name: root.label
@@ -59,19 +61,14 @@ Rectangle {
         Text {
           id: sourceName
           x: Style.space(24); y: 0
-          width: parent.width - x - level.width - Style.space(8)
+          width: Math.max(0,parent.width - x)
           text: root.label; elide: Text.ElideRight; color: root.foreground
           font.family: root.fontFamily; font.pixelSize: visual.body
         }
         Text {
-          id: level; anchors.right: parent.right; y: 0
-          text: Math.round(Number(root.sound.volume) || 0) + "%"
-          color: visual.muted; font.family: root.fontFamily; font.pixelSize: visual.caption
-        }
-        Text {
           id: description
-          x: Style.space(24); y: sourceName.implicitHeight + Style.space(4); width: parent.width - x
-          text: (Number(root.sound.distance || 0) < 33 ? "Nearby" : Number(root.sound.distance || 0) < 67 ? "Midway" : "Distant") + " · "
+          x: Style.space(24); y: sourceName.implicitHeight + Style.space(4); width: Math.max(0,parent.width - x)
+          text: Math.round(Number(root.sound.volume) || 0) + "% · " + (Number(root.sound.distance || 0) < 33 ? "Nearby" : Number(root.sound.distance || 0) < 67 ? "Midway" : "Distant") + " · "
             + (Number(root.sound.coverage === undefined ? 50 : root.sound.coverage) < 25 ? "Point" : Number(root.sound.coverage === undefined ? 50 : root.sound.coverage) < 75 ? "Wide" : "Surrounding")
             + (typeof root.sound.effective_volume === "number" && Math.round(root.sound.effective_volume) !== Math.round(root.sound.volume) ? " · " + Math.round(root.sound.effective_volume) + "% now" : "")
           elide: Text.ElideRight; color: visual.muted
@@ -90,7 +87,23 @@ Rectangle {
         onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
       }
       SkylofiButton {
+        id: soloButton
+        x: root.compactHeader ? 0 : selectButton.width + Style.space(6)
+        y: root.compactHeader ? selectButton.height + Style.space(6) : 0
+        objectName: "sourceSolo-" + (root.sound.id || "")
+        text: root.auditioning ? "Mix" : "Solo"
+        tooltipText: root.auditioning ? "Back to mix" : "Hear and adjust this sound alone"
+        Accessible.name: root.auditioning ? "Back to mix" : "Solo " + root.label
+        width: Style.space(52); height: Style.space(32); horizontalPadding: Style.space(2)
+        fontSize: visual.caption; foreground: root.foreground; fontFamily: root.fontFamily
+        bordered: true; selected: root.auditioning; focusable: true; enabled: root.canAudition
+        opacity: enabled ? 1 : 0.45; animate: root.animate
+        onClicked: root.auditionRequested()
+        onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+      }
+      SkylofiButton {
         id: removeButton
+        x: parent.width - width
         objectName: "sourceRemove-" + (root.sound.id || "")
         text: ""; iconText: "\uf00d"; tooltipText: "Remove sound from mix"
         width: Style.space(28); height: Style.space(32); horizontalPadding: 0

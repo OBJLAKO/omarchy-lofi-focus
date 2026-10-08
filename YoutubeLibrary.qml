@@ -5,6 +5,11 @@ import qs.Ui
 Column {
   id: root
   property var entries: []
+  property var entryIds: []
+  onEntriesChanged: {
+    var ids = entries.map(function(entry) { return entry.id })
+    if (JSON.stringify(ids) !== JSON.stringify(entryIds)) entryIds = ids
+  }
   property string selectedId: ""
   property bool playing: false
   property bool animate: true
@@ -184,45 +189,46 @@ Column {
     width: parent.width
     spacing: Style.space(2)
     Repeater {
-      model: root.entries
+      model: root.entryIds
       Column {
         required property var modelData
-        objectName: "libraryEntry-" + modelData.id
+        readonly property var entry: root.entries.find(function(value) { return value.id === modelData }) || ({})
+        objectName: "libraryEntry-" + entry.id
         width: root.width
-        visible: (modelData.name || "").toLowerCase().indexOf(search.text.trim().toLowerCase()) >= 0
+        visible: (entry.name || "").toLowerCase().indexOf(search.text.trim().toLowerCase()) >= 0
         spacing: Style.space(6)
         Row {
           width: parent.width
           spacing: Style.space(4)
           StationRow {
             width: parent.width - removeButton.width - parent.spacing
-            name: modelData.name
-            description: root.entryDescription(modelData)
+            name: entry.name
+            description: root.entryDescription(entry)
             glyph: "\uf144"
-            current: root.selectedId === modelData.id
+            current: root.selectedId === entry.id
             playing: current && root.playing
             animate: root.animate && root.visible
             foreground: root.foreground; fontFamily: root.fontFamily
-            onActivated: root.playRequested(modelData.id)
+            onActivated: root.playRequested(entry.id)
             onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
           }
           SkylofiButton {
             fontFamily: root.fontFamily
             animate: root.animate && root.visible
             id: removeButton
-            objectName: "removeYoutube-" + modelData.id
+            objectName: "removeYoutube-" + entry.id
             width: Style.space(28); height: Style.space(32)
             anchors.verticalCenter: parent.verticalCenter
             iconText: "\uf1f8"; iconSize: visual.caption
             tooltipText: "Remove saved link"
             foreground: visual.muted; focusable: true
-            Accessible.name: "Remove " + modelData.name
-            onClicked: root.pendingRemoval = root.pendingRemoval === modelData.id ? "" : modelData.id
+            Accessible.name: "Remove " + entry.name
+            onClicked: root.pendingRemoval = root.pendingRemoval === entry.id ? "" : entry.id
             onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
           }
         }
         BorderSurface {
-          visible: root.pendingRemoval === modelData.id
+          visible: root.pendingRemoval === entry.id
           width: parent.width
           height: confirmation.implicitHeight + Style.space(20)
           radius: Math.min(Style.cornerRadius, Style.space(8))
@@ -246,10 +252,10 @@ Column {
               animate: root.animate && root.visible
               id: confirmButton
               text: "Remove"
-              objectName: "confirmRemoveYoutube-" + modelData.id
+              objectName: "confirmRemoveYoutube-" + entry.id
               foreground: Color.urgent; bordered: true; focusable: true
               height: Style.space(32); fontSize: visual.label
-              onClicked: { root.removeRequested(modelData.id); root.pendingRemoval = "" }
+              onClicked: { root.removeRequested(entry.id); root.pendingRemoval = "" }
               onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
             }
             SkylofiButton {

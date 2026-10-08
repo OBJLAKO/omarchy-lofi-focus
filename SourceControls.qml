@@ -27,55 +27,17 @@ Column {
   function coverageText(value) { return value < 25 ? "Point" : value < 75 ? "Wide" : "Surrounding" }
   SkylofiStyle { id: visual; foreground: root.foreground }
   Row {
-    width: parent.width; spacing: Style.space(6)
-    Repeater {
-      model: [{id:"near",label:"Nearby"},{id:"far",label:"Distant"},{id:"around",label:"Around"}]
-      SkylofiButton {
-        required property var modelData
-        objectName: "sourcePreset-" + modelData.id
-        width: (root.width - Style.space(12)) / 3
-        text: modelData.label; bordered: true; focusable: true
-        horizontalPadding: Style.space(2); verticalPadding: Style.space(2)
-        foreground: root.foreground; fontFamily: root.fontFamily; fontSize: visual.caption
-        animate: root.animate
-        onClicked: root.presetRequested(modelData.id)
-        onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
-      }
-    }
-  }
-  SoundControl {
-    objectName: "spaceVolume"
-    label: "Volume"; value: root.number("volume",25)
-    lowLabel: "Quiet"; highLabel: "Loud"
-    bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
-    onEdited: function(value) { root.volumeEdited(value) }
-    onFocusRequested: function(item) { root.focusRequested(item) }
-  }
-  SoundControl {
-    objectName: "spaceDistance"
-    label: "Distance"; value: root.number("distance",0); suffix: root.depthText(value)
-    lowLabel: "Nearby"; highLabel: "Far away"
-    bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
-    onEdited: function(value) { root.layerEdited("distance",String(value)) }
-    onFocusRequested: function(item) { root.focusRequested(item) }
-  }
-  SoundControl {
-    objectName: "spaceCoverage"
-    label: "Coverage"; value: root.number("coverage",50); suffix: root.coverageText(value)
-    lowLabel: "Point"; middleLabel: "Wide"; highLabel: "Surrounding"
-    bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
-    onEdited: function(value) { root.layerEdited("coverage",String(value)) }
-    onFocusRequested: function(item) { root.focusRequested(item) }
-  }
-  Row {
+    id: auditionRow
     width: parent.width; spacing: Style.space(6)
     Item {
-      width: auditionButton.implicitWidth; height: auditionButton.implicitHeight
+      width: Math.min(auditionButton.implicitWidth,Math.max(0,root.width - helpButton.implicitWidth - auditionRow.spacing))
+      height: auditionButton.implicitHeight
     SkylofiButton {
       id: auditionButton
+      width: parent.width
       objectName: "sourceAudition"
-      text: root.auditioning ? "Back to mix" : "Hear only"
-      tooltipText: root.canAudition ? "Hear this sound alone for 8 seconds" : "Start playback to hear a sound alone"
+      text: root.auditioning ? "Back to mix" : "Solo"
+      tooltipText: root.canAudition ? "Hear and adjust only this sound until you return to the mix" : "Start playback to hear a sound alone"
       iconText: root.auditioning ? "\uf0e2" : "\uf025"
       bordered: true; focusable: true; enabled: root.canAudition
       opacity: enabled ? 1 : 0.45
@@ -105,6 +67,7 @@ Column {
       }
     }
     SkylofiButton {
+      id: helpButton
       objectName: "coverageHelp"
       text: ""; iconText: "\uf05a"; tooltipText: "About coverage"
       focusable: true; selected: root.helpOpen; animate: root.animate
@@ -115,9 +78,51 @@ Column {
   }
   Text {
     width: parent.width; visible: root.auditioning
-    text: "Hearing this sound for 8 seconds. Your mix stays saved."
+    text: "Only this sound is playing. Changes apply to your mix."
     wrapMode: Text.Wrap; color: visual.muted
     font.family: root.fontFamily; font.pixelSize: visual.caption
+  }
+  Row {
+    width: parent.width; spacing: Style.space(6)
+    Repeater {
+      model: [{id:"near",label:"Nearby"},{id:"far",label:"Distant"},{id:"around",label:"Around"}]
+      SkylofiButton {
+        required property var modelData
+        objectName: "sourcePreset-" + modelData.id
+        width: (root.width - Style.space(12)) / 3
+        text: modelData.label; bordered: true; focusable: true
+        tooltipText: modelData.label
+        horizontalPadding: Style.space(2); verticalPadding: Style.space(2)
+        foreground: root.foreground; fontFamily: root.fontFamily; fontSize: visual.caption
+        animate: root.animate
+        onClicked: root.presetRequested(modelData.id)
+        onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+      }
+    }
+  }
+  SoundControl {
+    objectName: "spaceVolume"
+    label: "Volume"; value: root.number("volume",25)
+    lowLabel: "Quiet"; highLabel: "Loud"
+    bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
+    onEdited: function(value) { root.volumeEdited(value) }
+    onFocusRequested: function(item) { root.focusRequested(item) }
+  }
+  SoundControl {
+    objectName: "spaceDistance"
+    label: "Distance"; value: root.number("distance",0); suffix: root.depthText(displayValue)
+    lowLabel: "Nearby"; highLabel: "Far away"
+    bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
+    onEdited: function(value) { root.layerEdited("distance",String(value)) }
+    onFocusRequested: function(item) { root.focusRequested(item) }
+  }
+  SoundControl {
+    objectName: "spaceCoverage"
+    label: "Coverage"; value: root.number("coverage",50); suffix: root.coverageText(displayValue)
+    lowLabel: "Point"; middleLabel: "Wide"; highLabel: "Surrounding"
+    bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
+    onEdited: function(value) { root.layerEdited("coverage",String(value)) }
+    onFocusRequested: function(item) { root.focusRequested(item) }
   }
   Text {
     width: parent.width; visible: root.helpOpen
@@ -141,7 +146,7 @@ Column {
     SoundControl {
       objectName: "spacePan"
       label: "Left / right"; minimum: -100; value: root.number("pan",0)
-      suffix: Math.abs(value) < 15 ? "Center" : value < 0 ? "Left" : "Right"
+      suffix: Math.abs(displayValue) < 15 ? "Center" : displayValue < 0 ? "Left" : "Right"
       lowLabel: "Left"; highLabel: "Right"
       bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
       onEdited: function(value) { root.layerEdited("pan",String(value)) }

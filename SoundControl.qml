@@ -1,13 +1,14 @@
 import QtQuick
 import qs.Commons
 
-// A shared, keyboard-accessible control. Dragging commits once on release.
+// A shared, keyboard-accessible control with bounded live audio feedback.
 Column {
   id: root
   property string label: ""
   property real value: 0
   property real minimum: 0
-  property string suffix: Math.round(value) + "%"
+  readonly property real displayValue: slider.displayValue
+  property string suffix: Math.round(displayValue) + "%"
   property string lowLabel: ""
   property string highLabel: ""
   property string middleLabel: ""
@@ -34,6 +35,7 @@ Column {
     }
   }
   SkylofiSlider {
+    id: slider
     objectName: "soundControlSlider"
     width: parent.width; height: Style.space(28)
     bar: root.bar; minimum: root.minimum; maximum: 100; step: 5; integer: true
@@ -42,13 +44,7 @@ Column {
     activeFocusOnTab: true
     Accessible.role: Accessible.Slider; Accessible.name: root.label
     Accessible.description: root.suffix
-    Keys.onLeftPressed: root.edited(Math.max(root.minimum,root.value - 5))
-    Keys.onRightPressed: root.edited(Math.min(100,root.value + 5))
-    Keys.onPressed: function(event) {
-      if (event.key === Qt.Key_Home) { root.edited(root.minimum); event.accepted = true }
-      else if (event.key === Qt.Key_End) { root.edited(100); event.accepted = true }
-    }
-    onReleased: function(value) { root.edited(value) }
+    onEdited: function(value) { root.edited(value) }
     onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
   }
   Item {

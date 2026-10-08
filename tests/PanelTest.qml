@@ -23,6 +23,7 @@ Window {
     name: "FocusPanel"
     property string phase: ""
     when: true
+    function init() { phase = ""; panel.editGuards = ({}) }
     function sourceCard(id) {
       function seek(parent) {
         if (parent.objectName === "sourceCard-" + id) return parent
@@ -324,7 +325,7 @@ Window {
       panel.hostWidget = null
     }
 
-    function test_auditionIsTransientAndDisabledWhenPaused() {
+    function test_soloStaysAvailableWhileEditingAndDisabledWhenPaused() {
       panel.hostWidget = voiceHost
       panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
       panel.applyStatus(JSON.stringify({running:true,paused:true,spatial_available:true,scene_dirty:false,
@@ -343,18 +344,92 @@ Window {
       compare(audition.enabled,true)
       phase = "audition start"
       audition.clicked()
-      compare(voiceHost.lastArguments,["audition","noise-rain","on"])
+      compare(voiceHost.lastArguments,["audition","noise-rain","hold"])
       compare(panel.sceneDirty,false)
       compare(panel.natureLayer("noise-rain").volume,35)
       phase = "audition active status"
       panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,audition_id:"noise-rain",
         scene_dirty:false,nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100}]}))
       compare(audition.text,"Back to mix")
+      compare(findChild(panel,"soloBanner").visible,true)
+      panel.selectedNatureId = ""
+      compare(findChild(panel,"soloBanner").visible,true)
       phase = "audition end"
-      audition.clicked()
+      findChild(panel,"soloReturnToMix").clicked()
       compare(voiceHost.lastArguments,["audition","noise-rain","off"])
       panel.applyStatus(JSON.stringify({running:false,paused:false,nature_layers:[]}))
       compare(panel.auditionId,"")
+      panel.hostWidget = null
+    }
+
+    function test_identicalLibraryModelsKeepSourceCardsAndDetailsAlive() {
+      panel.hostWidget = voiceHost
+      panel.showView(1); panel.spatialEditorOpen = false; panel.natureCardExpanded = true
+      panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
+      var state = {running:true,paused:false,spatial_available:true,animations:false,
+        imported_sounds:[{id:"imported-fire",name:"My fire"}],
+        scenes:[{id:"scene-calm",name:"Calm"}],
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:50}]}
+      panel.applyStatus(JSON.stringify(state))
+      var card = sourceCard("noise-rain"), options = panel.noiseOptions
+      var imports = panel.importedSounds, scenes = panel.scenes
+      var detail = findChild(card,"sourceDetailsLoader").item
+      var slider = findChild(findChild(card,"spaceCoverage"),"soundControlSlider")
+      verify(slider !== null)
+      for (var index = 0; index < 8; index++) {
+        state.nature_layers[0].effective_volume = index
+        state.nature_layers[0].volume = 36 + index
+        panel.applyStatus(JSON.stringify(state))
+        compare(panel.importedSounds,imports)
+        compare(panel.scenes,scenes)
+        compare(panel.noiseOptions,options)
+        compare(sourceCard("noise-rain"),card)
+        compare(findChild(card,"sourceDetailsLoader").item,detail)
+        compare(findChild(findChild(card,"spaceCoverage"),"soundControlSlider"),slider)
+      }
+      panel.hostWidget = null
+    }
+
+    function test_latestEditSurvivesOlderStatusAfterItsAcknowledgement() {
+      panel.hostWidget = voiceHost
+      panel.setVolume("main",73)
+      var state = {running:true,paused:false,main_volume:73,animations:false}
+      panel.applyStatus(JSON.stringify(state))
+      compare(panel.mainVolume,73)
+      state.main_volume = 42
+      panel.applyStatus(JSON.stringify(state))
+      compare(panel.mainVolume,73)
+      panel.runAction(["ui","fadeSeconds","6"])
+      panel.runAction(["room","reflections","54"])
+      state.fade_seconds = 2; state.room = {reflections:10}
+      panel.applyStatus(JSON.stringify(state))
+      compare(panel.fadeSeconds,6)
+      compare(panel.roomState.reflections,54)
+      // A scene is an intentional new value boundary.
+      panel.runAction(["scene-apply","scene-new"])
+      panel.applyStatus(JSON.stringify(state))
+      compare(panel.mainVolume,42)
+      compare(panel.fadeSeconds,2)
+      compare(panel.roomState.reflections,10)
+      panel.hostWidget = null
+    }
+
+    function test_pendingEditExpiresAndFailedEditReconcilesWhilePaused() {
+      panel.hostWidget = voiceHost
+      panel.applyStatus(JSON.stringify({running:true,paused:true,main_volume:42,animations:false}))
+      panel.setVolume("main",73)
+      panel.applyStatus(JSON.stringify({running:true,paused:true,main_volume:42,animations:false}))
+      compare(panel.mainVolume,73)
+      tryCompare(panel,"mainVolume",42,2000)
+      compare(Object.keys(panel.editGuards).length,0)
+      panel.setVolume("main",64)
+      voiceHost.actionFinished(["vol","main","73"],1,"Older action failed")
+      compare(panel.mainVolume,64)
+      verify(panel.editGuards["vol:main"] !== undefined)
+      voiceHost.actionFinished(["vol","main","64"],1,"Playback unavailable")
+      compare(panel.mainVolume,42)
+      compare(Object.keys(panel.editGuards).length,0)
+      compare(panel.playerPaused,true)
       panel.hostWidget = null
     }
 

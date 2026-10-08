@@ -23,9 +23,9 @@ if len(sys.argv) > 1 and sys.argv[1] == "--inside":
     finally:
         subprocess.run([str(stage / "Plugin" / "lofi-player"), "shutdown"], capture_output=True, timeout=10)
     match = re.search(r"WIDGET_TEST_RESULT (\{[^\n]+\})", output)
-    if not match or result.returncode or json.loads(match.group(1)) != {"passed": 4, "failed": 0} or "ERROR" in output:
+    if not match or result.returncode or json.loads(match.group(1)) != {"passed": 5, "failed": 0} or "ERROR" in output:
         raise SystemExit(output or "Widget tests did not report results")
-    print("3 real Rust/QML transport tests passed")
+    print("4 real Rust/QML transport tests passed")
     raise SystemExit(0)
 
 native = Path(os.environ.get("SKYLOFI_NATIVE", ""))

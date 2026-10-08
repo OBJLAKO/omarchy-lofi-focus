@@ -41,6 +41,41 @@ Window {
       compare(replies.signalArguments[1][1], 0)
       compare(widget.pendingRequestCount, 0)
     }
+    function test_disconnectedEditsCoalesceByParameterAndKeepFifoBarriers() {
+      widget.statusReady = false
+      widget.actionQueue = []
+      var first = [["vol","main","10"],["layer","noise-rain","coverage","20"],
+        ["room","size","30"],["ui","fadeSeconds","2"],["wander-amount","10"]]
+      for (var args of first) widget.runAction(args)
+      for (var value = 1; value <= 100; value++) widget.runAction(["layer","noise-rain","coverage",String(value)])
+      compare(widget.actionQueue.length,5)
+      compare(widget.actionQueue[4],["layer","noise-rain","coverage","100"])
+      widget.runAction(["scene-save","Before changes"])
+      widget.runAction(["vol","main","75"])
+      widget.runAction(["vol","main","80"])
+      compare(widget.actionQueue.length,7)
+      compare(widget.actionQueue[0],["vol","main","10"])
+      compare(widget.actionQueue[5],["scene-save","Before changes"])
+      compare(widget.actionQueue[6],["vol","main","80"])
+      widget.runAction(["scene-apply","scene-calm"])
+      widget.runAction(["layer","noise-rain","coverage","35"])
+      widget.runAction(["nature-remove","noise-rain"])
+      widget.runAction(["layer","noise-rain","coverage","40"])
+      compare(widget.actionQueue.slice(7),[["scene-apply","scene-calm"],
+        ["layer","noise-rain","coverage","35"],["nature-remove","noise-rain"],
+        ["layer","noise-rain","coverage","40"]])
+      widget.actionQueue = []
+      for (var index = 0; index < 32; index++) widget.runAction(["layer","noise-test-"+index,"coverage","30"])
+      compare(widget.actionQueue.length,32)
+      widget.runAction(["layer","noise-test-0","coverage","90"])
+      compare(widget.actionQueue.length,32)
+      compare(widget.actionQueue[31],["layer","noise-test-0","coverage","90"])
+      widget.runAction(["room","size","60"])
+      compare(widget.actionQueue.length,32)
+      compare(replies.count,1)
+      compare(replies.signalArguments[0][1],1)
+      widget.actionQueue = []; widget.statusReady = true
+    }
     function cleanup() {
       if (qtest_results.failed) console.error("WIDGET FAILURE", qtest_results.functionName)
     }

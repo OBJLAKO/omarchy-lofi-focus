@@ -32,7 +32,10 @@ BorderSurface {
   signal hovered(bool isHovered)
 
   SkylofiStyle { id: visual; foreground: root.foreground; accent: root.accent }
-  implicitWidth: copy.implicitWidth + horizontalPadding * 2 + Style.space(2)
+  implicitWidth: (buttonIcon.visible ? buttonIcon.implicitWidth : 0)
+    + (buttonLabel.visible ? buttonLabel.implicitWidth : 0)
+    + (buttonIcon.visible && buttonLabel.visible ? copy.spacing : 0)
+    + horizontalPadding * 2 + Style.space(2)
   implicitHeight: Math.max(visual.touchTarget, copy.implicitHeight + verticalPadding * 2 + Style.space(2))
   radius: visual.radius
   color: mouse.pressed ? visual.pressed : focused || hot ? visual.hover
@@ -61,6 +64,7 @@ BorderSurface {
     anchors.leftMargin: root.horizontalPadding + Style.space(1)
     spacing: Style.space(6)
     Text {
+      id: buttonIcon
       visible: root.iconText.length > 0
       text: root.iconText; textFormat: Text.PlainText
       anchors.verticalCenter: parent.verticalCenter
@@ -68,7 +72,11 @@ BorderSurface {
       font.family: root.fontFamily; font.pixelSize: root.iconSize
     }
     Text {
+      id: buttonLabel
       visible: root.text.length > 0
+      width: Math.min(implicitWidth,Math.max(0,root.width - root.horizontalPadding * 2 - Style.space(2)
+        - (buttonIcon.visible ? buttonIcon.width + copy.spacing : 0)))
+      elide: Text.ElideRight
       text: root.text; textFormat: Text.PlainText
       anchors.verticalCenter: parent.verticalCenter
       color: root.foreground

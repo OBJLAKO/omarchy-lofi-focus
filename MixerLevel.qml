@@ -50,14 +50,8 @@ FocusScope {
     activeFocusOnTab: true
     Accessible.role: Accessible.Slider
     Accessible.name: row.label + " volume"
-    Accessible.description: Math.round(row.value) + " percent"
-    Keys.onLeftPressed: row.edited(Math.max(0, row.value - 5))
-    Keys.onRightPressed: row.edited(Math.min(100, row.value + 5))
-    Keys.onPressed: function(event) {
-      if (event.key === Qt.Key_Home) { row.edited(0); event.accepted = true }
-      else if (event.key === Qt.Key_End) { row.edited(100); event.accepted = true }
-    }
-    onReleased: function(value) { row.edited(value) }
+    Accessible.description: Math.round(slider.displayValue) + " percent"
+    onEdited: function(value) { row.edited(value) }
     onActiveFocusChanged: if (activeFocus) row.focusRequested(this)
   }
   Text {
@@ -66,7 +60,7 @@ FocusScope {
     x: parent.width - width - (row.removable ? removeButton.width + Style.space(8) : 0)
     y: row.inlineLevel ? (parent.height - height) / 2 : (row.copyHeight - height) / 2
     width: Style.space(40)
-    text: Math.round(slider.dragging ? slider.liveValue : row.value) + "%"
+    text: Math.round(slider.displayValue) + "%"
     color: visual.muted
     font.family: row.fontFamily; font.pixelSize: visual.label
     horizontalAlignment: Text.AlignRight

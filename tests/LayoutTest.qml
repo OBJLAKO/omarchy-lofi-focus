@@ -26,6 +26,7 @@ Window {
     function sourceCard(id) { return visualItem(findChild(panel,"section-body-nature"),"sourceCard-"+id) }
     function init() {
       phase = ""
+      panel.editGuards = ({})
       panel.open()
       panel.showView(0)
       panel.libraryOpen = false
@@ -35,6 +36,114 @@ Window {
       panel.categories = [{id:"lofi",stations:[{id:"lofi-test",name:"Test radio",description:"Soft jazz"},{id:"lofi-second",name:"Second radio",description:"Dreamy beats"}]},{id:"talk",stations:[{id:"voice-test",name:"Voice"}]},{id:"ambience",stations:[{id:"noise-rain",name:"Rain"},{id:"noise-fireplace",name:"Fireplace"},{id:"noise-wind",name:"Wind"}]}]
       host.lastArguments = []
       host.commands = []
+    }
+    function xFor(slider,value) {
+      var track = findChild(slider,"sliderTrack")
+      return track.x + track.width * (value-slider.minimum) / (slider.maximum-slider.minimum)
+    }
+    function test_liveDragKeepsSourceObjectAndIgnoresStaleReplies() {
+      panel.showView(1); panel.spatialEditorOpen = false; panel.natureCardExpanded = true
+      var state = {running:true,paused:false,main_running:true,spatial_available:true,animations:false,
+        imported_sounds:[],nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:30}]}
+      panel.applyStatus(JSON.stringify(state))
+      var card = sourceCard("noise-rain")
+      var loader = findChild(card,"sourceDetailsLoader"), detail = loader.item
+      var slider = findChild(findChild(card,"spaceCoverage"),"soundControlSlider")
+      slider.forceActiveFocus(); wait(60); waitForPolish(window)
+      var scroll = findChild(panel,"mixScroll"), offset = scroll.contentY
+      phase = "live drag before release"
+      host.commands = []
+      mousePress(slider,xFor(slider,35),slider.height/2)
+      for (var value=36; value<=55; value++) mouseMove(slider,xFor(slider,value),slider.height/2,1)
+      wait(75)
+      verify(slider.dragging)
+      verify(host.commands.length >= 1 && host.commands.length <= 3,"Live drag must be bounded, not silent: "+host.commands.length)
+      compare(host.commands[host.commands.length-1],["layer","noise-rain","coverage","55"])
+      phase = "older status during grab"
+      state.nature_layers[0].effective_volume = 12
+      panel.applyStatus(JSON.stringify(state))
+      compare(sourceCard("noise-rain"),card)
+      compare(loader.item,detail)
+      compare(slider.dragging,true)
+      compare(slider.displayValue,55)
+      compare(scroll.contentY,offset)
+      compare(slider.activeFocus,true)
+      mouseMove(slider,xFor(slider,72),slider.height/2)
+      var beforeRelease = host.commands.length
+      mouseRelease(slider,xFor(slider,72),slider.height/2)
+      phase = "exact final release"
+      compare(host.commands.length,beforeRelease+1)
+      compare(host.commands[host.commands.length-1],["layer","noise-rain","coverage","72"])
+      state.nature_layers[0].coverage = 72
+      panel.applyStatus(JSON.stringify(state)) // Latest command ACK.
+      state.nature_layers[0].coverage = 40
+      panel.applyStatus(JSON.stringify(state)) // Older in-flight snapshot.
+      compare(slider.displayValue,72)
+      compare(panel.natureLayer("noise-rain").coverage,72)
+      wait(320)
+      compare(slider.displayValue,72)
+      compare(host.commands.length,beforeRelease+1)
+      compare(sourceCard("noise-rain"),card)
+    }
+    function test_everySliderFamilyAppliesBeforeReleaseAndSeekCancelsOnRadio() {
+      panel.showView(1)
+      panel.applyStatus(JSON.stringify({running:true,paused:false,main_running:true,spatial_available:true,
+        animations:false,wander:{enabled:true,amount:20},room:{preset:"cozy",size:35,softness:55,reflections:25},
+        fade_enabled:true,ducking:true,nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:50}]}))
+      var sliders = [
+        {item:findChild(findChild(panel,"allSoundsLevel"),"levelSlider"),value:64,args:["vol","master","64"],view:1},
+        {item:findChild(findChild(panel,"soundtrackLevel"),"levelSlider"),value:46,args:["vol","main","46"],view:1},
+        {item:findChild(panel,"livingMixSlider"),value:44,args:["wander-amount","44"],view:1},
+        {item:findChild(findChild(panel,"fadeDuration"),"settingSlider"),value:6,args:["ui","fadeSeconds","6"],view:2},
+        {item:findChild(findChild(panel,"dictationVolume"),"settingSlider"),value:48,args:["ui","duckLevel","48"],view:2}
+      ]
+      for (var test of sliders) {
+        phase = "continuous "+test.args.join(" ")
+        verify(test.item !== null)
+        panel.showView(test.view); test.item.forceActiveFocus(); wait(40); waitForPolish(window)
+        host.commands = []
+        mousePress(test.item,xFor(test.item,test.value),test.item.height/2)
+        wait(75)
+        compare(host.commands,[test.args])
+        mouseRelease(test.item,xFor(test.item,test.value),test.item.height/2)
+        compare(host.commands,[test.args])
+      }
+      phase = "continuous finite timeline"
+      panel.showView(0)
+      panel.applyStatus(JSON.stringify({running:true,paused:false,main_running:true,animations:false,
+        category:"youtube",can_seek:true,main_position:20,main_duration:100,nature_layers:[]}))
+      var seek = findChild(panel,"playbackProgress")
+      seek.forceActiveFocus(); waitForPolish(window); host.commands = []
+      mousePress(seek,xFor(seek,40),seek.height/2); wait(140)
+      verify(Math.abs(seek.displayValue-40) < 0.5)
+      var seekCommand = ["seek",String(seek.displayValue)]
+      compare(host.commands,[seekCommand])
+      panel.applyStatus(JSON.stringify({running:true,paused:false,main_running:true,animations:false,
+        category:"lofi",can_seek:false,nature_layers:[]}))
+      mouseRelease(seek,xFor(seek,40),seek.height/2)
+      wait(150)
+      compare(host.commands,[seekCommand])
+    }
+    function test_soloButtonIsAvailableOnCollapsedCardAndBannerSurvivesSelection() {
+      panel.showView(1); panel.spatialEditorOpen = false; panel.natureCardExpanded = false
+      var state = {running:true,paused:false,main_running:true,spatial_available:true,animations:false,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100},{id:"noise-fireplace",enabled:true,volume:50,coverage:12}]}
+      panel.applyStatus(JSON.stringify(state))
+      var card = sourceCard("noise-fireplace"), solo = findChild(card,"sourceSolo-noise-fireplace")
+      verify(solo.visible && solo.enabled)
+      panel.ensureVisible(findChild(panel,"mixScroll"),solo); waitForPolish(window)
+      mouseClick(solo,solo.width/2,solo.height/2)
+      compare(host.lastArguments,["audition","noise-fireplace","hold"])
+      compare(panel.selectedNatureId,"noise-fireplace")
+      compare(card.expanded,true)
+      state.audition_id = "noise-fireplace"
+      panel.applyStatus(JSON.stringify(state))
+      sourceCard("noise-rain").selectedRequested()
+      compare(panel.selectedNatureId,"noise-rain")
+      compare(findChild(panel,"soloBanner").visible,true)
+      var back = findChild(panel,"soloReturnToMix")
+      mouseClick(back,back.width/2,back.height/2)
+      compare(host.lastArguments,["audition","noise-fireplace","off"])
     }
     function test_natureAddedAfterEmptySectionRemainsVisible() {
       var body = findChild(panel, "section-body-nature")

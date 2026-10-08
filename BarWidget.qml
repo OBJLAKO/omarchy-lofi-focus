@@ -119,17 +119,28 @@ BarWidget {
     } catch (error) { console.warn("Skylofi transport:", String(error)) }
   }
   function refreshStatus() { root.runAction(["status"]) }
+  function numericEditKey(args) {
+    if (!args.length || !isFinite(Number(args[args.length - 1]))) return ""
+    if (args[0] === "vol" && args.length === 3) return "vol:" + args[1]
+    if (args[0] === "layer" && args.length === 4) return "layer:" + args[1] + ":" + args[2]
+    if ((args[0] === "room" || args[0] === "ui") && args.length === 3) return args[0] + ":" + args[1]
+    return (args[0] === "seek" || args[0] === "wander-amount") && args.length === 2 ? args[0] : ""
+  }
+  function coalescedQueue(queue,args) {
+    var key = numericEditKey(args)
+    if (key) for (var index = queue.length - 1; index >= 0; index--) {
+      var queuedKey = numericEditKey(queue[index])
+      if (!queuedKey) break // Preserve FIFO across apply/save/remove and toggles.
+      if (queuedKey === key) {
+        var next = queue.slice(); next.splice(index,1); return next.concat([args])
+      }
+    }
+    return queue.concat([args])
+  }
   function runAction(args) {
     if (!root.statusReady || !backend.running) {
-      if (args[0] === "vol") {
-        for (var i = root.actionQueue.length - 1; i >= 0; --i) {
-          if (root.actionQueue[i][0] === "vol" && root.actionQueue[i][1] === args[1]) {
-            root.actionQueue[i] = args
-            return
-          }
-        }
-      }
-      if (root.actionQueue.length < 32) root.actionQueue = root.actionQueue.concat([args])
+      var queue = root.coalescedQueue(root.actionQueue,args)
+      if (queue.length <= 32) root.actionQueue = queue
       else root.actionFinished(args, 1, "Player is reconnecting. Try again shortly.")
       if (!backend.running) backend.running = true
       return
