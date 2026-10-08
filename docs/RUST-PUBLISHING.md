@@ -2,7 +2,7 @@
 
 Research date: 2026-10-08. Release policy rechecked against official marketplace
 source `ccaedd642b93d65ca4881ea4aaaecf9b63f2151e`. The pinned local static
-preflight is recorded in [the coverage review](3.5-COVERAGE-REVIEW.md); it
+preflight is recorded in [the live-controls review](3.5-LIVE-CONTROLS-REVIEW.md); it
 does not grant marketplace approval.
 
 The Omarchy shell loads the plugin's QML entry point. QML remains the interface;

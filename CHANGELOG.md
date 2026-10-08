@@ -4,7 +4,12 @@
   quick placement presets and a spacious shared map with small source markers.
 - Add continuous per-source Coverage from focused point to diffuse stereo,
   including mono recordings, with preallocated and smoothed Rust processing.
-- Add eight-second solo listening without changing saved mix levels or transport.
+- Apply every slider while dragging, with bounded updates and immediate final
+  flush; preserve controls and scroll across routine status snapshots.
+- Expose Solo on every sound card and keep isolation on while editing, with a
+  visible Back to mix action and no changes to other saved levels.
+- Normalize successful settings edits before persistence so the controller's
+  own integer/float roundtrip does not cancel Solo as an external change.
 - Migrate prior stereo width once; preserve custom scenes, volumes and placement.
 - Add reusable named scenes; application preserves play/pause/stop and master level.
 - Add independent, smooth Living mix envelopes with per-layer locks.

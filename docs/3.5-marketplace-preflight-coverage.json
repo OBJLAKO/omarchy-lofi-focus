@@ -2,7 +2,7 @@
   "mode": "advisory-local-working-tree",
   "scannerSourceCommit": "ccaedd642b93d65ca4881ea4aaaecf9b63f2151e",
   "policyVersion": "3",
-  "checkedAt": "2026-10-08T06:31:23.529Z",
+  "checkedAt": "2026-10-08T03:11:32.805Z",
   "outcome": "review-required",
   "findings": [],
   "capabilities": [
@@ -20,11 +20,11 @@
     }
   ],
   "selectedFiles": 50,
-  "selectedTextBytes": 427476,
+  "selectedTextBytes": 417484,
   "fileHashes": [
     {
       "path": "BarWidget.qml",
-      "sha256": "75a0a779879a8d7de95746762f320a71df09fb872243fc0036856b43218f4e89"
+      "sha256": "af394f93acbea42468ea4e217dda86f65d19b883bf4b7c0196a4fe39f7e97e98"
     },
     {
       "path": "CoverageStage.qml",
@@ -36,11 +36,11 @@
     },
     {
       "path": "MixerLevel.qml",
-      "sha256": "51de6b8f79b570fb815350c44a4b38325849770f2be2a35ad962ef70b4ef4fd9"
+      "sha256": "29b96b9dd70e7dd588e0abb8c887c3ae323f736b69fbd8cc1985f95f81158bf9"
     },
     {
       "path": "Panel.qml",
-      "sha256": "506afee9e905e8b79f70ebd512fa9367447c32c81c431ec90cc68e87d594dd01"
+      "sha256": "2bb2d976aacca66434ada1ca0134ac3694a24452049080a5783433e90a558d4e"
     },
     {
       "path": "PlaybackWave.qml",
@@ -48,7 +48,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "1469f178bddbf9a1931307dd468b702200bd116f44841b880dff65a59b21d0b3"
+      "sha256": "0bad6910edd83db858a057dc6f40ac74d52b0077b8554a32d9aa97736b15ebe8"
     },
     {
       "path": "RoomEditor.qml",
@@ -56,15 +56,15 @@
     },
     {
       "path": "SceneControls.qml",
-      "sha256": "5b993a7cb55198e73cfa81a5c80d7fe128879f4168e46199b4a7c3d05a35e7ea"
+      "sha256": "dde158d331ce9f14b6c8223b2ec2fe074bc00741c83f73a98ba43c289708cee1"
     },
     {
       "path": "SkylofiButton.qml",
-      "sha256": "d236b458caf1dc9101c5cd2763445df7751b22913b2c314dfcda3c875078a370"
+      "sha256": "9c49f10aa81570297a518836a668566d3c01296f20e94018fa831f0b7f8dba91"
     },
     {
       "path": "SkylofiSlider.qml",
-      "sha256": "760ccb7933d435d080703d3561180607c6e67c301d3f17366f89603d67ba2c60"
+      "sha256": "e071d0c9105a12e587642b3ebe4fa476cdd20d23748f9904590ab149022a332c"
     },
     {
       "path": "SkylofiStyle.qml",
@@ -76,7 +76,7 @@
     },
     {
       "path": "SoundControl.qml",
-      "sha256": "5801f9138195091b85177c4c7bc13a4e58fb3b6a7851f725f4c659e8a673dfa9"
+      "sha256": "330ed144fed0b6f80e5698e0b3a892ef1b52d43065410aeeb7dfc06f6f59fc95"
     },
     {
       "path": "SoundImport.qml",
@@ -84,11 +84,11 @@
     },
     {
       "path": "SourceCard.qml",
-      "sha256": "bcf575df14499104f6f4bdaf84bababc8b44328f7234d18ff7bb524a54fab211"
+      "sha256": "73b7fd7e22a263c777045683526984810ef03d0fe083295867d2ee5ac7359c4c"
     },
     {
       "path": "SourceControls.qml",
-      "sha256": "8f1b550ccf8c3fbc82fc408b9c2ae35f7809888c4b4423c1dd0f022ed0a77299"
+      "sha256": "a105dc8891c45793ad81cb9a1347ee106eabd1f81b78ce69d5dfa65fcaf21a18"
     },
     {
       "path": "StationRow.qml",
@@ -96,15 +96,15 @@
     },
     {
       "path": "YoutubeLibrary.qml",
-      "sha256": "f6d27d78759ebd31b1a1fc7a646d45529fa34e859b1a5cb07335d017d6cde65b"
+      "sha256": "1189a4ba0976675524b1dd22f8218b8dcd7a234acdd0337f4219c0174a84bb53"
     },
     {
       "path": "bin/SHA256SUMS",
-      "sha256": "3e2e8ee9342d3d9c655bf8d959f721849d9e429e1aedaa2e095e0920d780ef98"
+      "sha256": "a83a1ec6b89b3c603c338a2bb87aa05537b29bd034d3459c4f50df371ed3455e"
     },
     {
       "path": "bin/linux-x86_64/skylofi",
-      "sha256": "cfee5c76c3fc9a3b118d6a989c7f67137a3375c848b4d7932e0dda62f41d1a96"
+      "sha256": "c12b04d1929c0d67df1e3303e8c54e3ceeaf4cc616f3f11b9e39ac6edfac0607"
     },
     {
       "path": "lofi-feed",

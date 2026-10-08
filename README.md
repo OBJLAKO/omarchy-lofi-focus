@@ -61,8 +61,14 @@ silent and disabling motion smoothly restores the chosen balance.
 Expand a sound card to adjust **Volume**, **Distance** and **Coverage**. Coverage
 changes continuously from a focused point through a wide source to a surrounding
 stereo texture, including for mono recordings. Try **Nearby**, **Distant** or
-**Around** as starting points. **Hear only** temporarily isolates an active sound
-for eight seconds, then returns to your mix without changing saved levels.
+**Around** as starting points. Every card has a visible **Solo** button to edit
+that active sound alone. Isolation stays on until **Back to mix**, Pause, Stop
+or a source/scene change; selecting another card does not end it. Solo never
+changes the other saved levels or enabled sounds.
+
+All sliders apply while dragging, using bounded live updates and an immediate
+final value on release. Routine status updates preserve the card, mouse grab,
+expanded details and scroll position.
 
 Open **Sound space** for a larger shared map: move small source markers left/right
 and near/far, with continuous coverage zones. Choose one room preset; muffling,
@@ -147,7 +153,8 @@ paths and host conditions affect CPU comparisons; these are measured samples,
 not guarantees. Twenty final rapid stop/start cycles returned to the original
 thread and file-descriptor counts after output cleanup. See the
 [3.5 measurements and limits](docs/PERFORMANCE-3.5.md) and
-[coverage/security review](docs/3.5-COVERAGE-REVIEW.md).
+[coverage/security review](docs/3.5-COVERAGE-REVIEW.md) and
+[live-controls follow-up](docs/3.5-LIVE-CONTROLS-REVIEW.md).
 
 The preserved prototype comparison used real mpv with silent output, local
 audio and three active channels:

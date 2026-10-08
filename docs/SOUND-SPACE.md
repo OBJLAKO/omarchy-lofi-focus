@@ -6,11 +6,15 @@ point into a wide or surrounding stereo texture. These controls are independent:
 a distant rain can still surround you, and a nearby fire can stay compact.
 
 **Nearby**, **Distant** and **Around** provide starting placements without
-changing the volume. Adjust them by ear. **Hear only** isolates the active layer
-for eight seconds while the mix is playing; **Back to mix**, Pause or Stop ends
-the audition immediately. The normal mix also returns if the source disappears.
+changing the volume. Adjust them by ear: every slider applies while it moves.
+**Solo** is visible on every sound card and isolates that active layer while
+the mix is playing. It stays on while you change its volume and acoustics;
+**Back to mix**, Pause or Stop ends isolation immediately. The normal mix also
+returns if the source disappears or a different scene is applied.
 The room's existing reflection tail can linger briefly after isolation begins.
 Solo listening never changes your saved levels or resumes stopped audio.
+The Mix view names the isolated sound and provides **Back to mix** even when
+you select a different card. Start playback first if Solo is unavailable.
 
 **Edit overall space** replaces the cards with a shared map. Drag a source icon
 left/right or near/far; arrows make small adjustments. Picking an icon changes
