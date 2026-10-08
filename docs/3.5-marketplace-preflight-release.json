@@ -1,0 +1,228 @@
+{
+  "mode": "advisory-local-working-tree",
+  "scannerSourceCommit": "92758f8aa9a7a466433a1877cba3e60f66679267",
+  "policyVersion": "3",
+  "checkedAt": "2026-10-08T07:25:35.436Z",
+  "outcome": "review-required",
+  "findings": [],
+  "capabilities": [
+    {
+      "id": "bundled-executable-binary",
+      "title": "Bundled executable binary",
+      "why": "The repository includes an executable binary that this deterministic source scan cannot inspect.",
+      "evidence": [
+        {
+          "path": "bin/linux-x86_64/skylofi",
+          "line": 1,
+          "snippet": "ELF executable binary (7482480 bytes)"
+        }
+      ]
+    }
+  ],
+  "selectedFiles": 50,
+  "selectedTextBytes": 426561,
+  "fileHashes": [
+    {
+      "path": "BarWidget.qml",
+      "sha256": "75a0a779879a8d7de95746762f320a71df09fb872243fc0036856b43218f4e89"
+    },
+    {
+      "path": "CoverageStage.qml",
+      "sha256": "7a644141acf0b9c256050d5218d8b742eac8a10366cff3f370a7c8249a18ee0c"
+    },
+    {
+      "path": "FocusDropdown.qml",
+      "sha256": "4a62eec58a435d1e9b3e5f7124578675b2495b96d6ce8d8dca032963ec74c673"
+    },
+    {
+      "path": "MixerLevel.qml",
+      "sha256": "51de6b8f79b570fb815350c44a4b38325849770f2be2a35ad962ef70b4ef4fd9"
+    },
+    {
+      "path": "Panel.qml",
+      "sha256": "506afee9e905e8b79f70ebd512fa9367447c32c81c431ec90cc68e87d594dd01"
+    },
+    {
+      "path": "PlaybackWave.qml",
+      "sha256": "6066cb5ba05f595cfe963a9e2a3d42c49013424cd46788fc1d455e39f5537cac"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ded591483660be67203e0f2ab6771b97811863d44634c3d2bd3b87510cac9959"
+    },
+    {
+      "path": "RoomEditor.qml",
+      "sha256": "43fda7142b8665181b3ff843713dcaacd7dac523a79bbe4674d5f8e8651e7b48"
+    },
+    {
+      "path": "SceneControls.qml",
+      "sha256": "5b993a7cb55198e73cfa81a5c80d7fe128879f4168e46199b4a7c3d05a35e7ea"
+    },
+    {
+      "path": "SkylofiButton.qml",
+      "sha256": "d236b458caf1dc9101c5cd2763445df7751b22913b2c314dfcda3c875078a370"
+    },
+    {
+      "path": "SkylofiSlider.qml",
+      "sha256": "760ccb7933d435d080703d3561180607c6e67c301d3f17366f89603d67ba2c60"
+    },
+    {
+      "path": "SkylofiStyle.qml",
+      "sha256": "0dd853550c9cce8cad944280f912995627395363fc4587bef2ad550dccbfc3bd"
+    },
+    {
+      "path": "SkylofiSwitch.qml",
+      "sha256": "c705c62d139f4c7cf4c548af4399d0be417b13034147e31ff701feed8efb3068"
+    },
+    {
+      "path": "SoundControl.qml",
+      "sha256": "5801f9138195091b85177c4c7bc13a4e58fb3b6a7851f725f4c659e8a673dfa9"
+    },
+    {
+      "path": "SoundImport.qml",
+      "sha256": "48dc8c47fe477c64e0835a4e4c8441c0994e6a232f1a261e7e3c8170bf573f3e"
+    },
+    {
+      "path": "SourceCard.qml",
+      "sha256": "bcf575df14499104f6f4bdaf84bababc8b44328f7234d18ff7bb524a54fab211"
+    },
+    {
+      "path": "SourceControls.qml",
+      "sha256": "8f1b550ccf8c3fbc82fc408b9c2ae35f7809888c4b4423c1dd0f022ed0a77299"
+    },
+    {
+      "path": "StationRow.qml",
+      "sha256": "bf110cf3a3c5bf3e215bbb0cb79f9086f9213d80c6c74760271594aac3c2cc42"
+    },
+    {
+      "path": "YoutubeLibrary.qml",
+      "sha256": "f6d27d78759ebd31b1a1fc7a646d45529fa34e859b1a5cb07335d017d6cde65b"
+    },
+    {
+      "path": "bin/SHA256SUMS",
+      "sha256": "cdd95ae3577a886d4cc2c84fa49a3785ab9b216b685ccd859182550db80935c8"
+    },
+    {
+      "path": "bin/linux-x86_64/skylofi",
+      "sha256": "4c10096ae47a056c91b281d1232a74eedac100c7fd7c972c3d70570306262342"
+    },
+    {
+      "path": "lofi-feed",
+      "sha256": "4dab351ef2146c1984af4511b5409b5f8f30766ce94df5134b7a584d1b7fcaaa"
+    },
+    {
+      "path": "lofi-ipc",
+      "sha256": "27e6aea36ef78da59a539e7fe39e8a8f9bdb151bde2bc6d194d0408b85d247ae"
+    },
+    {
+      "path": "lofi-mpris",
+      "sha256": "3bebfbf373d34c7e3703cc3a87140a5b196235d4095275ba73d64e122a1c7c34"
+    },
+    {
+      "path": "lofi-player",
+      "sha256": "04141e01ad5d1742d4b1d37eb6f514c831e0938a1f90d968b2a07303dc782083"
+    },
+    {
+      "path": "lofi_backend.py",
+      "sha256": "018f320221ac225cf3e49cf81855ff15e753edecd039ff2213bfaf5a69540602"
+    },
+    {
+      "path": "lofi_config.py",
+      "sha256": "8e224a5354daca63d4fce9a899aed74b201dbf3d495d15f3c2a9268af0b949d8"
+    },
+    {
+      "path": "lofi_duck.py",
+      "sha256": "d1b32c5971b646dd597b53eabe99fcab652c7156587554a9197f1bc3997f6905"
+    },
+    {
+      "path": "lofi_feed.py",
+      "sha256": "145a525293249c7f4c076f413478f818a4b731609293eb26f1427e418e88f4f6"
+    },
+    {
+      "path": "lofi_media.py",
+      "sha256": "218edf1127725b32887f831a5a5ee93958c4180aa9f3f6dbcc4182aaa955f229"
+    },
+    {
+      "path": "lofi_youtube.py",
+      "sha256": "7e6f8c2ea759fde8af4eb92662cd0f47fe6bfa8bed2a4e3570cdb40f795f0dc7"
+    },
+    {
+      "path": "native/Cargo.toml",
+      "sha256": "109ae0adf5fb6a7b5623c5a2132650c7127defcf908a72d5b8b964fdbd567e42"
+    },
+    {
+      "path": "native/rust-toolchain.toml",
+      "sha256": "2ad6f15416572b4836585087f1d4abc53b8fa2dbd616f8dacfaa587ed6714228"
+    },
+    {
+      "path": "scripts/build-native.sh",
+      "sha256": "56e2ac0032c4f7ae208c34b46d789d123328a63128bfaf2b8da7501d5dd8f5a8"
+    },
+    {
+      "path": "scripts/package-native.sh",
+      "sha256": "8b540d52e970c4c6dcba2d3cadc49d947f5da1b44824d97b1133b308257312fb"
+    },
+    {
+      "path": "tools/check-marketplace.mjs",
+      "sha256": "77e1a83fe0c5ae4f11b78f52bf36bf8002a806aa60899394045f5254ced19c27"
+    },
+    {
+      "path": "tools/native-notices.py",
+      "sha256": "9abf77366f740877b4e79ec0067b901f472ddb792f5ba574c8584f2a448e8590"
+    },
+    {
+      "path": "tools/perf_baseline.py",
+      "sha256": "65e249054756d56f58ad8c1efe328840772cfb943d0386412f7ab1b92ab284ec"
+    },
+    {
+      "path": "tools/perf_behavior.py",
+      "sha256": "2e9f2cdf401f2b8bc7e5c3ca93eff858306690997935a453a5977bd44e5b1804"
+    },
+    {
+      "path": "tools/perf_compare.py",
+      "sha256": "4c8487b50e2fb5938e7591731a752a12a837ecd8ca7d842143ba895eb77c0437"
+    },
+    {
+      "path": "tools/perf_coverage.py",
+      "sha256": "f0990c9313bda0bde91fb76157b3177d853b4f1dab00191a3dbd246834d7d84f"
+    },
+    {
+      "path": "tools/perf_live.py",
+      "sha256": "9a7b1c411766218c014a45749a33a409fae9410f31fa1e4a9b3e7597775a6e49"
+    },
+    {
+      "path": "tools/perf_playback_motion.py",
+      "sha256": "61e287ddb8c8ad53239eae3f4e630d60f946488be1651e6b216e198b6a8366bd"
+    },
+    {
+      "path": "tools/perf_qml.py",
+      "sha256": "0f3ebf95a908980af045909e5c80b287203b61338ecdfe4727002d3f7c0e35d4"
+    },
+    {
+      "path": "tools/perf_resident.py",
+      "sha256": "8663f7b07eb031480063e12bd9e5becf94c25750a57d0d1e4c079c4faaf3bd78"
+    },
+    {
+      "path": "tools/perf_space.py",
+      "sha256": "79b4b2ac00752931f98bca013bb4f4b1f6ba4daf6d6589d63a79ffd2ce0ab4a7"
+    },
+    {
+      "path": "tools/render-demos.py",
+      "sha256": "468586ff7bc381b84084c9c4ad35b0bc95eb193856826d70f711b209c8e3ac29"
+    },
+    {
+      "path": "tools/render-redesign.py",
+      "sha256": "2930070c9d89728d84e0b7e53c4653f6d30de7a00d5db1d92b4c039644f561bb"
+    },
+    {
+      "path": "tools/showcase_capture.py",
+      "sha256": "ef03eea387502b55085df22e79ec786ccbb738651099a0f0419f04ec013071c8"
+    },
+    {
+      "path": "tools/ui_review_v2.py",
+      "sha256": "81480d408a69221e0c17f3d699d0efd40aa9788f54a28d2b0adc0fb0660263b8"
+    }
+  ],
+  "rustSourceFiles": 12,
+  "note": "Local static pattern analysis only; no exact-commit marketplace evidence or approval. Rust source needs separate review. No community runtime code was executed by this scan."
+}
