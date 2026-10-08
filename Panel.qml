@@ -59,7 +59,11 @@ Panel {
   property int wanderAmount: 20
   property bool spatialEditorOpen: false
   property bool spatialScrollRequested: false
+  property Item mixerFocusItem: null
   property string selectedNatureId: ""
+  property bool natureCardExpanded: true
+  property bool roomDetailsOpen: false
+  property string auditionId: ""
   readonly property var activeNatureLayers: natureLayers.filter(function(layer) { return layer.enabled === true })
   property bool settingsOpen: false
   property bool mixerOpen: false
@@ -257,6 +261,7 @@ Panel {
       root.mixOn = state.mix === true
       root.natureLayers = Array.isArray(state.nature_layers) ? state.nature_layers : []
       root.spatialAvailable = state.spatial_available === true
+      root.auditionId = typeof state.audition_id === "string" ? state.audition_id : ""
       root.importedSounds = Array.isArray(state.imported_sounds) ? state.imported_sounds.filter(function(sound) {
         return sound && typeof sound.id === "string" && typeof sound.name === "string"
       }).slice(0, 64) : []
@@ -392,6 +397,25 @@ Panel {
     root.runAction(["layer", id, "pan", String(pan)])
     root.runAction(["layer", id, "distance", String(distance)])
   }
+  function selectNatureCard(id) {
+    root.natureCardExpanded = root.selectedNatureId === id && !root.spatialEditorOpen ? !root.natureCardExpanded : true
+    root.selectedNatureId = id
+    root.spatialEditorOpen = false
+  }
+  function sourcePreset(id, preset) {
+    // Placement presets never replace the user's volume or saved soundtrack.
+    if (preset === "around") {
+      root.editLayer(id,"coverage",100)
+      root.editLayer(id,"pan",0)
+    } else if (preset === "near" || preset === "far") {
+      root.editLayer(id,"distance",preset === "near" ? 18 : 80)
+      root.editLayer(id,"coverage",preset === "near" ? 12 : 25)
+    }
+  }
+  function auditionNature(id) {
+    if (!root.isPlaying) return
+    root.runAction(["audition",id,root.auditionId === id ? "off" : "on"])
+  }
   function setWanderAmount(value) {
     root.wanderAmount = clampVolume(value,20); root.sceneDirty = true
     root.runAction(["wander-amount", String(root.wanderAmount)])
@@ -402,9 +426,11 @@ Panel {
   }
   function isCollapsed(key) { return root.collapsibleSections && root.collapsed[key] === true }
   function ensureVisible(scroll, item) {
+    if (scroll === mixerScroll) root.mixerFocusItem = item
     var point = item.mapToItem(scroll.contentItem, 0, 0)
     var target = scroll.contentY
-    if (point.y < target) target = point.y
+    if (item.height > scroll.height) target = point.y
+    else if (point.y < target) target = point.y
     else if (point.y + item.height > target + scroll.height) target = point.y + item.height - scroll.height
     scroll.contentY = Math.max(0, Math.min(scroll.contentHeight - scroll.height, target))
   }
@@ -655,10 +681,14 @@ Panel {
           anchors.fill: parent
           contentWidth: width; contentHeight: mixColumn.implicitHeight
           visible: root.currentView === 1; clip: true
-          onContentHeightChanged: if (root.spatialScrollRequested) Qt.callLater(function() {
+          onContentHeightChanged: Qt.callLater(function() {
             if (root.spatialScrollRequested && spaceDisclosure.height >= roomEditor.stageItem.height) {
               root.ensureVisible(mixerScroll,roomEditor.stageItem)
               root.spatialScrollRequested = false
+            } else if (root.mixerFocusItem && root.mixerFocusItem.visible) {
+              // Loader activation and wrapped text settle during polish. Keep
+              // the requested hit target visible after that final layout.
+              root.ensureVisible(mixerScroll,root.mixerFocusItem)
             }
           })
           boundsBehavior: Flickable.StopAtBounds; interactive: contentHeight > height
@@ -702,56 +732,29 @@ Panel {
                   onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
                 }
               }
-              Row {
-                width: parent.width; spacing: Style.space(8)
-                Text {
-                  width: parent.width - livingMixToggle.width - parent.spacing
-                  anchors.verticalCenter: parent.verticalCenter
-                  text: "Living mix"; textFormat: Text.PlainText
-                  color: root.contentForeground; font.family: root.contentFontFamily; font.pixelSize: visual.body
-                }
-                SkylofiSwitch {
-                  id: livingMixToggle
-                  objectName: "livingMixToggle"
-                  checked: root.wanderEnabled; animate: root.liveMotion
-                  foreground: root.contentForeground; Accessible.name: "Living mix"
-                  Accessible.description: "Slow, gentle ambience variation without changing your faders"
-                  onToggled: { root.wanderEnabled = !root.wanderEnabled; root.sceneDirty = true; root.runAction(["wander",root.wanderEnabled ? "on" : "off"]) }
-                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
-                }
+              SkylofiButton {
+                objectName: "roomDetailsButton"
+                width: parent.width
+                text: root.roomDetailsOpen ? "Hide room acoustics" : "Room acoustics"
+                iconText: root.roomDetailsOpen ? "\uf107" : "\uf105"
+                leftAlign: true; horizontalPadding: 0; verticalPadding: 0
+                foreground: visual.muted; fontFamily: root.contentFontFamily; fontSize: visual.caption
+                animate: root.liveMotion; focusable: true
+                onClicked: root.roomDetailsOpen = !root.roomDetailsOpen
+                onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
               }
-              Disclosure {
-                width: parent.width; expanded: root.wanderEnabled
-                Row {
-                  id: variationRow
-                  objectName: "livingMixAmount"
-                  signal edited(int value)
-                  width: parent.width; spacing: Style.space(8)
-                  onEdited: function(value) { root.setWanderAmount(value) }
-                  Text {
-                    id: variationLabel
-                    width: Style.space(68); anchors.verticalCenter: parent.verticalCenter
-                    text: "Variation"; color: visual.muted
-                    font.family: root.contentFontFamily; font.pixelSize: visual.label
-                  }
-                  SkylofiSlider {
-                    width: parent.width - variationLabel.width - variationReadout.width - parent.spacing * 2
-                    height: Style.space(32); minimum: 0; maximum: 100; step: 5; integer: true
-                    value: root.wanderAmount; animate: root.liveMotion; bar: root.bar
-                    trackColor: visual.sliderTrack; fillColor: Color.accent; knobColor: Color.accent
-                    activeFocusOnTab: true; Accessible.role: Accessible.Slider
-                    Accessible.name: "Living mix variation"
-                    Accessible.description: root.wanderAmount + " percent"
-                    Keys.onLeftPressed: variationRow.edited(Math.max(0,root.wanderAmount - 5))
-                    Keys.onRightPressed: variationRow.edited(Math.min(100,root.wanderAmount + 5))
-                    onReleased: function(value) { variationRow.edited(value) }
-                    onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
-                  }
-                  Text {
-                    id: variationReadout
-                    width: Style.space(34); anchors.verticalCenter: parent.verticalCenter
-                    text: root.wanderAmount + "%"; horizontalAlignment: Text.AlignRight
-                    color: visual.muted; font.family: root.contentFontFamily; font.pixelSize: visual.caption
+              Column {
+                width: parent.width; visible: root.roomDetailsOpen; spacing: Style.space(10)
+                Repeater {
+                  model: [{key:"size",label:"Room size",fallback:35},{key:"softness",label:"Soft furnishings",fallback:55},{key:"reflections",label:"Room reflections",fallback:25}]
+                  SoundControl {
+                    required property var modelData
+                    objectName: "room-" + modelData.key
+                    label: modelData.label; value: root.roomState[modelData.key]
+                    bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                    animate: root.liveMotion
+                    onEdited: function(value) { root.editRoom(modelData.key,value) }
+                    onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
                   }
                 }
               }
@@ -787,11 +790,26 @@ Panel {
                 }
               }
               Caption { visible: root.enabledNatureCount === 0; text: "Add rain, a room tone or your own audio." }
+              SkylofiButton {
+                objectName: "soundSpaceButton"
+                width: parent.width
+                visible: root.spatialAvailable && root.enabledNatureCount > 0
+                text: root.spatialEditorOpen ? "Back to sound cards" : "Edit overall space"
+                iconText: root.spatialEditorOpen ? "\uf107" : "\uf105"
+                leftAlign: true; horizontalPadding: Style.space(2)
+                foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                animate: root.liveMotion; focusable: true
+                onClicked: {
+                  root.spatialScrollRequested = !root.spatialEditorOpen
+                  root.spatialEditorOpen = !root.spatialEditorOpen
+                }
+              }
               Item {
                 id: natureBody
                 objectName: "section-body-nature"
                 width: parent.width
-                height: root.isCollapsed("nature") ? 0 : natureColumn.implicitHeight
+                visible: !root.spatialAvailable || !root.spatialEditorOpen
+                height: root.spatialAvailable && root.spatialEditorOpen || root.isCollapsed("nature") ? 0 : natureColumn.implicitHeight
                 clip: true
                 Column {
                   id: natureColumn
@@ -806,45 +824,60 @@ Panel {
                       readonly property var soundState: root.natureLayer(modelData.value)
                       visible: soundState.enabled
                       width: parent.width; spacing: Style.space(2)
-                      MixerLevel {
-                        objectName: "natureLevel-" + modelData.value
-                        width: parent.width
-                        compact: true; labelWidth: Style.space(112)
-                        label: modelData.label; value: soundState.volume
-                        removable: true
+                      SourceCard {
+                        objectName: "sourceCard-" + modelData.value
+                        width: parent.width; visible: root.spatialAvailable
+                        sound: soundState; label: modelData.label
+                        selected: root.selectedNatureId === modelData.value
+                        expanded: selected && root.natureCardExpanded && !root.spatialEditorOpen
+                        canAudition: root.isPlaying; auditioning: root.auditionId === modelData.value
                         bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
                         animate: root.liveMotion
-                        onEdited: function(value) { root.setVolume(modelData.value, value) }
-                        onRemoveRequested: root.runAction(["nature", modelData.value, "off"])
-                        onFocusRequested: function(item) { root.selectedNatureId = modelData.value; root.ensureVisible(mixerScroll, item) }
+                        onSelectedRequested: root.selectNatureCard(modelData.value)
+                        onRemoveRequested: root.runAction(["nature",modelData.value,"off"])
+                        onVolumeEdited: function(value) { root.setVolume(modelData.value,value) }
+                        onLayerEdited: function(key,value) { root.editLayer(modelData.value,key,value) }
+                        onPresetRequested: function(preset) { root.sourcePreset(modelData.value,preset) }
+                        onAuditionRequested: root.auditionNature(modelData.value)
+                        onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
                       }
-                      Row {
-                        width: parent.width; spacing: Style.space(6)
-                        Caption {
-                          objectName: "natureEffective-" + modelData.value
-                          width: parent.width - (placeButton.visible ? placeButton.width + parent.spacing : 0)
-                          anchors.verticalCenter: parent.verticalCenter
-                          text: (root.spatialAvailable ? roomEditor.positionText(soundState) + " · " : "") + Math.round(typeof soundState.effective_volume === "number" ? soundState.effective_volume : soundState.volume) + "% now"
-                        }
-                        SkylofiButton {
-                          id: placeButton
-                          objectName: "place-" + modelData.value
-                          visible: root.spatialAvailable
-                          text: "Place"; fontSize: visual.caption
-                          height: Style.space(26); verticalPadding: 0; horizontalPadding: Style.space(6)
-                          foreground: visual.muted; fontFamily: root.contentFontFamily
-                          animate: root.liveMotion; focusable: true
-                          selected: root.spatialEditorOpen && root.selectedNatureId === modelData.value
-                          onClicked: {
-                            root.selectedNatureId = modelData.value
-                            var alreadyOpen = root.spatialEditorOpen
-                            root.spatialScrollRequested = true; root.spatialEditorOpen = true
-                            if (alreadyOpen) Qt.callLater(function() { root.ensureVisible(mixerScroll,roomEditor.stageItem); root.spatialScrollRequested = false })
-                          }
-                        }
+                      MixerLevel {
+                        objectName: "natureLevel-" + modelData.value
+                        width: parent.width; visible: !root.spatialAvailable
+                        compact: true; labelWidth: Style.space(112)
+                        label: modelData.label; value: soundState.volume; removable: true
+                        bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                        animate: root.liveMotion
+                        onEdited: function(value) { root.setVolume(modelData.value,value) }
+                        onRemoveRequested: root.runAction(["nature",modelData.value,"off"])
+                        onFocusRequested: function(item) { root.selectedNatureId = modelData.value; root.ensureVisible(mixerScroll,item) }
                       }
                     }
                   }
+                }
+              }
+              Disclosure {
+                id: spaceDisclosure
+                width: parent.width
+                expanded: root.spatialAvailable && root.spatialEditorOpen && root.enabledNatureCount > 0
+                RoomEditor {
+                  id: roomEditor
+                  objectName: "roomEditor"
+                  width: parent.width
+                  layers: root.activeNatureLayers; options: root.noiseOptions
+                  selectedId: root.selectedNatureId; room: root.roomState
+                  canAudition: root.isPlaying; auditionId: root.auditionId
+                  popupBoundary: keyCatcher; bar: root.bar
+                  foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                  animate: root.liveMotion
+                  onSelected: function(id) { root.selectedNatureId = id }
+                  onLayerEdited: function(id,key,value) { root.editLayer(id,key,value) }
+                  onVolumeEdited: function(id,value) { root.setVolume(id,value) }
+                  onPresetRequested: function(id,preset) { root.sourcePreset(id,preset) }
+                  onAuditionRequested: function(id) { root.auditionNature(id) }
+                  onPositionEdited: function(id,pan,distance) { root.placeLayer(id,pan,distance) }
+                  onRoomEdited: function(key,value) { root.editRoom(key,value) }
+                  onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
                 }
               }
               SoundImport {
@@ -907,38 +940,61 @@ Panel {
                   }
                 }
               }
-              SkylofiButton {
-                objectName: "soundSpaceButton"
-                width: parent.width
-                visible: root.spatialAvailable && root.enabledNatureCount > 0
-                text: root.spatialEditorOpen ? "Hide sound space" : "Sound space"
-                iconText: root.spatialEditorOpen ? "\uf107" : "\uf105"
-                leftAlign: true; horizontalPadding: Style.space(2)
-                foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                animate: root.liveMotion; focusable: true
-                onClicked: {
-                  root.spatialScrollRequested = !root.spatialEditorOpen
-                  root.spatialEditorOpen = !root.spatialEditorOpen
+            }
+            ControlGroup {
+              width: parent.width
+              visible: root.spatialAvailable
+              Row {
+                width: parent.width; spacing: Style.space(8)
+                Text {
+                  width: parent.width - livingMixToggle.width - parent.spacing
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: "Living mix"; textFormat: Text.PlainText
+                  color: root.contentForeground; font.family: root.contentFontFamily; font.pixelSize: visual.body
+                }
+                SkylofiSwitch {
+                  id: livingMixToggle
+                  objectName: "livingMixToggle"
+                  checked: root.wanderEnabled; animate: root.liveMotion
+                  foreground: root.contentForeground; Accessible.name: "Living mix"
+                  Accessible.description: "Slow, gentle ambience variation without changing your faders"
+                  onToggled: { root.wanderEnabled = !root.wanderEnabled; root.sceneDirty = true; root.runAction(["wander",root.wanderEnabled ? "on" : "off"]) }
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
                 }
               }
               Disclosure {
-                id: spaceDisclosure
-                width: parent.width
-                expanded: root.spatialAvailable && root.spatialEditorOpen && root.enabledNatureCount > 0
-                RoomEditor {
-                  id: roomEditor
-                  objectName: "roomEditor"
-                  width: parent.width
-                  layers: root.activeNatureLayers; options: root.noiseOptions
-                  selectedId: root.selectedNatureId; room: root.roomState
-                  popupBoundary: keyCatcher; bar: root.bar
-                  foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                  animate: root.liveMotion
-                  onSelected: function(id) { root.selectedNatureId = id }
-                  onLayerEdited: function(id,key,value) { root.editLayer(id,key,value) }
-                  onPositionEdited: function(id,pan,distance) { root.placeLayer(id,pan,distance) }
-                  onRoomEdited: function(key,value) { root.editRoom(key,value) }
-                  onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
+                width: parent.width; expanded: root.wanderEnabled
+                Row {
+                  id: variationRow
+                  objectName: "livingMixAmount"
+                  signal edited(int value)
+                  width: parent.width; spacing: Style.space(8)
+                  onEdited: function(value) { root.setWanderAmount(value) }
+                  Text {
+                    id: variationLabel
+                    width: Style.space(68); anchors.verticalCenter: parent.verticalCenter
+                    text: "Variation"; color: visual.muted
+                    font.family: root.contentFontFamily; font.pixelSize: visual.label
+                  }
+                  SkylofiSlider {
+                    width: parent.width - variationLabel.width - variationReadout.width - parent.spacing * 2
+                    height: Style.space(32); minimum: 0; maximum: 100; step: 5; integer: true
+                    value: root.wanderAmount; animate: root.liveMotion; bar: root.bar
+                    trackColor: visual.sliderTrack; fillColor: Color.accent; knobColor: Color.accent
+                    activeFocusOnTab: true; Accessible.role: Accessible.Slider
+                    Accessible.name: "Living mix variation"
+                    Accessible.description: root.wanderAmount + " percent"
+                    Keys.onLeftPressed: variationRow.edited(Math.max(0,root.wanderAmount - 5))
+                    Keys.onRightPressed: variationRow.edited(Math.min(100,root.wanderAmount + 5))
+                    onReleased: function(value) { variationRow.edited(value) }
+                    onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
+                  }
+                  Text {
+                    id: variationReadout
+                    width: Style.space(34); anchors.verticalCenter: parent.verticalCenter
+                    text: root.wanderAmount + "%"; horizontalAlignment: Text.AlignRight
+                    color: visual.muted; font.family: root.contentFontFamily; font.pixelSize: visual.caption
+                  }
                 }
               }
             }

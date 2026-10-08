@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix="lofi-panel-test-") as directory:
     if not match:
         raise SystemExit(output or "Panel tests did not report results")
     totals = json.loads(match.group(1))
-    # Twelve tests and initTestCase must finish before cleanupTestCase reports.
-    if result.returncode or totals != {"passed": 13, "failed": 0}:
+    # Fourteen tests and initTestCase must finish before cleanupTestCase reports.
+    if result.returncode or totals != {"passed": 15, "failed": 0}:
         raise SystemExit(output)
-    print("12 panel state tests passed")
+    print("14 panel state tests passed")

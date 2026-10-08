@@ -23,6 +23,14 @@ Window {
     name: "FocusPanel"
     property string phase: ""
     when: true
+    function sourceCard(id) {
+      function seek(parent) {
+        if (parent.objectName === "sourceCard-" + id) return parent
+        for (var child of parent.children || []) { var found = seek(child); if (found) return found }
+        return null
+      }
+      return seek(findChild(panel,"section-body-nature"))
+    }
 
     function test_instantRevealPersists() {
       panel.applyStatus(JSON.stringify({running: false, paused: false, reveal_speed: 0}))
@@ -261,6 +269,92 @@ Window {
       compare(voiceHost.lastArguments,["sound-remove","imported-rain"])
       compare(panel.pendingSoundRemoval,"")
       compare(panel.playerRunning,false)
+      panel.hostWidget = null
+    }
+
+    function test_coverageCardsAndPresetsKeepVolumeAndSelection() {
+      panel.hostWidget = voiceHost
+      panel.showView(1)
+      panel.natureCardExpanded = true
+      panel.spatialEditorOpen = false
+      panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"},{id:"noise-fireplace",name:"Fireplace"}]}]
+      panel.applyStatus(JSON.stringify({running:true,paused:true,spatial_available:true,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,distance:78,pan:0,width:100,coverage:100},
+          {id:"noise-fireplace",enabled:true,volume:50,distance:18,pan:-45,width:100,coverage:12}]}))
+      tryVerify(function() { return sourceCard("noise-fireplace") !== null },1000)
+      var fire = sourceCard("noise-fireplace")
+      phase = "coverage selection"
+      fire.selectedRequested()
+      compare(panel.selectedNatureId,"noise-fireplace")
+      compare(fire.expanded,true)
+      compare(sourceCard("noise-rain").expanded,false)
+      compare(findChild(fire,"sourceDetailsLoader").active,true)
+      compare(findChild(sourceCard("noise-rain"),"sourceDetailsLoader").active,false)
+      findChild(fire,"spaceCoverage").edited(65)
+      phase = "coverage command"
+      compare(voiceHost.lastArguments,["layer","noise-fireplace","coverage","65"])
+      compare(panel.natureLayer("noise-fireplace").width,100)
+      compare(panel.natureLayer("noise-fireplace").volume,50)
+      findChild(fire,"sourcePreset-near").clicked()
+      phase = "near preset"
+      compare(panel.natureLayer("noise-fireplace").distance,18)
+      compare(panel.natureLayer("noise-fireplace").coverage,12)
+      findChild(fire,"sourcePreset-far").clicked()
+      phase = "far preset"
+      compare(panel.natureLayer("noise-fireplace").distance,80)
+      compare(panel.natureLayer("noise-fireplace").coverage,25)
+      voiceHost.argumentsHistory = []
+      findChild(fire,"sourcePreset-around").clicked()
+      phase = "around preset"
+      compare(voiceHost.argumentsHistory,[["layer","noise-fireplace","coverage","100"],["layer","noise-fireplace","pan","0"]])
+      compare(panel.natureLayer("noise-fireplace").volume,50)
+      compare(panel.natureLayer("noise-fireplace").distance,80)
+      compare(panel.playerPaused,true)
+      phase = "coverage refreshed selection"
+      panel.applyStatus(JSON.stringify({running:true,paused:true,spatial_available:true,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,effective_volume:20,coverage:100},
+          {id:"noise-fireplace",enabled:true,volume:50,effective_volume:30,distance:80,pan:0,coverage:100}]}))
+      compare(panel.selectedNatureId,"noise-fireplace")
+      compare(fire.expanded,true)
+      panel.spatialEditorOpen = true
+      phase = "coverage map hides cards"
+      compare(findChild(panel,"section-body-nature").height,0)
+      compare(findChild(fire,"sourceDetailsLoader").active,false)
+      compare(findChild(panel,"roomEditor").currentLayer.id,"noise-fireplace")
+      panel.hostWidget = null
+    }
+
+    function test_auditionIsTransientAndDisabledWhenPaused() {
+      panel.hostWidget = voiceHost
+      panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
+      panel.applyStatus(JSON.stringify({running:true,paused:true,spatial_available:true,scene_dirty:false,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100}]}))
+      tryVerify(function() { return sourceCard("noise-rain") !== null },1000)
+      var card = sourceCard("noise-rain")
+      var audition = findChild(card,"sourceAudition")
+      phase = "audition paused"
+      compare(audition.enabled,false)
+      voiceHost.argumentsHistory = []
+      panel.auditionNature("noise-rain")
+      phase = "audition paused command"
+      compare(voiceHost.argumentsHistory,[])
+      panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,scene_dirty:false,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100}]}))
+      compare(audition.enabled,true)
+      phase = "audition start"
+      audition.clicked()
+      compare(voiceHost.lastArguments,["audition","noise-rain","on"])
+      compare(panel.sceneDirty,false)
+      compare(panel.natureLayer("noise-rain").volume,35)
+      phase = "audition active status"
+      panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,audition_id:"noise-rain",
+        scene_dirty:false,nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100}]}))
+      compare(audition.text,"Back to mix")
+      phase = "audition end"
+      audition.clicked()
+      compare(voiceHost.lastArguments,["audition","noise-rain","off"])
+      panel.applyStatus(JSON.stringify({running:false,paused:false,nature_layers:[]}))
+      compare(panel.auditionId,"")
       panel.hostWidget = null
     }
 
