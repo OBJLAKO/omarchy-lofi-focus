@@ -53,6 +53,7 @@ pub struct LayerParams {
     pub reflections: f64,
     pub softness: f64,
     pub width: f64,
+    pub coverage: f64,
     pub echo: f64,
     pub outside: bool,
 }
@@ -66,6 +67,7 @@ impl Default for LayerParams {
             reflections: 0.0,
             softness: 0.0,
             width: 1.0,
+            coverage: 0.5,
             echo: 0.0,
             outside: false,
         }
@@ -81,6 +83,7 @@ impl LayerParams {
             reflections: unit(self.reflections, 0.0),
             softness: unit(self.softness, 0.0),
             width: unit(self.width, 1.0),
+            coverage: unit(self.coverage, 0.5),
             echo: unit(self.echo, 0.0),
             outside: self.outside,
         }
@@ -178,9 +181,11 @@ fn response(params: LayerParams) -> LayerResponse {
 struct Slot {
     track: TrackHandle,
     filter: FilterHandle,
-    stereo: CommandWriter<(f64, f64)>,
+    stereo: CommandWriter<SpatialCommand>,
     sound: Option<LoopHandle>,
     params: LayerParams,
+    mono: bool,
+    generation: u64,
 }
 
 /// Dropping or stopping this mixer cancels every decoder worker and releases
@@ -342,6 +347,8 @@ where
                 stereo,
                 sound: None,
                 params: LayerParams::default(),
+                mono: false,
+                generation: 0,
             });
         }
         let mut result = Self {
@@ -377,6 +384,7 @@ where
         }
         // Validate/open the new file before disturbing an existing layer.
         let data = LoopData::from_file(path)?;
+        let mono = data.decoder.channels == 1;
         let index = if let Some(index) = self.active.get(id).copied() {
             index
         } else {
@@ -403,6 +411,8 @@ where
         if let Some(old) = slot.sound.replace(next_sound) {
             drop(old);
         }
+        slot.mono = mono;
+        slot.generation = slot.generation.wrapping_add(1);
         if let Some(sound) = &slot.sound {
             sound.set_paused(paused);
         }
@@ -456,7 +466,15 @@ where
         slot.track.set_volume(db(target.gain), tween);
         slot.filter.set_cutoff(target.cutoff, tween);
         slot.filter.set_mix(Mix(target.filter_mix as f32), tween);
-        slot.stereo.write((params.pan, params.width));
+        slot.stereo.write(SpatialCommand {
+            values: SpatialValues {
+                pan: params.pan,
+                width: params.width,
+                coverage: params.coverage,
+            },
+            mono: slot.mono,
+            generation: slot.generation,
+        });
         let _ = slot
             .track
             .set_send(&self.reverb_track, db(target.reverb_send), tween);
@@ -568,53 +586,256 @@ impl<B: Backend> Drop for LocalAudio<B> {
 }
 
 struct StereoFieldBuilder;
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct SpatialValues {
+    pan: f64,
+    width: f64,
+    coverage: f64,
+}
+impl Default for SpatialValues {
+    fn default() -> Self {
+        Self {
+            pan: 0.0,
+            width: 1.0,
+            coverage: 0.5,
+        }
+    }
+}
+#[derive(Clone, Copy)]
+struct SpatialCommand {
+    values: SpatialValues,
+    mono: bool,
+    generation: u64,
+}
 struct StereoField {
-    reader: CommandReader<(f64, f64)>,
-    current: (f64, f64),
-    target: (f64, f64),
+    reader: CommandReader<SpatialCommand>,
+    current: SpatialValues,
+    target: SpatialValues,
+    mono: bool,
+    generation: u64,
+    mix: SpatialMix,
+    diffuser: StereoDiffuser,
 }
 
 impl EffectBuilder for StereoFieldBuilder {
-    type Handle = CommandWriter<(f64, f64)>;
+    type Handle = CommandWriter<SpatialCommand>;
     fn build(self) -> (Box<dyn Effect>, Self::Handle) {
         let (writer, reader) = command_writer_and_reader();
         (
             Box::new(StereoField {
                 reader,
-                current: (0.0, 1.0),
-                target: (0.0, 1.0),
+                current: SpatialValues::default(),
+                target: SpatialValues::default(),
+                mono: false,
+                generation: 0,
+                mix: SpatialMix::new(SpatialValues::default(), false),
+                diffuser: StereoDiffuser::new(),
             }),
             writer,
         )
     }
 }
 
-fn stereo_frame(frame: Frame, pan: f64, width: f64) -> Frame {
-    if pan == 0.0 && width == 1.0 {
-        return frame;
+#[derive(Clone, Copy)]
+struct SpatialMix {
+    input_width: f32,
+    direct_width: f32,
+    direct_left: f32,
+    direct_right: f32,
+    diffuse_left: f32,
+    diffuse_right: f32,
+    direct_gain: f32,
+    diffuse_gain: f32,
+    preserve_original: bool,
+}
+impl SpatialMix {
+    fn new(values: SpatialValues, mono: bool) -> Self {
+        let spread = if mono {
+            values.coverage
+        } else {
+            (values.coverage - 0.5).max(0.0) * 2.0
+        };
+        // A convex mix keeps correlated/DC gain at unity. Equal-power mixing
+        // would boost low-frequency mono ambience by up to ~3 dB while widening.
+        let diffuse_gain = spread * 0.72;
+        let diffuse_pan = values.pan * (1.0 - values.coverage * 0.75);
+        Self {
+            input_width: values.width as f32,
+            direct_width: (values.width
+                * (values.coverage * 2.0).min(1.0)
+                * (1.0 - values.pan.abs())) as f32,
+            direct_left: (1.0 - values.pan).sqrt() as f32,
+            direct_right: (1.0 + values.pan).sqrt() as f32,
+            diffuse_left: (1.0 - diffuse_pan).sqrt() as f32,
+            diffuse_right: (1.0 + diffuse_pan).sqrt() as f32,
+            direct_gain: (1.0 - diffuse_gain) as f32,
+            diffuse_gain: diffuse_gain as f32,
+            preserve_original: !mono
+                && values.coverage == 0.5
+                && values.width == 1.0
+                && values.pan == 0.0,
+        }
     }
-    let mid = (frame.left + frame.right) * 0.5;
-    let side = (frame.left - frame.right) * 0.5 * width as f32;
-    // Centre/full width preserves the original stereo asset exactly. At the
-    // edges the field narrows rather than simply discarding one source channel.
-    let side = side * (1.0 - pan.abs()) as f32;
-    let left = (1.0 - pan).sqrt() as f32;
-    let right = (1.0 + pan).sqrt() as f32;
-    Frame::new((mid + side) * left, (mid - side) * right)
+
+    fn direct(self, frame: Frame) -> Frame {
+        if self.preserve_original {
+            return frame;
+        }
+        let mid = (frame.left + frame.right) * 0.5;
+        let side = (frame.left - frame.right) * 0.5 * self.direct_width;
+        Frame::new(
+            (mid + side) * self.direct_left,
+            (mid - side) * self.direct_right,
+        )
+    }
+}
+
+// Four preallocated all-pass delay lines use at most 64 KiB per reusable slot.
+// Delays stay below ~20ms at supported rates: stereo diffusion, not a second
+// echo/reverb per source. This is an envelopment cue, not HRTF/front-back audio.
+const DIFFUSER_CAPACITY: usize = 4096;
+struct DiffusionAllPass {
+    buffer: [f32; DIFFUSER_CAPACITY],
+    delay: usize,
+    cursor: usize,
+    milliseconds: f64,
+    feedback: f32,
+}
+impl DiffusionAllPass {
+    fn new(milliseconds: f64, feedback: f32) -> Self {
+        let mut result = Self {
+            buffer: [0.0; DIFFUSER_CAPACITY],
+            delay: 1,
+            cursor: 0,
+            milliseconds,
+            feedback,
+        };
+        result.configure(48_000);
+        result
+    }
+    fn configure(&mut self, sample_rate: u32) {
+        self.delay = (self.milliseconds * f64::from(sample_rate) / 1000.0)
+            .round()
+            .clamp(1.0, DIFFUSER_CAPACITY as f64) as usize;
+        self.reset();
+    }
+    fn reset(&mut self) {
+        self.buffer.fill(0.0);
+        self.cursor = 0;
+    }
+    fn process(&mut self, input: f32) -> f32 {
+        let output = self.buffer[self.cursor] - self.feedback * input;
+        let stored = input + self.feedback * output;
+        // Flush inaudible denormals without allocation or platform FP flags.
+        self.buffer[self.cursor] = if stored.abs() < 1.0e-20 { 0.0 } else { stored };
+        self.cursor += 1;
+        if self.cursor == self.delay {
+            self.cursor = 0;
+        }
+        output
+    }
+}
+struct StereoDiffuser {
+    left_a: DiffusionAllPass,
+    left_b: DiffusionAllPass,
+    right_a: DiffusionAllPass,
+    right_b: DiffusionAllPass,
+}
+impl StereoDiffuser {
+    fn new() -> Self {
+        Self {
+            left_a: DiffusionAllPass::new(7.3, 0.52),
+            left_b: DiffusionAllPass::new(13.9, 0.37),
+            right_a: DiffusionAllPass::new(11.7, 0.52),
+            right_b: DiffusionAllPass::new(19.1, 0.37),
+        }
+    }
+    fn configure(&mut self, sample_rate: u32) {
+        for line in [
+            &mut self.left_a,
+            &mut self.left_b,
+            &mut self.right_a,
+            &mut self.right_b,
+        ] {
+            line.configure(sample_rate);
+        }
+    }
+    fn reset(&mut self) {
+        for line in [
+            &mut self.left_a,
+            &mut self.left_b,
+            &mut self.right_a,
+            &mut self.right_b,
+        ] {
+            line.reset();
+        }
+    }
+    fn process(&mut self, frame: Frame) -> Frame {
+        Frame::new(
+            self.left_b.process(self.left_a.process(frame.left)),
+            self.right_b.process(self.right_a.process(frame.right)),
+        )
+    }
+}
+
+fn approach(current: f64, target: f64, coefficient: f64) -> f64 {
+    if (target - current).abs() < 1.0e-7 {
+        target
+    } else {
+        current + (target - current) * coefficient
+    }
 }
 
 impl Effect for StereoField {
+    fn init(&mut self, sample_rate: u32, _internal_buffer_size: usize) {
+        self.diffuser.configure(sample_rate);
+    }
+    fn on_change_sample_rate(&mut self, sample_rate: u32) {
+        self.diffuser.configure(sample_rate);
+    }
     fn on_start_processing(&mut self) {
-        if let Some(target) = self.reader.read() {
-            self.target = (finite(target.0, 0.0).clamp(-1.0, 1.0), unit(target.1, 1.0));
+        if let Some(command) = self.reader.read() {
+            self.target = SpatialValues {
+                pan: finite(command.values.pan, 0.0).clamp(-1.0, 1.0),
+                width: unit(command.values.width, 1.0),
+                coverage: unit(command.values.coverage, 0.5),
+            };
+            self.mono = command.mono;
+            if self.generation != command.generation {
+                self.generation = command.generation;
+                self.current = self.target;
+                self.diffuser.reset();
+            }
+            self.mix = SpatialMix::new(self.current, self.mono);
         }
     }
     fn process(&mut self, input: &mut [Frame], dt: f64, _info: &Info) {
         let coefficient = 1.0 - (-dt / 0.025).exp();
         for frame in input {
-            self.current.0 += (self.target.0 - self.current.0) * coefficient;
-            self.current.1 += (self.target.1 - self.current.1) * coefficient;
-            *frame = stereo_frame(*frame, self.current.0, self.current.1);
+            if self.current != self.target {
+                self.current.pan = approach(self.current.pan, self.target.pan, coefficient);
+                self.current.width = approach(self.current.width, self.target.width, coefficient);
+                self.current.coverage =
+                    approach(self.current.coverage, self.target.coverage, coefficient);
+                self.mix = SpatialMix::new(self.current, self.mono);
+            }
+            let original = *frame;
+            let mid = (original.left + original.right) * 0.5;
+            let side = (original.left - original.right) * 0.5 * self.mix.input_width;
+            // Keep histories warm even at Point so widening never starts with
+            // empty delays. Coefficients are cached once transitions settle.
+            let diffuse = self.diffuser.process(Frame::new(mid + side, mid - side));
+            let direct = self.mix.direct(original);
+            *frame = if self.mix.diffuse_gain == 0.0 {
+                direct
+            } else {
+                Frame::new(
+                    direct.left * self.mix.direct_gain
+                        + diffuse.left * self.mix.diffuse_left * self.mix.diffuse_gain,
+                    direct.right * self.mix.direct_gain
+                        + diffuse.right * self.mix.diffuse_right * self.mix.diffuse_gain,
+                )
+            };
         }
     }
 }
@@ -855,6 +1076,7 @@ struct FileDecoder {
     decoder: Box<dyn AudioDecoder>,
     track_id: u32,
     sample_rate: u32,
+    channels: usize,
 }
 
 impl FileDecoder {
@@ -902,6 +1124,7 @@ impl FileDecoder {
             decoder,
             track_id,
             sample_rate,
+            channels: 0,
         })
     }
 
@@ -924,6 +1147,7 @@ impl FileDecoder {
                 .decode(&packet)
                 .map_err(|error| error.to_string())?;
             let frames = convert_buffer(&buffer)?;
+            self.channels = buffer.num_planes();
             if !frames.is_empty() {
                 return Ok(frames);
             }
@@ -992,7 +1216,7 @@ fn decoded_sample(sample: f32) -> f32 {
     // Float WAV imports can contain nonfinite samples. Remove them before they
     // poison a source filter's persistent state; normal levels remain intact.
     if sample.is_finite() {
-        sample
+        sample.clamp(-8.0, 8.0)
     } else {
         0.0
     }
@@ -1088,31 +1312,37 @@ mod tests {
     struct TestFile(PathBuf);
     impl TestFile {
         fn wave(frequency: f64, seconds: f64) -> Self {
+            Self::wave_channels(frequency, seconds, 2)
+        }
+        fn wave_channels(frequency: f64, seconds: f64, channels: u16) -> Self {
             let path = std::env::temp_dir().join(format!(
                 "skylofi-audio-{}-{}.wav",
                 std::process::id(),
                 NEXT_FILE.fetch_add(1, Ordering::Relaxed)
             ));
             let frames = (48_000.0 * seconds) as u32;
-            let length = frames * 4;
+            let alignment = channels * 2;
+            let length = frames * u32::from(alignment);
             let mut file = File::create(&path).unwrap();
             file.write_all(b"RIFF").unwrap();
             file.write_all(&(36 + length).to_le_bytes()).unwrap();
             file.write_all(b"WAVEfmt ").unwrap();
             file.write_all(&16_u32.to_le_bytes()).unwrap();
             file.write_all(&1_u16.to_le_bytes()).unwrap();
-            file.write_all(&2_u16.to_le_bytes()).unwrap();
+            file.write_all(&channels.to_le_bytes()).unwrap();
             file.write_all(&48_000_u32.to_le_bytes()).unwrap();
-            file.write_all(&192_000_u32.to_le_bytes()).unwrap();
-            file.write_all(&4_u16.to_le_bytes()).unwrap();
+            file.write_all(&(48_000 * u32::from(alignment)).to_le_bytes())
+                .unwrap();
+            file.write_all(&alignment.to_le_bytes()).unwrap();
             file.write_all(&16_u16.to_le_bytes()).unwrap();
             file.write_all(b"data").unwrap();
             file.write_all(&length.to_le_bytes()).unwrap();
             for index in 0..frames {
                 let value = ((index as f64 * frequency * std::f64::consts::TAU / 48_000.0).sin()
                     * 10_000.0) as i16;
-                file.write_all(&value.to_le_bytes()).unwrap();
-                file.write_all(&value.to_le_bytes()).unwrap();
+                for _ in 0..channels {
+                    file.write_all(&value.to_le_bytes()).unwrap();
+                }
             }
             Self(path)
         }
@@ -1159,6 +1389,7 @@ mod tests {
             reflections: 99.0,
             softness: f64::NAN,
             width: f64::NEG_INFINITY,
+            coverage: f64::NAN,
             echo: 50.0,
             outside: true,
         }
@@ -1172,11 +1403,351 @@ mod tests {
     #[test]
     fn stereo_width_preserves_diffuse_asset_and_position_keeps_both_channels() {
         let input = Frame::new(0.8, 0.2);
-        assert_eq!(stereo_frame(input, 0.0, 1.0), input);
-        assert_eq!(stereo_frame(input, 0.0, 0.0), Frame::from_mono(0.5));
-        let left = stereo_frame(input, -1.0, 1.0);
+        assert_eq!(
+            SpatialMix::new(SpatialValues::default(), false).direct(input),
+            input
+        );
+        assert_eq!(
+            SpatialMix::new(
+                SpatialValues {
+                    coverage: 0.0,
+                    ..SpatialValues::default()
+                },
+                false
+            )
+            .direct(input),
+            Frame::from_mono(0.5)
+        );
+        let left = SpatialMix::new(
+            SpatialValues {
+                pan: -1.0,
+                ..SpatialValues::default()
+            },
+            false,
+        )
+        .direct(input);
         assert_eq!(left.right, 0.0);
         assert!((left.left - 0.5 * 2.0_f32.sqrt()).abs() < 0.0001);
+    }
+
+    fn spatial(
+        mono: bool,
+        coverage: f64,
+        pan: f64,
+    ) -> (StereoField, CommandWriter<SpatialCommand>) {
+        let (mut writer, reader) = command_writer_and_reader();
+        let mut field = StereoField {
+            reader,
+            current: SpatialValues::default(),
+            target: SpatialValues::default(),
+            mono: false,
+            generation: 0,
+            mix: SpatialMix::new(SpatialValues::default(), false),
+            diffuser: StereoDiffuser::new(),
+        };
+        field.init(48_000, 128);
+        writer.write(SpatialCommand {
+            values: SpatialValues {
+                coverage,
+                pan,
+                ..SpatialValues::default()
+            },
+            mono,
+            generation: 1,
+        });
+        field.on_start_processing();
+        (field, writer)
+    }
+
+    struct SpatialMetrics {
+        correlation: f64,
+        gain: f64,
+        left_energy: f64,
+        right_energy: f64,
+    }
+    fn coverage_metrics(coverage: f64, pan: f64, brown: bool) -> SpatialMetrics {
+        let (mut field, _) = spatial(true, coverage, pan);
+        let info = kira::info::MockInfoBuilder::new().build();
+        let mut block = [Frame::ZERO; 128];
+        let mut source = [0.0_f32; 128];
+        let mut rng = 0x9e37_79b9_u32;
+        let mut low = 0.0_f32;
+        let mut left = 0.0;
+        let mut right = 0.0;
+        let mut cross = 0.0;
+        let mut original = 0.0;
+        for index in 0..700 {
+            for (frame, input) in block.iter_mut().zip(&mut source) {
+                rng ^= rng << 13;
+                rng ^= rng >> 17;
+                rng ^= rng << 5;
+                let white = (rng as f64 / f64::from(u32::MAX) * 2.0 - 1.0) as f32 * 0.35;
+                low = low * 0.992 + white * 0.008;
+                *input = if brown { low } else { white };
+                *frame = Frame::from_mono(*input);
+            }
+            field.process(&mut block, 1.0 / 48_000.0, &info);
+            if index >= 100 {
+                for (frame, input) in block.iter().zip(source) {
+                    assert!(frame.left.is_finite() && frame.right.is_finite());
+                    let l = f64::from(frame.left);
+                    let r = f64::from(frame.right);
+                    left += l * l;
+                    right += r * r;
+                    cross += l * r;
+                    original += f64::from(input).powi(2);
+                }
+            }
+        }
+        SpatialMetrics {
+            correlation: cross / (left * right).sqrt().max(1.0e-30),
+            gain: ((left + right) / (2.0 * original)).sqrt(),
+            left_energy: left,
+            right_energy: right,
+        }
+    }
+
+    #[test]
+    fn coverage_spreads_mono_without_changing_pan_or_distance() {
+        let point = coverage_metrics(0.0, 0.0, false);
+        let wide = coverage_metrics(0.5, 0.0, false);
+        let around = coverage_metrics(1.0, 0.0, false);
+        assert!((point.correlation - 1.0).abs() < 1.0e-10);
+        assert!((point.gain - 1.0).abs() < 1.0e-10);
+        assert!(
+            wide.correlation < 0.95 && wide.correlation > 0.4,
+            "wide coherence={}",
+            wide.correlation
+        );
+        assert!(
+            around.correlation < wide.correlation - 0.15,
+            "around coherence={} wide={}",
+            around.correlation,
+            wide.correlation
+        );
+        assert!((around.left_energy / around.right_energy - 1.0).abs() < 0.1);
+        let right_point = coverage_metrics(0.0, 1.0, false);
+        let right_around = coverage_metrics(1.0, 1.0, false);
+        assert_eq!(right_point.left_energy, 0.0);
+        assert!(right_around.left_energy > right_around.right_energy * 0.1);
+        assert!(right_around.right_energy > right_around.left_energy);
+        let near = response(LayerParams {
+            coverage: 0.0,
+            distance: 0.6,
+            ..LayerParams::default()
+        });
+        let broad = response(LayerParams {
+            coverage: 1.0,
+            distance: 0.6,
+            ..LayerParams::default()
+        });
+        assert_eq!(near.gain, broad.gain);
+        assert_eq!(near.cutoff, broad.cutoff);
+        assert_eq!(near.reverb_send, broad.reverb_send);
+    }
+
+    #[test]
+    fn diffusion_does_not_raise_correlated_low_frequency_or_dc_gain() {
+        for coverage in [0.0, 0.12, 0.5, 0.75, 1.0] {
+            let white = coverage_metrics(coverage, 0.0, false);
+            let brown = coverage_metrics(coverage, 0.0, true);
+            eprintln!("coverage={coverage:.2}: white RMS gain={:.4}, brown RMS gain={:.4}, mono coherence={:.4}", white.gain, brown.gain, white.correlation);
+            assert!(
+                white.gain > 0.68 && white.gain <= 1.02,
+                "white gain={} coverage={coverage}",
+                white.gain
+            );
+            assert!(
+                brown.gain > 0.55 && brown.gain <= 1.02,
+                "brown gain={} coverage={coverage}",
+                brown.gain
+            );
+            let (mut field, _) = spatial(true, coverage, 0.0);
+            let info = kira::info::MockInfoBuilder::new().build();
+            let mut block = [Frame::from_mono(0.25); 128];
+            for _ in 0..1200 {
+                block.fill(Frame::from_mono(0.25));
+                field.process(&mut block, 1.0 / 48_000.0, &info);
+            }
+            assert!((block[127].left - 0.25).abs() < 1.0e-5);
+            assert!((block[127].right - 0.25).abs() < 1.0e-5);
+        }
+    }
+
+    #[test]
+    fn coverage_edits_are_smoothed_and_allocate_nothing_in_renderer() {
+        let (mut field, mut writer) = spatial(true, 0.0, 0.0);
+        let info = kira::info::MockInfoBuilder::new().build();
+        let mut block = [Frame::from_mono(0.2); 128];
+        for _ in 0..30 {
+            block.fill(Frame::from_mono(0.2));
+            field.process(&mut block, 1.0 / 48_000.0, &info);
+        }
+        writer.write(SpatialCommand {
+            values: SpatialValues {
+                coverage: 1.0,
+                pan: 1.0,
+                width: 1.0,
+            },
+            mono: true,
+            generation: 1,
+        });
+        let audit = Audit::start();
+        field.on_start_processing();
+        field.process(&mut block, 1.0 / 48_000.0, &info);
+        assert_eq!(audit.finish(), 0);
+        assert!((block[0].left - 0.2).abs() < 0.001 && (block[0].right - 0.2).abs() < 0.001);
+        assert!(field.current.coverage < 0.2 && field.current.pan < 0.2);
+        for _ in 0..160 {
+            block.fill(Frame::from_mono(0.2));
+            field.process(&mut block, 1.0 / 48_000.0, &info);
+        }
+        assert_eq!(field.current, field.target);
+        let audit = Audit::start();
+        field.on_change_sample_rate(192_000);
+        field.process(&mut block, 1.0 / 192_000.0, &info);
+        assert_eq!(audit.finish(), 0);
+        assert!(block
+            .iter()
+            .all(|frame| frame.left.is_finite() && frame.right.is_finite()));
+        writer.write(SpatialCommand {
+            values: SpatialValues {
+                coverage: 1.0,
+                ..SpatialValues::default()
+            },
+            mono: true,
+            generation: 2,
+        });
+        block.fill(Frame::ZERO);
+        let audit = Audit::start();
+        field.on_start_processing();
+        field.process(&mut block, 1.0 / 192_000.0, &info);
+        assert_eq!(
+            audit.finish(),
+            0,
+            "generation reset allocated or freed memory"
+        );
+        assert!(
+            block.iter().all(|frame| *frame == Frame::ZERO),
+            "old source diffusion survived replacement"
+        );
+    }
+
+    #[test]
+    fn mono_file_metadata_enables_diffusion_and_source_replacement_resets_histories() {
+        let mono = TestFile::wave_channels(500.0, 0.2, 1);
+        let stereo = TestFile::wave(500.0, 0.2);
+        assert_eq!(LoopData::from_file(&mono.0).unwrap().decoder.channels, 1);
+        assert_eq!(LoopData::from_file(&stereo.0).unwrap().decoder.channels, 2);
+        let mut mixer = mixer();
+        mixer
+            .play(
+                "mono",
+                &mono.0,
+                LayerParams {
+                    coverage: 1.0,
+                    ..LayerParams::default()
+                },
+                RoomParams::default(),
+                false,
+            )
+            .unwrap();
+        assert!(mixer.slots[mixer.active["mono"]].mono);
+        let mut out = [0.0_f32; 256];
+        let mut difference = 0.0_f64;
+        for _ in 0..60 {
+            render(&mut mixer, &mut out);
+            for frame in out.as_chunks::<2>().0 {
+                difference += f64::from(frame[0] - frame[1]).powi(2);
+            }
+        }
+        assert!(difference > 0.01, "actual mono file remained dual mono");
+        mixer.clear();
+        render(&mut mixer, &mut out);
+        mixer.set_master(1.0);
+        mixer
+            .play(
+                "stereo",
+                &stereo.0,
+                LayerParams {
+                    coverage: 0.0,
+                    ..LayerParams::default()
+                },
+                RoomParams::default(),
+                false,
+            )
+            .unwrap();
+        render(&mut mixer, &mut out);
+        assert!(out
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .all(|frame| frame[0] == frame[1]));
+        mixer.stop();
+    }
+
+    #[test]
+    fn diffusion_transients_remain_finite_decay_and_obey_the_peak_guard() {
+        assert_eq!(decoded_sample(f32::MAX), 8.0);
+        assert_eq!(decoded_sample(-f32::MAX), -8.0);
+        for rate in [8_000, 44_100, 48_000, 192_000] {
+            let (mut field, _) = spatial(true, 1.0, 0.0);
+            field.on_change_sample_rate(rate);
+            let info = kira::info::MockInfoBuilder::new().build();
+            let mut guard = PeakGuard;
+            let mut block = [Frame::ZERO; 128];
+            block[0] = Frame::from_mono(8.0);
+            for index in 0..(rate as usize * 2 / 128) {
+                field.process(&mut block, 1.0 / f64::from(rate), &info);
+                guard.process(&mut block, 1.0 / f64::from(rate), &info);
+                assert!(block.iter().all(|frame| frame.left.is_finite()
+                    && frame.right.is_finite()
+                    && frame.left.abs() <= 0.980001
+                    && frame.right.abs() <= 0.980001));
+                if index > rate as usize / 128 {
+                    assert!(block
+                        .iter()
+                        .all(|frame| frame.left.abs() < 1.0e-5 && frame.right.abs() < 1.0e-5));
+                }
+                block.fill(Frame::ZERO);
+            }
+        }
+        // An irregular short crackle train exercises transient overlap at the
+        // delays' natural time scale, rather than only a steady sinusoid.
+        let (mut field, _) = spatial(true, 1.0, 0.0);
+        let info = kira::info::MockInfoBuilder::new().build();
+        let mut input_energy = 0.0_f64;
+        let mut output_energy = 0.0_f64;
+        let mut peak = 0.0_f32;
+        let mut block = [Frame::ZERO; 128];
+        for block_index in 0..1500 {
+            for (offset, frame) in block.iter_mut().enumerate() {
+                let sample_index = block_index * 128 + offset;
+                let phase = sample_index % 977;
+                let sample = if block_index < 700 && phase < 9 {
+                    0.9 * (1.0 - phase as f32 / 9.0)
+                } else {
+                    0.0
+                };
+                *frame = Frame::from_mono(sample);
+                input_energy += f64::from(sample).powi(2);
+            }
+            field.process(&mut block, 1.0 / 48_000.0, &info);
+            for frame in &block {
+                output_energy +=
+                    (f64::from(frame.left).powi(2) + f64::from(frame.right).powi(2)) * 0.5;
+                peak = peak.max(frame.left.abs()).max(frame.right.abs());
+            }
+        }
+        assert!(output_energy <= input_energy * 1.001);
+        assert!(
+            peak < 0.98,
+            "normal-level crackle transient exceeded output peak limit: {peak}"
+        );
+        eprintln!(
+            "diffuse crackle RMS gain={:.4}, raw peak={peak:.4}",
+            (output_energy / input_energy).sqrt()
+        );
     }
 
     #[test]

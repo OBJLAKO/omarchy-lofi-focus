@@ -85,6 +85,7 @@ pub struct Engine {
     local_gain: f64,
     local_fade: Option<Fade>,
     local_idle: Option<Instant>,
+    audition: Option<(String, Instant)>,
 }
 impl Engine {
     pub fn new(paths: Paths, events: SyncSender<Event>) -> Result<Self, String> {
@@ -155,6 +156,7 @@ impl Engine {
             local_gain: 1.0,
             local_fade: None,
             local_idle: None,
+            audition: None,
         };
         engine.refresh_recording();
         if let Err(error) = engine.persist() {
@@ -249,6 +251,9 @@ impl Engine {
         }
     }
     fn volume(&self, channel: &str) -> f64 {
+        if !self.audition_allows(channel.strip_prefix("nature-")) {
+            return 0.0;
+        }
         let living = channel
             .strip_prefix("nature-")
             .map(|id| self.wander.gain(id))
@@ -257,7 +262,21 @@ impl Engine {
             * self.duck_gain
             * living
     }
+    fn audition_allows(&self, nature_id: Option<&str>) -> bool {
+        self.audition
+            .as_ref()
+            .is_none_or(|(selected, _)| nature_id == Some(selected.as_str()))
+    }
     fn stop_channel(&mut self, channel: &str) -> bool {
+        if channel.strip_prefix("nature-").is_some_and(|id| {
+            self.audition
+                .as_ref()
+                .is_some_and(|(selected, _)| selected == id)
+        }) {
+            self.audition = None;
+            self.apply_volumes();
+            self.changed();
+        }
         if self.native_nature {
             if let Some(id) = channel.strip_prefix("nature-") {
                 if let Some(audio) = &mut self.local_audio {
@@ -692,6 +711,7 @@ impl Engine {
                 return Err(format!("Unknown music station: {id}"));
             }
         }
+        self.audition = None;
         let previous = self.mode.clone();
         let previous_station = self.station.clone();
         let previous_default = self.settings["defaultStation"].clone();
@@ -748,6 +768,7 @@ impl Engine {
         Ok(())
     }
     fn transport(&mut self, action: &str, immediate: bool) {
+        self.audition = None;
         self.bookmark();
         if action == "pause" && self.mode == "stopped" {
             return;
@@ -855,6 +876,32 @@ impl Engine {
                 return Ok(());
             }
             "status" => return Ok(()),
+            "audition" => {
+                let id = arg(1)?;
+                match arg(2)? {
+                    "on" => {
+                        if self.mode != "playing"
+                            || !self.catalog.nature.iter().any(|s| s == id)
+                            || !self.alive(&format!("nature-{id}"))
+                            || self.settings["natureLayers"][id]["enabled"] != true
+                        {
+                            return Err(
+                                "Play an active ambience sound before listening to it alone."
+                                    .into(),
+                            );
+                        }
+                        self.audition =
+                            Some((id.to_owned(), Instant::now() + Duration::from_secs(8)));
+                    }
+                    "off" => self.audition = None,
+                    _ => return Err("audition takes on/off".into()),
+                }
+                self.apply_volumes();
+                self.changed();
+                // Solo listening is runtime-only. It never changes saved levels
+                // or resumes paused/stopped playback.
+                return Ok(());
+            }
             "wander" => {
                 let choice = args.get(1).map(String::as_str).unwrap_or("toggle");
                 let enabled = match choice {
@@ -897,6 +944,7 @@ impl Engine {
                     "distance",
                     "pan",
                     "width",
+                    "coverage",
                     "softness",
                     "reflections",
                     "echo",
@@ -1327,7 +1375,7 @@ impl Engine {
     }
     fn ensure_layer(&mut self, id: &str) {
         if !self.settings["natureLayers"][id].is_object() {
-            self.settings["natureLayers"][id] = room::layer(&json!({"enabled":false,"volume":25}));
+            self.settings["natureLayers"][id] = room::new_layer(id);
         }
     }
     fn bounded_argument(input: &str, min: f64, max: f64) -> Result<f64, String> {
@@ -1346,6 +1394,7 @@ impl Engine {
             .ok_or("Unknown scene")?["state"]
             .clone();
         room::validate(&scene, &self.catalog)?;
+        self.audition = None;
         let station = scene["station"].as_str().unwrap().to_owned();
         let changed_main = station != self.station;
         let changed_bg = scene["bgStation"] != self.settings["bgStation"]
@@ -1427,6 +1476,7 @@ impl Engine {
     pub fn reload_preferences(&mut self) {
         let fresh = preferences(config::read_json(&self.paths.state.join("settings.json")));
         if fresh != self.settings {
+            self.audition = None;
             let replace_bg = fresh["bgStation"] != self.settings["bgStation"]
                 || fresh["mix"] != self.settings["mix"];
             self.settings = fresh;
@@ -1550,12 +1600,19 @@ impl Engine {
     fn local_layer(&self, id: &str) -> LayerParams {
         let v = room::layer(&self.settings["natureLayers"][id]);
         LayerParams {
-            volume: config::level(&v["volume"], 25.0) / 100.0 * self.wander.gain(id),
+            volume: config::level(&v["volume"], 25.0) / 100.0
+                * self.wander.gain(id)
+                * if self.audition_allows(Some(id)) {
+                    1.0
+                } else {
+                    0.0
+                },
             pan: v["pan"].as_f64().unwrap_or(0.0) / 100.0,
             distance: config::level(&v["distance"], 0.0) / 100.0,
             reflections: config::level(&v["reflections"], 25.0) / 100.0,
             softness: config::level(&v["softness"], 0.0) / 100.0,
             width: config::level(&v["width"], 100.0) / 100.0,
+            coverage: config::level(&v["coverage"], 50.0) / 100.0,
             echo: config::level(&v["echo"], 0.0) / 100.0,
             outside: v["outside"] == true,
         }
@@ -1726,6 +1783,14 @@ impl Engine {
     }
     pub fn tick(&mut self) {
         let now = Instant::now();
+        if self.audition.as_ref().is_some_and(|(id, deadline)| {
+            now >= *deadline
+                || self.settings["natureLayers"][id]["enabled"] != true
+                || !self.alive(&format!("nature-{id}"))
+        }) {
+            self.audition = None;
+            self.changed();
+        }
         if self.local_idle.is_some_and(|deadline| now >= deadline) {
             if let Some(mut audio) = self.local_audio.take() {
                 audio.stop();
@@ -1871,6 +1936,9 @@ impl Engine {
         if let Some(deadline) = self.local_idle {
             duration = duration.min(deadline.saturating_duration_since(now));
         }
+        if let Some((_, deadline)) = &self.audition {
+            duration = duration.min(deadline.saturating_duration_since(now));
+        }
         if self.mode == "playing" {
             duration = duration.min(self.next_maintenance.saturating_duration_since(now));
         }
@@ -1968,6 +2036,11 @@ impl Engine {
         status["scene_id"] = self.settings["sceneId"].clone();
         status["scene_dirty"] = json!(room::dirty(&self.settings, &self.station));
         status["spatial_available"] = json!(self.native_nature);
+        status["audition_id"] = json!(self
+            .audition
+            .as_ref()
+            .map(|(id, _)| id.as_str())
+            .unwrap_or(""));
         status["nature_engine"] = json!(if self.native_nature { "rust" } else { "mpv" });
         status["imported_sounds"] = json!(self.settings["importedSounds"]
             .as_array()
@@ -1977,11 +2050,16 @@ impl Engine {
             .collect::<Vec<_>>());
         for entry in status["nature_layers"].as_array_mut().unwrap() {
             let id = entry["id"].as_str().unwrap().to_owned();
-            let config = room::layer(&self.settings["natureLayers"][&id]);
+            let config = if self.settings["natureLayers"][&id].is_object() {
+                room::layer(&self.settings["natureLayers"][&id])
+            } else {
+                room::new_layer(&id)
+            };
             for key in [
                 "distance",
                 "pan",
                 "width",
+                "coverage",
                 "softness",
                 "reflections",
                 "echo",

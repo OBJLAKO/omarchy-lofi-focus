@@ -2,6 +2,7 @@
 import json
 import os
 import shutil
+import signal
 import time
 import unittest
 from player_test import PlayerTest
@@ -109,7 +110,7 @@ class SpaceTest(PlayerTest):
         self.wait_for(lambda: next(l for l in self.status()['nature_layers'] if l['id'] == 'noise-rain')['effective_volume'] == 61, timeout=4)
 
     def test_invalid_effects_and_scene_reference_are_transactional(self):
-        for args in [('layer', 'noise-rain', 'pan', 'nan'), ('layer', 'noise-rain', 'echo', '101'), ('room', 'size', '-1'), ('wander-amount', 'inf'), ('scene-apply', '../../bad')]:
+        for args in [('layer', 'noise-rain', 'pan', 'nan'), ('layer', 'noise-rain', 'echo', '101'), ('layer', 'noise-rain', 'coverage', 'nan'), ('layer', 'noise-rain', 'coverage', '101'), ('room', 'size', '-1'), ('wander-amount', 'inf'), ('scene-apply', '../../bad')]:
             self.assertNotEqual(self.action(*args, check=False).returncode, 0)
         self.action('nature', 'noise-rain', 'on')
         self.action('scene-save', 'Missing source')
@@ -124,6 +125,79 @@ class SpaceTest(PlayerTest):
         self.assertNotEqual(self.action('scene-apply', identity, check=False).returncode, 0)
         self.assertEqual(self.status()['room'], before)
         self.assertFalse(self.status()['running'])
+
+    def test_coverage_is_independent_and_round_trips_in_scenes(self):
+        self.action('nature', 'noise-rain', 'on')
+        self.action('vol', 'noise-rain', '39')
+        self.action('layer', 'noise-rain', 'pan', '-47')
+        self.action('layer', 'noise-rain', 'distance', '68')
+        self.action('layer', 'noise-rain', 'coverage', '92')
+        self.action('scene-save', 'Wide distant rain')
+        identity = self.status()['scene_id']
+        self.action('layer', 'noise-rain', 'coverage', '7')
+        self.assertTrue(self.status()['scene_dirty'])
+        self.action('scene-apply', identity)
+        rain = next(l for l in self.status()['nature_layers'] if l['id'] == 'noise-rain')
+        self.assertEqual((rain['volume'], rain['distance'], rain['pan'], rain['coverage']), (39, 68, -47, 92))
+        self.assertFalse(self.status()['scene_dirty'])
+
+    def test_audition_is_temporary_and_does_not_change_saved_mix(self):
+        self.action('nature', 'noise-rain', 'on')
+        self.action('nature', 'noise-wind', 'on')
+        self.assertNotEqual(self.action('audition', 'noise-rain', 'on', check=False).returncode, 0)
+        self.assertFalse(self.status()['running'])
+        self.action('ui', 'fade', 'off')
+        self.action('play')
+        self.wait_for(lambda: all(l['running'] for l in self.status()['nature_layers'] if l['enabled']))
+        self.action('scene-save', 'Audition mix')
+        path = self.base / 'state/sky.lofi/settings.json'
+        saved = path.read_bytes()
+        self.action('audition', 'noise-rain', 'on')
+        self.assertEqual(self.status()['audition_id'], 'noise-rain')
+        self.assertFalse(self.status()['scene_dirty'])
+        self.assertEqual(path.read_bytes(), saved)
+        self.wait_for(lambda: self.status()['audition_id'] == '', timeout=10)
+        self.assertEqual(path.read_bytes(), saved)
+        self.action('audition', 'noise-wind', 'on')
+        self.action('pause')
+        self.assertEqual(self.status()['audition_id'], '')
+        self.assertNotEqual(self.action('audition', 'noise-rain', 'on', check=False).returncode, 0)
+        self.assertTrue(self.status()['paused'])
+        self.action('resume')
+        self.action('audition', 'noise-rain', 'on')
+        self.action('nature', 'noise-rain', 'off')
+        self.assertEqual(self.status()['audition_id'], '')
+
+    def test_audition_mutes_and_restores_actual_other_channel_gains(self):
+        # The subprocess fixture exposes observable real gain properties. The
+        # native signal/coherence and smoothing cases run inside audio.rs.
+        self.env['SKYLOFI_NATURE_ENGINE'] = 'mpv'
+        self.action('ui', 'fade', 'off')
+        self.action('bg', 'off')
+        self.action('vol', 'master', '70')
+        self.action('vol', 'main', '50')
+        for identity, level in [('noise-rain', '35'), ('noise-wind', '45')]:
+            self.action('nature', identity, 'on')
+            self.action('vol', identity, level)
+        self.action('play')
+        for channel, level in [('main', 35), ('nature-noise-rain', 24.5), ('nature-noise-wind', 31.5)]:
+            self.wait_prop(channel, 'volume', level)
+        self.action('audition', 'noise-rain', 'on')
+        self.wait_prop('main', 'volume', 0)
+        self.wait_prop('nature-noise-wind', 'volume', 0)
+        self.wait_prop('nature-noise-rain', 'volume', 24.5)
+        self.action('audition', 'noise-rain', 'off')
+        self.wait_prop('main', 'volume', 35)
+        self.wait_prop('nature-noise-wind', 'volume', 31.5)
+        self.action('audition', 'noise-rain', 'on')
+        self.action('scene-save', 'Solo is not a scene')
+        self.action('scene-apply', self.status()['scene_id'])
+        self.assertEqual(self.status()['audition_id'], '')
+        self.wait_prop('main', 'volume', 35)
+        self.action('audition', 'noise-rain', 'on')
+        os.kill(int(self.pid('nature-noise-rain')), signal.SIGTERM)
+        self.wait_for(lambda: self.status()['audition_id'] == '', timeout=3)
+        self.wait_prop('nature-noise-wind', 'volume', 31.5)
 
     def test_removed_active_catalog_source_is_reconciled(self):
         self.action('ui', 'fade', 'off')

@@ -8,6 +8,14 @@ pub const MAX_LAYERS: usize = 16;
 pub const MAX_SCENES: usize = 32;
 
 pub fn layer(value: &Value) -> Value {
+    let coverage = value["coverage"]
+        .as_f64()
+        .or_else(|| {
+            value["coverage"]
+                .as_str()
+                .and_then(|s| s.parse::<f64>().ok())
+        })
+        .filter(|v| v.is_finite());
     let pan = value["pan"]
         .as_f64()
         .filter(|n| n.is_finite())
@@ -15,9 +23,33 @@ pub fn layer(value: &Value) -> Value {
         .clamp(-100.0, 100.0);
     json!({"enabled":value["enabled"]==true,"volume":level(&value["volume"],25.0),
         "distance":level(&value["distance"],0.0),"pan":pan,
-        "width":level(&value["width"],100.0),"softness":level(&value["softness"],0.0),
+        "coverage":coverage.unwrap_or_else(|| level(&value["width"],100.0)/2.0).clamp(0.0,100.0),
+        "width":if coverage.is_some() {level(&value["width"],100.0)} else {100.0},
+        "softness":level(&value["softness"],0.0),
         "reflections":level(&value["reflections"],25.0),"echo":level(&value["echo"],0.0),
         "outside":value["outside"]==true,"living":value["living"]!=false})
+}
+/// New sounds start with a placement suited to their material. Existing layers
+/// migrate separately from their former stereo width, preserving custom scenes.
+pub fn new_layer(id: &str) -> Value {
+    let coverage = if ["fire", "campfire", "embers", "drops", "clock", "vinyl"]
+        .iter()
+        .any(|part| id.contains(part))
+    {
+        12
+    } else if id.contains("wind") {
+        65
+    } else if [
+        "rain", "storm", "river", "water", "waves", "stream", "harbour", "noise",
+    ]
+    .iter()
+    .any(|part| id.strip_prefix("noise-").unwrap_or(id).contains(part))
+    {
+        100
+    } else {
+        50
+    };
+    layer(&json!({"enabled":false,"volume":25,"coverage":coverage}))
 }
 pub fn room(value: &Value) -> Value {
     let preset = value["preset"]
@@ -101,7 +133,7 @@ pub fn normalize(settings: &mut Value) {
     {
         settings["sceneId"] = json!("");
     }
-    settings["spaceVersion"] = json!(1);
+    settings["spaceVersion"] = json!(2);
 }
 pub fn snapshot(settings: &Value, station: &str) -> Value {
     json!({"station":station,"bgStation":settings["bgStation"],"mix":settings["mix"],
@@ -291,5 +323,32 @@ mod tests {
         assert!(v.get("masterVolume").is_none());
         s["masterVolume"] = json!(100);
         assert_eq!(v, snapshot(&s, "lofi-test"));
+    }
+    #[test]
+    fn coverage_migrates_old_width_once_and_defaults_to_material() {
+        let old = layer(&json!({"width":44,"volume":31,"distance":75,"pan":-20}));
+        assert_eq!(old["coverage"], 22.0);
+        assert_eq!(old["width"], 100.0);
+        assert_eq!(old["volume"], 31.0);
+        assert_eq!(old["distance"], 75.0);
+        assert_eq!(old, layer(&old));
+        let explicit = layer(&json!({"coverage":87,"width":44}));
+        assert_eq!(explicit["coverage"], 87.0);
+        assert_eq!(explicit["width"], 44.0);
+        for invalid in [Value::Null, json!("nan"), json!([])] {
+            let migrated = layer(&json!({"coverage":invalid,"width":44}));
+            assert_eq!(migrated["coverage"], 22.0);
+            assert_eq!(migrated["width"], 100.0);
+            assert_eq!(migrated, layer(&migrated));
+        }
+        assert_eq!(layer(&json!({"coverage":900}))["coverage"], 100.0);
+        assert_eq!(layer(&json!({"coverage":"nan"}))["coverage"], 50.0);
+        assert_eq!(new_layer("noise-campfire")["coverage"], 12.0);
+        assert_eq!(new_layer("noise-fire")["coverage"], 12.0);
+        assert_eq!(new_layer("noise-rain")["coverage"], 100.0);
+        assert_eq!(new_layer("noise-waves")["coverage"], 100.0);
+        assert_eq!(new_layer("noise-stream")["coverage"], 100.0);
+        assert_eq!(new_layer("noise-wind")["coverage"], 65.0);
+        assert_eq!(new_layer("noise-imported-123")["coverage"], 50.0);
     }
 }
