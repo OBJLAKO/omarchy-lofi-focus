@@ -92,7 +92,7 @@ class PlayerTest(unittest.TestCase):
                             if reply.get('error') != 'success' or reply.get('data') is None:
                                 raise PlaybackNotReady('audio property not decoded yet: ' + name)
                             return reply['data']
-        except (FileNotFoundError, ConnectionRefusedError, TimeoutError) as error:
+        except (FileNotFoundError, ConnectionRefusedError, ConnectionResetError, BrokenPipeError, TimeoutError) as error:
             raise PlaybackNotReady(str(error)) from error
         raise PlaybackNotReady('audio IPC returned no matching reply')
 
