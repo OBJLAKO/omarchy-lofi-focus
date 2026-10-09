@@ -1,9 +1,10 @@
 # Native Rust and Omarchy publication
 
-Research date: 2026-10-08. Release policy rechecked against official marketplace
-source `92758f8aa9a7a466433a1877cba3e60f66679267`. The pinned local static
-preflight and stable distribution evidence are recorded in the
-[3.5 release review](RELEASE-3.5.md). Marketplace approval remains separate.
+Research date: 2026-10-09. Release policy rechecked against official marketplace
+source `6345a490acaaa2eb323a81634a35b455d34e40d2`. The
+[build identity](../bin/BUILD-IDENTITY.json) records the current native artifact;
+the [3.5 release review](RELEASE-3.5.md) retains the earlier release's evidence.
+Marketplace approval remains separate.
 
 The Omarchy shell loads the plugin's QML entry point. QML remains the interface;
 Rust provides the controller and local mixer through local IPC. This also
@@ -36,19 +37,19 @@ A release build made on a compatible Linux runner is preferable to a binary
 linked against a developer machine's newer libc. Document architecture and
 runtime library requirements; add an ARM build only after it has been tested.
 
-The Ubuntu CI-built 3.5.0 release executable was inspected with `readelf -h`,
+The Ubuntu CI-built 3.5.1 release executable was inspected with `readelf -h`,
 `readelf -d` and `readelf --version-info`. It is an ELF64 x86_64 GNU/Linux PIE,
 with `DT_NEEDED` entries for `libasound.so.2`, `libgcc_s.so.1`, `libm.so.6`,
 `libc.so.6` and `ld-linux-x86-64.so.2`. Mandatory glibc symbol versions reach
 **2.34**; its GLIBC_2.39 references are marked **WEAK**, so they are not mandatory
 requirements. This is not a static or cross-platform binary. The ALSA runtime
 library is now required by the local CPAL output, and building requires the
-ALSA development package (`libasound2-dev` on Ubuntu). The [Ubuntu 24.04 distribution run](https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37741826698)
+ALSA development package (`libasound2-dev` on Ubuntu). The [Ubuntu 24.04 distribution run](https://github.com/OBJLAKO/omarchy-lofi-focus/actions/runs/37917318781)
 passed its build and regressions; the same executable is tested again on this
 Omarchy machine. [Build identity](../bin/BUILD-IDENTITY.json) identifies the exact
 CI input and source hashes. Reinspect the ELF when rebuilding it.
 
-The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/92758f8aa9a7a466433a1877cba3e60f66679267/SECURITY.md)
+The [marketplace policy](https://github.com/omacom/omarchy-plugin-marketplace/blob/6345a490acaaa2eb323a81634a35b455d34e40d2/SECURITY.md)
 does not categorically prohibit Rust. Bundled executable files are classified as
 `bundled-executable-binary`, requiring maintainer review. A build involving remote
 source can also require review. Acceptance is a maintainer decision. Preserve
@@ -63,14 +64,15 @@ matching standard-library license/copyright files when changing the toolchain.
 
 ## Updating the existing listing
 
-Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/92758f8aa9a7a466433a1877cba3e60f66679267/VERIFICATION.md):
+Follow the official [verification and update workflow](https://github.com/omacom/omarchy-plugin-marketplace/blob/6345a490acaaa2eb323a81634a35b455d34e40d2/VERIFICATION.md):
 
 1. Complete native regressions, UI review and controlled Python/Rust measurements.
 2. Finalize a release commit, including the intended distributable executable,
    matching source, preview, README, manifest version and license information.
 3. For the existing `sky.lofi` listing, open the Plugin verification form and
    choose **Verify and publish a newer upstream commit**. Supply the repository,
-   plugin ID and exact 40-character HEAD SHA.
+   plugin ID and exact 40-character HEAD SHA. If a verification request is already
+   open, update its target commit and evidence rather than creating a duplicate.
 4. The marketplace checks that commit. Its maintainer reviews the native binary
    capability and applies `approved-and-verified` after the report is available.
 
@@ -92,6 +94,12 @@ build and `scripts/package-native.sh` for an explicit bundle.
 Explicit packaging removes an older CI identity; the CI workflow writes a new
 identity after its tested build. A local rebuild must not retain another
 executable's provenance report.
+
+When bundling a tested CI artifact, retain its original `sourceCommit` and
+`workflowRun`. A later commit that packages the executable and artwork has its
+own commit identity; it must preserve the recorded native input hashes and the
+artifact's exact binary bytes. Do not rerun `package-native.sh` on a downloaded
+CI bundle, because explicit local packaging removes CI provenance.
 
 The [3.5 performance report](PERFORMANCE-3.5.md) must distinguish command
 acknowledgement from the moment

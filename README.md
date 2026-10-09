@@ -1,14 +1,14 @@
-# Skylofi 3.5
+# Skylofi 3.5.1
 
 **Make room for focus.** Lo-fi radio, a nearby fire, rain all around you — build
 your own sound space from the Omarchy bar.
 
 [Install](#install) ·
 [Marketplace](https://omarchyplugins.com/plugin.html?id=sky.lofi) ·
-[What's new](https://github.com/OBJLAKO/omarchy-lofi-focus/releases/tag/v3.5.0) ·
+[What's new](https://github.com/OBJLAKO/omarchy-lofi-focus/releases/tag/v3.5.1) ·
 [Give it a star](https://github.com/OBJLAKO/omarchy-lofi-focus)
 
-![Skylofi 3.5: Make room for focus. 32 offline sounds, spatial layers, room acoustics, living mixes, saved scenes and Solo, alongside the actual sound-space interface.](docs/showcase/3.5/cover.png)
+![Skylofi: make room for focus with lo-fi radio, layered ambience and your own stereo space. Actual mixer and sound-space editor shown.](docs/showcase/3.5.1/cover.png)
 
 ## Your atmosphere, your way
 
@@ -21,8 +21,10 @@ your own sound space from the Omarchy bar.
 | **A saved scene** | Keep your soundtrack, voices, layers, placement and room together. |
 
 Tune every active sound with **Solo**, then return to the full mix with one click.
-All sliders apply as you drag. The playback dock stays within reach while you
-browse, and the panel follows your Omarchy theme and font.
+Every sound keeps its volume visible. Choose **Space** for its spatial controls,
+or **Sound space** for the shared map and room. Sliders keep following your pointer
+until release, including outside the track. The playback dock stays within reach
+while you browse, and the panel follows your Omarchy theme and font.
 
 If Skylofi makes your workday a little calmer,
 [**give the project a star**](https://github.com/OBJLAKO/omarchy-lofi-focus).
@@ -55,20 +57,35 @@ requirements are documented in [native distribution](docs/RUST-PUBLISHING.md).
 ## Build your first space
 
 1. In **Listen**, choose a radio station or add a public YouTube link.
-2. In **Mix**, add a few ambient sounds and choose a room preset.
-3. Expand a sound card. Try **Nearby**, **Distant** or **Around**, then adjust
-   **Volume**, **Distance** and **Coverage** while listening.
-4. Open **Edit overall space** to arrange the sources on the shared map.
-5. Turn on **Living mix** for gentle independent changes, then save your scene.
+2. In **Mix**, add ambient sounds and balance their always-visible faders.
+3. Choose **Space** beside a sound to try **Nearby**, **Distant** or **Around**,
+   then adjust **Distance** and **Coverage** while listening.
+4. Open **Sound space** to arrange the sources on the shared map and choose a room.
+5. Turn on **Living mix** there for gentle independent changes, then save your mix.
+
+Use **Add voice** for a voice or podcast channel. Choose **Import audio…** in
+**Add sound** to add a personal recording, or manage recordings under
+**Settings → Sound library**.
 
 A simple starting point: a quiet lo-fi soundtrack, a nearby fireplace,
 surrounding rain and a warm room. The
 [sound-space guide](docs/SOUND-SPACE.md) explains that recipe in more detail.
 
 <details>
+<summary><strong>See the mixer</strong></summary>
+
+![Actual Skylofi 3.5.1 compact mixer: soundtrack and individual sound volumes, with saved mixes and playback always close at hand.](docs/showcase/3.5.1/mix.png)
+
+Balance the soundtrack and each ambient layer, listen to one sound with **Solo**,
+then save the whole mix. **Add sound** also opens audio import. Playback and
+overall volume stay at the bottom while you browse.
+
+</details>
+
+<details>
 <summary><strong>See the sound-space editor</strong></summary>
 
-![Actual Skylofi 3.5 sound-space editor: a nearby fireplace, surrounding rain and wind, with a persistent radio dock.](docs/showcase/3.5/sound-space.png)
+![Actual Skylofi 3.5.1 sound-space editor, with room controls, a shared map and persistent playback.](docs/showcase/3.5.1/sound-space.png)
 
 Move a source left/right and near/far, then set how focused or enveloping it
 feels. Room details include softness, reflections and echo. These are stereo
@@ -80,9 +97,8 @@ HRTF front/back localization or head tracking.
 <details>
 <summary><strong>Adjust one sound with Solo</strong></summary>
 
-![Actual Skylofi 3.5 source editor with Fireplace isolated, live volume and distance controls, and Back to mix.](docs/showcase/3.5/source-controls.png)
-
-Every active sound has a visible **Solo** button, including collapsed cards.
+Every active sound has a visible **Solo** button and volume fader, including
+when spatial controls are closed.
 Other channels temporarily go quiet without changing their saved levels or
 switches. Isolation stays on until **Back to mix**, Pause, Stop or a source/scene
 change; selecting another card does not end it.
@@ -93,10 +109,11 @@ layers can play together. **All sounds** controls the complete mix.
 
 </details>
 
-The images above render the actual 3.5 QML interface with isolated sample state.
+The images above render the actual 3.5.1 QML interface with isolated sample state.
 They contain no private library data and make no network or audio-latency claim.
-The cover is a code-native layout around an unmodified interface capture;
-[asset provenance](docs/showcase/3.5/README.md) records its sources.
+The bundled executable's source hashes are recorded in its
+[build identity](bin/BUILD-IDENTITY.json). Earlier release artwork remains in the
+[3.5 asset archive](docs/showcase/3.5/README.md).
 
 ## Close at hand
 

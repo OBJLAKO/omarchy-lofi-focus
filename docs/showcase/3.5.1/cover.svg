@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1600" height="900" viewBox="0 0 1600 900" role="img"
+     aria-labelledby="title description">
+  <title id="title">Skylofi. Make room for focus.</title>
+  <desc id="description">Lo-fi radio, layered ambience and your own stereo sound space in Omarchy. The actual Skylofi mixer and sound-space editor are shown with a sample rain and fireplace mix.</desc>
+  <!--
+    Quiet studio: cool daylight, generous space, and the real product.
+    Screenshots are unmodified current QML renders, stored beside this source.
+    Edit the text, geometry or palette here; render with render-cover.py.
+  -->
+  <defs>
+    <filter id="panel-shadow" x="-25%" y="-15%" width="150%" height="145%"
+            color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18"/>
+      <feOffset dy="22"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.20  0 0 0 0 0.25  0 0 0 0.18 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="small-panel-shadow" x="-25%" y="-15%" width="150%" height="145%"
+            color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15"/>
+      <feOffset dy="18"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.20  0 0 0 0 0.25  0 0 0 0.14 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="#eaf0f2"/>
+
+  <g font-family="Adwaita Sans, sans-serif" fill="#172a34">
+    <text x="94" y="150" font-size="55" font-weight="600" letter-spacing="-1.7">Skylofi</text>
+
+    <text x="90" y="337" font-size="94" font-weight="600" letter-spacing="-4.2">
+      <tspan x="90">Make room</tspan>
+      <tspan x="90" dy="103">for focus.</tspan>
+    </text>
+
+    <text x="96" y="540" font-size="36" font-weight="400" fill="#506672" letter-spacing="-.55">
+      <tspan x="96">Lo-fi radio.</tspan>
+      <tspan x="96" dy="49">Layered ambience.</tspan>
+      <tspan x="96" dy="49">Your own stereo space.</tspan>
+    </text>
+  </g>
+
+  <!-- Full, unaltered interface captures. The main mixer stays visually primary. -->
+  <image x="1161" y="245" width="352" height="454.6667"
+         xlink:href="sound-space.png" filter="url(#small-panel-shadow)"/>
+  <image x="659" y="129" width="480" height="620"
+         xlink:href="mix.png" filter="url(#panel-shadow)"/>
+</svg>

@@ -5,7 +5,7 @@
   "version": "3.5.1",
   "author": "OBJLAKO",
   "license": "MIT",
-  "description": "Build your own sound space: lo-fi radio, saved YouTube audio, 32 offline sounds, spatial layers, living mixes and scenes.",
+  "description": "Lo-fi radio and 32 offline sounds for focus. Mix rain and fire, shape your sound space and save your favourite atmosphere.",
   "keywords": [
     "lofi",
     "focus",
@@ -30,7 +30,7 @@
   },
   "barWidget": {
     "displayName": "Skylofi",
-    "description": "Your sound space: lo-fi radio, ambient layers, living mixes and saved scenes.",
+    "description": "Lo-fi radio and ambient sounds, mixed into your own space for focus.",
     "category": "Media",
     "allowMultiple": false,
     "defaultSection": "right"
