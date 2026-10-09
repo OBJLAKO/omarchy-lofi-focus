@@ -11,6 +11,10 @@ Column {
   property bool helpOpen: false
   property bool canAudition: false
   property bool auditioning: false
+  // Cards already expose these actions beside the source name. The overall
+  // space editor keeps the complete control set by using the defaults.
+  property bool showVolume: true
+  property bool showAudition: true
   property color foreground: Color.foreground
   property string fontFamily: Style.font.family
   signal volumeEdited(int value)
@@ -28,6 +32,7 @@ Column {
   SkylofiStyle { id: visual; foreground: root.foreground }
   Row {
     id: auditionRow
+    visible: root.showAudition
     width: parent.width; spacing: Style.space(6)
     Item {
       width: Math.min(auditionButton.implicitWidth,Math.max(0,root.width - helpButton.implicitWidth - auditionRow.spacing))
@@ -77,7 +82,7 @@ Column {
     }
   }
   Text {
-    width: parent.width; visible: root.auditioning
+    width: parent.width; visible: root.showAudition && root.auditioning
     text: "Only this sound is playing. Changes apply to your mix."
     wrapMode: Text.Wrap; color: visual.muted
     font.family: root.fontFamily; font.pixelSize: visual.caption
@@ -90,7 +95,10 @@ Column {
         required property var modelData
         objectName: "sourcePreset-" + modelData.id
         width: (root.width - Style.space(12)) / 3
-        text: modelData.label; bordered: true; focusable: true
+        text: modelData.label; focusable: true
+        selected: modelData.id === "near" ? root.number("distance",0) === 18 && root.number("coverage",50) === 12
+          : modelData.id === "far" ? root.number("distance",0) === 80 && root.number("coverage",50) === 25
+          : root.number("coverage",50) === 100 && root.number("pan",0) === 0
         tooltipText: modelData.label
         horizontalPadding: Style.space(2); verticalPadding: Style.space(2)
         foreground: root.foreground; fontFamily: root.fontFamily; fontSize: visual.caption
@@ -102,6 +110,7 @@ Column {
   }
   SoundControl {
     objectName: "spaceVolume"
+    visible: root.showVolume
     label: "Volume"; value: root.number("volume",25)
     lowLabel: "Quiet"; highLabel: "Loud"
     bar: root.bar; foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
@@ -130,16 +139,31 @@ Column {
     wrapMode: Text.Wrap; color: visual.muted
     font.family: root.fontFamily; font.pixelSize: visual.caption
   }
-  SkylofiButton {
-    objectName: "spaceDetailsButton"
-    width: parent.width
-    text: root.detailsOpen ? "Hide extra acoustics" : "Extra acoustics"
-    leftAlign: true; iconText: root.detailsOpen ? "\uf107" : "\uf105"
-    foreground: visual.muted; fontFamily: root.fontFamily; fontSize: visual.caption
-    horizontalPadding: 0; verticalPadding: 0
-    animate: root.animate; focusable: true
-    onClicked: root.detailsOpen = !root.detailsOpen
-    onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+  Row {
+    width: parent.width; spacing: Style.space(8)
+    SkylofiButton {
+      objectName: "spaceDetailsButton"
+      width: parent.width - (coverageHelp.visible ? coverageHelp.width + parent.spacing : 0)
+      text: root.detailsOpen ? "Hide extra acoustics" : "Extra acoustics"
+      leftAlign: true; iconText: root.detailsOpen ? "chevron-down" : "chevron-right"
+      foreground: visual.muted; fontFamily: root.fontFamily; fontSize: visual.caption
+      horizontalPadding: 0; verticalPadding: 0
+      animate: root.animate; focusable: true
+      onClicked: root.detailsOpen = !root.detailsOpen
+      onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+    }
+    SkylofiButton {
+      id: coverageHelp
+      objectName: "cardCoverageHelp"
+      visible: !root.showAudition
+      iconText: "info"; tooltipText: "About spatial coverage"
+      width: Style.space(32); height: Style.space(32)
+      foreground: visual.muted; fontFamily: root.fontFamily; iconSize: visual.iconSize
+      horizontalPadding: 0; verticalPadding: 0
+      animate: root.animate; focusable: true; selected: root.helpOpen
+      onClicked: root.helpOpen = !root.helpOpen
+      onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+    }
   }
   Column {
     width: parent.width; visible: root.detailsOpen; spacing: Style.space(10)

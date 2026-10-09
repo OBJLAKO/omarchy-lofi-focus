@@ -90,6 +90,7 @@ Window {
     }
     function init() {
       panel.open(); panel.showView(0); panel.libraryOpen=false
+      panel.soundSpaceOpen=false; panel.soundLibraryOpen=false; panel.natureCardExpanded=false; panel.voiceControlsOpen=false
       fixtureBar.fontFamily=Style.font.family
       panel.categories=originalCategories
       panel.youtubeEntries=[]
@@ -159,6 +160,13 @@ Window {
       click("stopPlayback"); expectEq(host.lastArguments,["stop"])
       shot("radio-live")
     }
+    function test_failedForegroundHasRetryWhenTheMixIsSilent() {
+      state({main_state:"failed",main_running:false,mix:false,bg_running:false,bg_state:"stopped",nature_layers:[]})
+      expectEq(panel.retrySource,true)
+      expectEq(item("togglePlayback").actionLabel,"Retry")
+      click("togglePlayback"); expectEq(host.lastArguments,["start","lofi-lilo"])
+      shot("source-retry")
+    }
     function test_tabsKeepDockAndNavigationStable() {
       var nav=item("mainNavigation"), dock=item("playbackDock")
       var navY=nav.mapToItem(win.contentItem,0,0).y
@@ -197,7 +205,7 @@ Window {
       expectEq(panel.hasProgress,true)
       var progress=item("playbackProgress"); progress.forceActiveFocus()
       keyClick(Qt.Key_Right); expectEq(host.lastArguments,["seek","1255"])
-      keyClick(Qt.Key_Left); expectEq(host.lastArguments,["seek","1225"])
+      keyClick(Qt.Key_Left); expectEq(host.lastArguments,["seek","1240"])
       shot("youtube-seek")
     }
     function test_emptyLibraryFormAndCancel() {
@@ -329,7 +337,7 @@ Window {
       var scroll=item("mixScroll")
       item("mainTab-1").forceActiveFocus()
       var visited=0
-      for (var step=0;step<30;step++) {
+      for (var step=0;step<layers.length*3+20;step++) {
         keyClick(Qt.Key_Tab); waitForPolish(win); wait(15)
         var focus=win.activeFocusItem
         var ancestor=focus
@@ -342,6 +350,39 @@ Window {
       }
       expect(visited>=layers.length,"Tab failed to reach every active nature layer; visited="+visited)
       shot("mix-keyboard-last-focus")
+    }
+    function test_compactSpatialMixerAndSeparateSpace() {
+      state({spatial_available:true,animations:false,mix:false,bg_station:"",bg_state:"stopped",
+        room:{preset:"cozy",size:35,softness:55,reflections:25},wander:{enabled:false,amount:20},
+        nature_layers:[{id:"noise-rain",enabled:true,running:true,volume:35,distance:20,coverage:100},
+          {id:"noise-fireplace",enabled:true,running:true,volume:20,distance:18,coverage:12}]})
+      panel.showView(1); panel.selectedNatureId="noise-rain"
+      waitForPolish(win); wait(40)
+      var rain=item("sourceCard-noise-rain"), fire=item("sourceCard-noise-fireplace")
+      expectEq(rain.expanded,false)
+      expectEq(findChild(rain,"sourceDetailsLoader").item,null)
+      var rainLevel=findChild(item("sourceVolume-noise-rain"),"levelSlider")
+      var fireLevel=findChild(item("sourceVolume-noise-fireplace"),"levelSlider")
+      expect(rainLevel.visible && fireLevel.visible,"Every sound needs its own visible fader")
+      expectEq(item("soundSpaceScroll").visible,false)
+      shot("compact-mixer")
+      rainLevel.forceActiveFocus(); keyClick(Qt.Key_Right)
+      expectEq(host.lastArguments,["vol","noise-rain","40"])
+      panel.ensureVisible(item("mixScroll"),item("soundSpaceDisclosureButton"))
+      waitForPolish(win); wait(40)
+      click("soundSpaceDisclosureButton")
+      expectEq(panel.soundSpaceOpen,true)
+      expectEq(item("mixScroll").visible,false)
+      expectEq(item("soundSpaceScroll").visible,true)
+      item("soundSpaceScroll").contentY=0
+      shot("sound-space")
+      item("soundSpaceBack").forceActiveFocus(); keyClick(Qt.Key_Escape)
+      expectEq(panel.soundSpaceOpen,false)
+      expectEq(panel.opened,true)
+      expect(findChild(item("sourceVolume-noise-rain"),"levelSlider") === rainLevel,"Returning from space must preserve the fader")
+      expectEq(rainLevel.displayValue,40)
+      item("mixScroll").contentY=0
+      shot("compact-mixer-return")
     }
     function test_unknownSavedSourceHasNoSeek() {
       state({station:"youtube-live",name:"Saved audio of unknown type",source_kind:"unknown",category:"youtube",main_duration:7200,main_position:45,can_seek:false,youtube_entries:[{id:"youtube-live",name:"Saved audio of unknown type",position:45}]})

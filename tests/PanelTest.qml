@@ -23,7 +23,15 @@ Window {
     name: "FocusPanel"
     property string phase: ""
     when: true
-    function init() { phase = ""; panel.editGuards = ({}) }
+    function init() {
+      phase = ""
+      panel.editGuards = ({})
+      panel.natureCardExpanded = false
+      panel.soundSpaceOpen = false
+      panel.soundLibraryOpen = false
+      panel.voiceControlsOpen = false
+      panel.spatialEditorOpen = false
+    }
     function sourceCard(id) {
       function seek(parent) {
         if (parent.objectName === "sourceCard-" + id) return parent
@@ -166,6 +174,7 @@ Window {
     function test_scenesRoomAndLivingMixPreservePausedPlaybackAndUserLevels() {
       panel.hostWidget = voiceHost
       panel.showView(1)
+      panel.soundSpaceOpen = true
       panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
       panel.applyStatus(JSON.stringify({running:true,paused:true,spatial_available:true,
         scenes:[{id:"scene-calm",name:"Calm room"}],scene_id:"scene-calm",scene_dirty:true,
@@ -215,6 +224,7 @@ Window {
     function test_spatialEditorUsesLayerIdsAndKeepsSelectionOnStatusUpdates() {
       panel.hostWidget = voiceHost
       panel.showView(1)
+      panel.soundSpaceOpen = true
       panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"},{id:"noise-fireplace",name:"Fireplace"}]}]
       panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,
         nature_layers:[{id:"noise-rain",enabled:true,volume:30,living:true},
@@ -251,6 +261,7 @@ Window {
 
     function test_importedSoundsExtendThePickerAndUsePrivateLibraryCommands() {
       panel.hostWidget = voiceHost
+      panel.soundLibraryOpen = true
       panel.categories = [{id:"ambience",stations:[{id:"noise-rain",name:"Rain"}]}]
       panel.applyStatus(JSON.stringify({running:false,paused:false,spatial_available:true,
         imported_sounds:[{id:"imported-rain",name:"My rain"}],nature_layers:[]}))
@@ -264,7 +275,13 @@ Window {
       findChild(importer,"soundImportTitle").text = "Rain on the porch"
       findChild(importer,"soundImportConfirm").clicked()
       compare(voiceHost.lastArguments,["sound-import","/tmp/My rain.ogg","Rain on the porch"])
+      compare(importer.pending,true)
+      compare(importer.expanded,true)
+      compare(findChild(importer,"soundImportPath").text,"/tmp/My rain.ogg")
+      voiceHost.actionFinished(["sound-import","/tmp/My rain.ogg","Rain on the porch"],0,"")
+      compare(importer.pending,false)
       compare(importer.expanded,false)
+      compare(findChild(importer,"soundImportPath").text,"")
       panel.pendingSoundRemoval = "imported-rain"
       findChild(panel,"soundRemoveConfirm").clicked()
       compare(voiceHost.lastArguments,["sound-remove","imported-rain"])
@@ -317,9 +334,11 @@ Window {
           {id:"noise-fireplace",enabled:true,volume:50,effective_volume:30,distance:80,pan:0,coverage:100}]}))
       compare(panel.selectedNatureId,"noise-fireplace")
       compare(fire.expanded,true)
+      panel.soundSpaceOpen = true
       panel.spatialEditorOpen = true
-      phase = "coverage map hides cards"
-      compare(findChild(panel,"section-body-nature").height,0)
+      phase = "coverage map suspends card details without removing volume controls"
+      verify(findChild(fire,"sourceVolume-noise-fireplace") !== null)
+      compare(fire.expanded,false)
       compare(findChild(fire,"sourceDetailsLoader").active,false)
       compare(findChild(panel,"roomEditor").currentLayer.id,"noise-fireplace")
       panel.hostWidget = null
@@ -332,7 +351,7 @@ Window {
         nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100}]}))
       tryVerify(function() { return sourceCard("noise-rain") !== null },1000)
       var card = sourceCard("noise-rain")
-      var audition = findChild(card,"sourceAudition")
+      var audition = findChild(card,"sourceSolo-noise-rain")
       phase = "audition paused"
       compare(audition.enabled,false)
       voiceHost.argumentsHistory = []
@@ -347,10 +366,12 @@ Window {
       compare(voiceHost.lastArguments,["audition","noise-rain","hold"])
       compare(panel.sceneDirty,false)
       compare(panel.natureLayer("noise-rain").volume,35)
+      compare(card.expanded,false)
+      compare(findChild(card,"sourceDetailsLoader").active,false)
       phase = "audition active status"
       panel.applyStatus(JSON.stringify({running:true,paused:false,spatial_available:true,audition_id:"noise-rain",
         scene_dirty:false,nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:100}]}))
-      compare(audition.text,"Back to mix")
+      compare(audition.text,"Mix")
       compare(findChild(panel,"soloBanner").visible,true)
       panel.selectedNatureId = ""
       compare(findChild(panel,"soloBanner").visible,true)

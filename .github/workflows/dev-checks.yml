@@ -21,10 +21,10 @@ jobs:
       - name: Install test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y mpv dbus python3-gi python3-venv
+          sudo apt-get install -y mpv dbus python3-gi python3-venv openssl
       - name: Backend and process isolation tests
         run: |
-          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v fade_test feed_test media_test mpris_test player_test process_test recovery_test youtube_test config_test
+          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v fade_test feed_test media_test mpris_test player_test process_test recovery_test youtube_test config_test tls_test
       - name: Security analysis
         run: |
           /usr/bin/python3 -m venv /tmp/lofi-bandit

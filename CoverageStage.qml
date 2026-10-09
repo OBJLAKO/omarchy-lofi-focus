@@ -50,7 +50,7 @@ Rectangle {
     if (mini) return Style.space(112)
     var size = markerSize, inset = size / 2 + Style.space(4), top = Style.space(28) + size / 2
     var step = size + Style.space(5), columns = layoutColumns
-    var result = Style.space(width < Style.space(280) ? 230 : 260)
+    var result = Style.space(width < Style.space(280) ? 210 : 220)
     var clearance = size / 2 + Style.space(24)
     // Account for the headphone hit area too. Large fonts on a narrow panel
     // need more rows; ordinary scenes retain the compact map height.
@@ -151,9 +151,11 @@ Rectangle {
     }
   }
   Text {
+    objectName: "stageSourceName"
     x: Style.space(10); y: Style.space(8)
     width: root.width - Style.space(20)
     text: root.mini ? "" : root.sourceName(root.selectedId)
+    textFormat: Text.PlainText
     visible: text.length > 0; elide: Text.ElideRight
     color: visual.muted; font.family: root.fontFamily; font.pixelSize: visual.caption
   }
@@ -179,9 +181,9 @@ Rectangle {
     width: Style.space(root.mini ? 30 : 42); height: width; radius: width / 2
     x: (root.width - width) / 2; y: root.height * 0.80 - height / 2
     color: Color.popups.background; border.width: 1; border.color: visual.line; z: 2
-    Text {
-      anchors.centerIn: parent; text: "\uf025"; color: Color.accent
-      font.family: root.fontFamily; font.pixelSize: visual.iconSize
+    SkylofiIcon {
+      anchors.centerIn: parent; name: "headphones"; color: Color.accent
+      size: visual.iconSize
     }
   }
   Text {
@@ -236,10 +238,10 @@ Rectangle {
       Keys.onRightPressed: if (root.interactive) root.positionEdited(modelData,Math.min(100,pan + 5),distance)
       Keys.onUpPressed: if (root.interactive) root.positionEdited(modelData,pan,Math.min(100,distance + 5))
       Keys.onDownPressed: if (root.interactive) root.positionEdited(modelData,pan,Math.max(0,distance - 5))
-      Text {
-        anchors.centerIn: parent; text: root.sourceIcon(marker.modelData)
+      SkylofiIcon {
+        anchors.centerIn: parent; glyph: root.sourceIcon(marker.modelData)
         color: root.selectedId === marker.modelData ? Color.accent : root.foreground
-        font.family: root.fontFamily; font.pixelSize: visual.iconSize
+        size: visual.iconSize
       }
       MouseArea {
         anchors.fill: parent; enabled: root.interactive; preventStealing: true

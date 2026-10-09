@@ -378,6 +378,9 @@ impl Engine {
                 "--msg-color=no",
                 "--term-status-msg=",
                 "--network-timeout=12",
+                // mpv 0.41 defaults to disabled verification, even for HTTPS.
+                // Require certificates for direct and extractor-resolved audio.
+                "--tls-verify=yes",
                 "--user-agent=sky.lofi/3.0 (mpv)",
             ])
             .arg(format!("--volume={}", self.volume(channel) * gain))

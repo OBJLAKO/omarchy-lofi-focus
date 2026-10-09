@@ -28,6 +28,12 @@ Window {
     function init() {
       panel.showView(0)
       panel.open()
+      panel.natureCardExpanded = false
+      panel.soundSpaceOpen = false
+      panel.soundLibraryOpen = false
+      panel.voiceControlsOpen = false
+      panel.spatialEditorOpen = false
+      panel.roomDetailsOpen = false
       panel.applyStatus(JSON.stringify({running:true,paused:false,main_running:true,main_state:"playing",source_kind:"radio",station:"lofi-test",name:"Test radio",category:"lofi",main_volume:65,master_volume:80,mix:true,bg_station:"voice-test",bg_state:"playing",bg_volume:30,nature_layers:[{id:"noise-rain",enabled:true,volume:35},{id:"noise-fireplace",enabled:true,volume:20}],animations:false,fade_enabled:true,fade_seconds:3,ducking:true,duck_level:35}))
       panel.categories = [{id:"lofi",stations:[{id:"lofi-test",name:"Test radio"}]},{id:"talk",stations:[{id:"voice-test",name:"Voice"}]},{id:"ambience",stations:[{id:"noise-rain",name:"Rain"},{id:"noise-fireplace",name:"Fireplace"}]}]
       waitForPolish(window)
@@ -77,6 +83,26 @@ Window {
       }
       capture("mix-focused-last-level")
     }
+    function test_compactSourceVolumeFocusStaysInsideCardBeforeSpatialControls() {
+      panel.showView(1)
+      panel.applyStatus(JSON.stringify({running:true,paused:false,main_running:true,spatial_available:true,animations:false,
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:50}]}))
+      waitForPolish(window)
+      var card = findChild(panel,"sourceCard-noise-rain")
+      var slider = findChild(findChild(card,"sourceVolume-noise-rain"),"levelSlider")
+      var viewport = findChild(panel,"mixScroll")
+      verifyFocus(slider,viewport)
+      expectInside(findChild(slider,"sliderFocusOutline"),card,"Compact volume focus escapes its source card")
+      compare(card.expanded,false)
+      compare(findChild(card,"sourceDetailsLoader").active,false)
+      compare(findChild(panel,"soundSpaceDisclosure").height,0)
+      var focus = rectangleIn(findChild(slider,"sliderFocusOutline"),card)
+      for (var name of ["sourceSelect-noise-rain","sourceSolo-noise-rain","sourceRemove-noise-rain"]) {
+        var control = findChild(card,name)
+        verify(focus.top > rectangleIn(control,card).bottom,"Volume focus touches the source header: "+name)
+      }
+      capture("compact-source-focused-volume")
+    }
     function test_stackedLabelReadoutAndRemoveStayAboveFocusBorder() {
       var level = stackedLevel.createObject(window.contentItem, {x:10,y:10,width:Style.space(180)})
       verify(level !== null)
@@ -93,6 +119,28 @@ Window {
       }
       expectInside(slider, level, "Stacked slider escapes its row")
       level.destroy()
+    }
+    function test_soundSpaceFocusedSlidersStayInsideSubview() {
+      panel.showView(1)
+      panel.applyStatus(JSON.stringify({running:true,paused:false,main_running:true,spatial_available:true,animations:false,
+        wander:{enabled:true,amount:20},room:{preset:"cozy",size:35,softness:55,reflections:25},
+        nature_layers:[{id:"noise-rain",enabled:true,volume:35,coverage:50}]}))
+      panel.soundSpaceOpen = true
+      panel.roomDetailsOpen = true
+      waitForPolish(window)
+      var viewport = findChild(panel,"soundSpaceScroll")
+      var sliders = collectSliders(viewport)
+      var focused = 0
+      verify(viewport.visible)
+      compare(findChild(panel,"mixScroll").visible,false)
+      for (var slider of sliders) {
+        if (!slider.visible) continue
+        verifyFocus(slider,viewport)
+        expectInside(findChild(slider,"sliderFocusOutline"),slider.parent,"Sound space focus overlaps a neighboring control")
+        focused++
+      }
+      verify(focused >= 7,"Room, source and Living mix sliders must remain reachable")
+      capture("sound-space-focused-last-level")
     }
     function test_tabbingBetweenStackedLevelActionsRevealsTheFocusedControl() {
       panel.showView(1)

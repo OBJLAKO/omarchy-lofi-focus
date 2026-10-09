@@ -38,17 +38,19 @@ BorderSurface {
     + horizontalPadding * 2 + Style.space(2)
   implicitHeight: Math.max(visual.touchTarget, copy.implicitHeight + verticalPadding * 2 + Style.space(2))
   radius: visual.radius
-  color: mouse.pressed ? visual.pressed : focused || hot ? visual.hover
-    : selected || active ? visual.selected : background
+  color: !enabled ? background : mouse.pressed ? visual.pressed
+    : selected || active ? Qt.alpha(root.accent, hot ? 0.17 : 0.11)
+    : focused || hot ? visual.hover : background
   borderSpec: focused ? Border.flat(visual.focus, 1)
     : bordered ? Border.flat(hot ? visual.quiet : visual.line, 1) : Border.none()
   activeFocusOnTab: focusable
   Accessible.role: Accessible.Button
   Accessible.name: text || tooltipText
+  Accessible.description: tooltipText
   Accessible.onPressAction: if (enabled) root.clicked()
-  Keys.onReturnPressed: if (focusable) root.clicked()
-  Keys.onEnterPressed: if (focusable) root.clicked()
-  Keys.onSpacePressed: if (focusable) root.clicked()
+  Keys.onReturnPressed: if (enabled && focusable) root.clicked()
+  Keys.onEnterPressed: if (enabled && focusable) root.clicked()
+  Keys.onSpacePressed: if (enabled && focusable) root.clicked()
   onAnimateChanged: if (!animate) fillFeedback.complete()
   onVisibleChanged: if (!visible) fillFeedback.complete()
 
@@ -63,13 +65,15 @@ BorderSurface {
     anchors.left: root.leftAlign ? parent.left : undefined
     anchors.leftMargin: root.horizontalPadding + Style.space(1)
     spacing: Style.space(6)
-    Text {
+    // Some legacy callers already fade disabled controls. Avoid fading twice.
+    opacity: root.enabled || root.opacity < 1 ? 1 : 0.45
+    SkylofiIcon {
       id: buttonIcon
       visible: root.iconText.length > 0
-      text: root.iconText; textFormat: Text.PlainText
+      glyph: root.iconText
       anchors.verticalCenter: parent.verticalCenter
       color: root.selected ? root.accent : root.foreground
-      font.family: root.fontFamily; font.pixelSize: root.iconSize
+      size: root.iconSize
     }
     Text {
       id: buttonLabel

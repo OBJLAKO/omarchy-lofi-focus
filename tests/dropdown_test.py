@@ -13,7 +13,8 @@ with tempfile.TemporaryDirectory(prefix="lofi-dropdown-test-") as directory:
     test = Path(directory)
     for name in ("Commons", "Ui"):
         (test / name).symlink_to(shell / name, target_is_directory=True)
-    (test / "FocusDropdown.qml").symlink_to(repo / "FocusDropdown.qml")
+    for name in ("FocusDropdown.qml", "SkylofiIcon.qml"):
+        (test / name).symlink_to(repo / name)
     (test / "shell.qml").write_text((repo / "tests/DropdownTest.qml").read_text())
     runtime = test / "runtime"
     runtime.mkdir(mode=0o700)

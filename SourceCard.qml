@@ -1,6 +1,8 @@
 import QtQuick
 import qs.Commons
 
+// A mixer strip: the sound, two contextual actions, and its fader. Spatial
+// controls load only when requested; the ordinary mix stays easy to scan.
 Rectangle {
   id: root
   property var sound: ({})
@@ -23,93 +25,115 @@ Rectangle {
   signal presetRequested(string preset)
   signal auditionRequested()
   signal focusRequested(var item)
-  implicitHeight: body.implicitHeight + Style.space(20)
-  height: implicitHeight; radius: Math.min(Style.cornerRadius,Style.space(8))
-  color: root.selected ? visual.selected : visual.surface
-  border.width: 1; border.color: root.selected ? Qt.alpha(Color.accent,0.65) : visual.line
+  implicitHeight: body.implicitHeight + Style.space(16)
+  height: implicitHeight
+  color: "transparent"
+  border.width: 0
   SkylofiStyle { id: visual; foreground: root.foreground }
   function sourceIcon(id) {
-    if (/fire|bonfire/.test(id)) return "\uf06d"
-    if (/rain|storm/.test(id)) return "\uf0c2"
-    if (/wind/.test(id)) return "\u224b"
-    if (/river|water|ocean|stream/.test(id)) return "\uf043"
-    if (/forest|leaves/.test(id)) return "\uf1bb"
-    return "\uf001"
+    if (/fire|bonfire/.test(id)) return "fire"
+    if (/rain|storm/.test(id)) return "rain"
+    if (/wind/.test(id)) return "wind"
+    if (/river|water|ocean|stream/.test(id)) return "water"
+    if (/forest|leaves/.test(id)) return "tree"
+    return "music"
   }
   Column {
     id: body
-    x: Style.space(10); y: Style.space(10)
-    width: parent.width - Style.space(20); spacing: Style.space(10)
+    y: Style.space(8)
+    width: parent.width
+    spacing: Style.space(4)
     Item {
       width: parent.width
-      height: root.compactHeader ? selectButton.height + Style.space(6) + soloButton.height : Math.max(selectButton.height,soloButton.height,removeButton.height)
-      Item {
+      height: Style.space(32)
+      SkylofiIcon {
+        x: 0; anchors.verticalCenter: parent.verticalCenter
+        name: root.sourceIcon(root.sound.id || "")
+        size: visual.iconSize
+        color: root.auditioning ? Color.accent : visual.muted
+      }
+      Text {
+        id: sourceName
+        x: Style.space(24)
+        width: Math.max(0, selectButton.x - x - Style.space(8))
+        anchors.verticalCenter: parent.verticalCenter
+        text: root.label; textFormat: Text.PlainText
+        elide: Text.ElideRight; color: root.foreground
+        font.family: root.fontFamily; font.pixelSize: visual.body
+        font.weight: Font.Medium
+      }
+      SkylofiButton {
         id: selectButton
         objectName: "sourceSelect-" + (root.sound.id || "")
-        width: Math.max(0,parent.width - removeButton.width - Style.space(6) - (root.compactHeader ? 0 : soloButton.width + Style.space(6)))
-        height: Math.max(Style.space(38),sourceName.implicitHeight + description.implicitHeight + Style.space(5))
-        activeFocusOnTab: true
-        Accessible.role: Accessible.Button; Accessible.name: root.label
-        Accessible.description: root.expanded ? "Hide sound controls" : "Show sound controls"
-        Accessible.onPressAction: root.selectedRequested()
-        Keys.onReturnPressed: root.selectedRequested()
-        Keys.onSpacePressed: root.selectedRequested()
-        Rectangle {
-          anchors.fill: parent; color: "transparent"; radius: Style.space(4)
-          border.width: parent.activeFocus ? 1 : 0; border.color: Color.accent
-        }
-        Text {
-          id: sourceName
-          x: Style.space(24); y: 0
-          width: Math.max(0,parent.width - x)
-          text: root.label; elide: Text.ElideRight; color: root.foreground
-          font.family: root.fontFamily; font.pixelSize: visual.body
-        }
-        Text {
-          id: description
-          x: Style.space(24); y: sourceName.implicitHeight + Style.space(4); width: Math.max(0,parent.width - x)
-          text: Math.round(Number(root.sound.volume) || 0) + "% · " + (Number(root.sound.distance || 0) < 33 ? "Nearby" : Number(root.sound.distance || 0) < 67 ? "Midway" : "Distant") + " · "
-            + (Number(root.sound.coverage === undefined ? 50 : root.sound.coverage) < 25 ? "Point" : Number(root.sound.coverage === undefined ? 50 : root.sound.coverage) < 75 ? "Wide" : "Surrounding")
-            + (typeof root.sound.effective_volume === "number" && Math.round(root.sound.effective_volume) !== Math.round(root.sound.volume) ? " · " + Math.round(root.sound.effective_volume) + "% now" : "")
-          elide: Text.ElideRight; color: visual.muted
-          font.family: root.fontFamily; font.pixelSize: visual.caption
-        }
-        Text {
-          x: 0; y: (sourceName.implicitHeight - height) / 2
-          text: root.sourceIcon(root.sound.id || "")
-          color: root.selected ? Color.accent : root.foreground
-          font.family: root.fontFamily; font.pixelSize: visual.iconSize
-        }
-        MouseArea {
-          anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-          onClicked: { selectButton.forceActiveFocus(Qt.MouseFocusReason); root.selectedRequested() }
-        }
+        x: soloButton.x - width - Style.space(4)
+        text: "Space"
+        width: Style.space(54); height: Style.space(32)
+        horizontalPadding: Style.space(4); verticalPadding: 0
+        fontSize: visual.caption; foreground: root.expanded ? Color.accent : visual.muted
+        fontFamily: root.fontFamily; animate: root.animate
+        tooltipText: root.expanded ? "Hide spatial settings for " + root.label : "Spatial settings for " + root.label
+        Accessible.name: "Spatial settings for " + root.label
+        selected: root.expanded; focusable: true
+        onClicked: root.selectedRequested()
         onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
       }
       SkylofiButton {
         id: soloButton
-        x: root.compactHeader ? 0 : selectButton.width + Style.space(6)
-        y: root.compactHeader ? selectButton.height + Style.space(6) : 0
         objectName: "sourceSolo-" + (root.sound.id || "")
+        x: removeButton.x - width - Style.space(4)
         text: root.auditioning ? "Mix" : "Solo"
-        tooltipText: root.auditioning ? "Back to mix" : "Hear and adjust this sound alone"
+        tooltipText: root.auditioning ? "Back to mix" : "Listen to " + root.label + " alone"
         Accessible.name: root.auditioning ? "Back to mix" : "Solo " + root.label
-        width: Style.space(52); height: Style.space(32); horizontalPadding: Style.space(2)
-        fontSize: visual.caption; foreground: root.foreground; fontFamily: root.fontFamily
-        bordered: true; selected: root.auditioning; focusable: true; enabled: root.canAudition
-        opacity: enabled ? 1 : 0.45; animate: root.animate
+        width: Style.space(44); height: Style.space(32)
+        horizontalPadding: Style.space(2); verticalPadding: 0
+        fontSize: visual.caption; foreground: root.auditioning ? Color.accent : visual.muted
+        fontFamily: root.fontFamily; animate: root.animate
+        selected: root.auditioning; focusable: true; enabled: root.canAudition
         onClicked: root.auditionRequested()
         onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
       }
       SkylofiButton {
         id: removeButton
-        x: parent.width - width
         objectName: "sourceRemove-" + (root.sound.id || "")
-        text: ""; iconText: "\uf00d"; tooltipText: "Remove sound from mix"
-        width: Style.space(28); height: Style.space(32); horizontalPadding: 0
-        focusable: true; foreground: visual.muted; fontFamily: root.fontFamily; animate: root.animate
+        x: parent.width - width
+        iconText: "close"; tooltipText: "Remove " + root.label + " from mix"
+        Accessible.name: "Remove " + root.label + " from mix"
+        width: Style.space(32); height: Style.space(32)
+        horizontalPadding: 0; verticalPadding: 0; iconSize: visual.iconSize
+        focusable: true; foreground: visual.quiet; fontFamily: root.fontFamily; animate: root.animate
         onClicked: root.removeRequested()
         onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+      }
+    }
+    Item {
+      id: volumeLevel
+      objectName: "sourceVolume-" + (root.sound.id || "")
+      width: parent.width; height: Style.space(32)
+      signal edited(int value)
+      onEdited: function(value) { root.volumeEdited(value) }
+      SkylofiSlider {
+        id: volumeSlider
+        objectName: "levelSlider"
+        width: Math.max(Style.space(40), parent.width - volumeReadout.width - Style.space(12))
+        height: parent.height
+        bar: root.bar; minimum: 0; maximum: 100; step: 5; integer: true
+        value: Number(root.sound.volume) || 0; animate: root.animate
+        trackColor: visual.sliderTrack; fillColor: Color.accent; knobColor: Color.accent
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Slider
+        Accessible.name: root.label + " volume"
+        Accessible.description: Math.round(displayValue) + " percent"
+        onEdited: function(value) { volumeLevel.edited(value) }
+        onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
+      }
+      Text {
+        id: volumeReadout
+        objectName: "levelReadout"
+        anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+        width: Style.space(40)
+        text: Math.round(volumeSlider.displayValue) + "%"
+        color: visual.muted; horizontalAlignment: Text.AlignRight
+        font.family: root.fontFamily; font.pixelSize: visual.label
       }
     }
     Loader {
@@ -117,31 +141,36 @@ Rectangle {
       width: parent.width; active: root.expanded; visible: active
       height: item ? item.implicitHeight : 0
       sourceComponent: Component {
-      Column {
-      width: parent.width; spacing: Style.space(10)
-      CoverageStage {
-        objectName: "sourceMini-" + (root.sound.id || "")
-        width: parent.width; mini: true; interactive: false
-        layers: root.sound.id ? [root.sound] : []
-        options: [{value:root.sound.id,label:root.label}]; selectedId: root.sound.id || ""
-        foreground: root.foreground; fontFamily: root.fontFamily
-      }
-      SourceControls {
-        objectName: "sourceControls-" + (root.sound.id || "")
-        sound: root.sound; bar: root.bar; animate: root.animate
-        detailsOpen: root.detailsOpen; helpOpen: root.helpOpen
-        onDetailsOpenChanged: root.detailsOpen = detailsOpen
-        onHelpOpenChanged: root.helpOpen = helpOpen
-        canAudition: root.canAudition; auditioning: root.auditioning
-        foreground: root.foreground; fontFamily: root.fontFamily
-        onVolumeEdited: function(value) { root.volumeEdited(value) }
-        onLayerEdited: function(key,value) { root.layerEdited(key,value) }
-        onPresetRequested: function(preset) { root.presetRequested(preset) }
-        onAuditionRequested: root.auditionRequested()
-        onFocusRequested: function(item) { root.focusRequested(item) }
-      }
-      }
+        Column {
+          width: parent.width; spacing: Style.space(12)
+          CoverageStage {
+            objectName: "sourceMini-" + (root.sound.id || "")
+            width: parent.width; mini: true; interactive: false
+            layers: root.sound.id ? [root.sound] : []
+            options: [{value:root.sound.id,label:root.label}]; selectedId: root.sound.id || ""
+            foreground: root.foreground; fontFamily: root.fontFamily
+          }
+          SourceControls {
+            objectName: "sourceControls-" + (root.sound.id || "")
+            sound: root.sound; bar: root.bar; animate: root.animate
+            showVolume: false; showAudition: false
+            detailsOpen: root.detailsOpen; helpOpen: root.helpOpen
+            onDetailsOpenChanged: root.detailsOpen = detailsOpen
+            onHelpOpenChanged: root.helpOpen = helpOpen
+            canAudition: root.canAudition; auditioning: root.auditioning
+            foreground: root.foreground; fontFamily: root.fontFamily
+            onVolumeEdited: function(value) { root.volumeEdited(value) }
+            onLayerEdited: function(key,value) { root.layerEdited(key,value) }
+            onPresetRequested: function(preset) { root.presetRequested(preset) }
+            onAuditionRequested: root.auditionRequested()
+            onFocusRequested: function(item) { root.focusRequested(item) }
+          }
+        }
       }
     }
+  }
+  Rectangle {
+    anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+    height: 1; color: Qt.alpha(root.foreground, 0.08)
   }
 }

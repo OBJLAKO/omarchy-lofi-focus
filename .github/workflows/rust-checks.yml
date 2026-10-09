@@ -39,7 +39,7 @@ jobs:
           LOFI_TEST_BACKEND: rust
           SKYLOFI_NATIVE: ${{ github.workspace }}/../skylofi-rust-target/release/skylofi
         run: |
-          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test space_test.SpaceTest
+          PYTHONPATH=tests dbus-run-session --config-file tests/dbus-no-activation.conf -- /usr/bin/python3 -B -m unittest -v player_test youtube_test.YoutubeIntegrationTest native_test qa_test space_test.SpaceTest tls_test
       - name: Python reference regressions
         env:
           LOFI_TEST_BACKEND: python
@@ -60,6 +60,9 @@ jobs:
           sources = sorted((root / 'native/src').glob('*.rs')) + [root / 'native/Cargo.toml', root / 'native/Cargo.lock', root / 'native/rust-toolchain.toml']
           report = {
               'version': json.loads((root / 'manifest.json').read_text())['version'],
+              'buildType': 'github-actions',
+              'sourceState': 'committed-source',
+              'ciTested': True,
               'sourceCommit': os.environ['GITHUB_SHA'],
               'workflowRun': f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
               'buildPlatform': 'ubuntu-24.04, x86_64 GNU/Linux',

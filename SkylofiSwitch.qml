@@ -22,11 +22,14 @@ Item {
   implicitHeight: Style.space(32)
   activeFocusOnTab: interactive
   Accessible.role: Accessible.CheckBox
+  Accessible.checkable: true
   Accessible.checked: checked
-  Accessible.onPressAction: if (interactive) root.toggled()
-  Keys.onSpacePressed: if (interactive) root.toggled()
-  Keys.onReturnPressed: if (interactive) root.toggled()
-  Keys.onEnterPressed: if (interactive) root.toggled()
+  function activate() { if (enabled && interactive) root.toggled() }
+  Accessible.onPressAction: root.activate()
+  Accessible.onToggleAction: root.activate()
+  Keys.onSpacePressed: root.activate()
+  Keys.onReturnPressed: root.activate()
+  Keys.onEnterPressed: root.activate()
   onAnimateChanged: if (!animate) { knobFeedback.complete(); trackFeedback.complete() }
   onVisibleChanged: if (!visible) { knobFeedback.complete(); trackFeedback.complete() }
 

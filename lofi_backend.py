@@ -522,7 +522,7 @@ class Player:
         # Warnings/errors and lifecycle messages, not every IPC request.
         args = ['mpv', '--no-config', '--no-video', '--terminal=yes', '--input-terminal=no', '--load-scripts=no',
                 '--ytdl=no', '--audio-display=no', '--msg-level=all=warn,cplayer=info',
-                '--msg-color=no', '--term-status-msg=', '--network-timeout=12',
+                '--msg-color=no', '--term-status-msg=', '--network-timeout=12', '--tls-verify=yes',
                 f'--volume={start_volume}', f'--input-ipc-server={self.sock(channel)}',
                 '--user-agent=sky.lofi/1.0 (mpv)']
         if youtube:

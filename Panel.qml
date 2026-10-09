@@ -61,7 +61,11 @@ Panel {
   property bool spatialScrollRequested: false
   property Item mixerFocusItem: null
   property string selectedNatureId: ""
-  property bool natureCardExpanded: true
+  property bool natureCardExpanded: false
+  property bool soundSpaceOpen: false
+  property bool soundLibraryOpen: false
+  property bool voiceControlsOpen: false
+  onSoundSpaceOpenChanged: { spatialEditorOpen = soundSpaceOpen; spatialScrollRequested = false; mixerFocusItem = null }
   property bool roomDetailsOpen: false
   property string auditionId: ""
   property var editGuards: ({})
@@ -94,6 +98,7 @@ Panel {
   readonly property var youtubeTitle: youtubeLibrary.titleField
   readonly property bool youtubeSelected: playerCategory === "youtube"
   readonly property bool sourceEnded: mainState === "ended"
+  readonly property bool retrySource: mainState === "failed" && !audiblePlayback && playerStationId.length > 0
   property real mainPosition: -1
   property real mainDuration: -1
   property bool canSeek: false
@@ -225,6 +230,16 @@ Panel {
   readonly property var availableSounds: noiseOptions.filter(function(sound) {
     return !root.natureLayer(sound.value).enabled
   })
+  readonly property string importSoundAction: "__import_audio__"
+  readonly property var addSoundOptions: (root.spatialAvailable && root.enabledNatureCount >= 16 ? [] : availableSounds).concat(root.spatialAvailable
+    ? [{value:root.importSoundAction,label:"Import audio…",description:"Add an audio file to your sound library"}] : [])
+  function openSoundImport() {
+    root.showView(2)
+    root.soundLibraryOpen = true
+    Qt.callLater(function() {
+      if (root.opened && root.currentView === 2 && root.soundLibraryOpen) soundImport.openImporter()
+    })
+  }
 
   readonly property var backgroundOptions: {
     var out = [{ value: "off", label: "Off", description: "No background voice" }]
@@ -483,7 +498,12 @@ Panel {
   }
   function isCollapsed(key) { return root.collapsibleSections && root.collapsed[key] === true }
   function ensureVisible(scroll, item) {
-    if (scroll === mixerScroll) root.mixerFocusItem = item
+    if (scroll === mixerScroll) {
+      var ancestor = item
+      while (ancestor && ancestor !== soundSpaceScroll) ancestor = ancestor.parent
+      if (ancestor === soundSpaceScroll) scroll = soundSpaceScroll
+      else root.mixerFocusItem = item
+    }
     var point = item.mapToItem(scroll.contentItem, 0, 0)
     var target = scroll.contentY
     if (item.height > scroll.height) target = point.y
@@ -516,7 +536,9 @@ Panel {
         if (root.latestStatusRaw) root.applyStatus(root.latestStatusRaw)
       }
       root.youtubeResult(arguments, exitCode, message)
-      if (arguments[0] !== "youtube-add") root.actionMessage = exitCode !== 0 ? message : ""
+      if (arguments[0] === "scene-save") { root.actionMessage = ""; sceneControls.finishSave(exitCode, message) }
+      else if (arguments[0] === "sound-import") { root.actionMessage = ""; soundImport.completeImport(exitCode, message) }
+      else if (arguments[0] !== "youtube-add") root.actionMessage = exitCode !== 0 ? message : ""
     }
   }
   onOpenedChanged: {
@@ -566,6 +588,7 @@ Panel {
 
     FocusScope {
       id: keyCatcher
+      readonly property bool tightHeight: height < Style.space(470)
       anchors.fill: parent
       focus: true
       Keys.priority: Keys.AfterItem
@@ -576,11 +599,13 @@ Panel {
           else if (naturePicker.popupOpen) naturePicker.close()
           else if (youtubeLibrary.addingLink) youtubeLibrary.addingLink = false
           else if (youtubeLibrary.pendingRemoval.length > 0) youtubeLibrary.pendingRemoval = ""
+          else if (root.currentView === 1 && root.soundSpaceOpen) root.soundSpaceOpen = false
           else root.close()
           event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_F) {
           root.showView(0)
-          root.libraryOpen ? youtubeLibrary.focusSearch() : stationSearch.forceActiveFocus()
+          if (root.libraryOpen) youtubeLibrary.focusSearch()
+          else { stationSearch.forceActiveFocus(); root.ensureVisible(listenScroll, stationSearch) }
           event.accepted = true
         } else if ((event.modifiers & Qt.ControlModifier) && event.key >= Qt.Key_1 && event.key <= Qt.Key_3) {
           root.showView(event.key - Qt.Key_1)
@@ -591,8 +616,9 @@ Panel {
       Column {
         id: chrome
         width: parent.width
-        spacing: Style.space(12)
+        spacing: keyCatcher.tightHeight ? Style.space(4) : Style.space(12)
         Row {
+          visible: !keyCatcher.tightHeight
           width: parent.width
           height: Style.space(32)
           spacing: visual.controlGap
@@ -632,11 +658,23 @@ Panel {
               required property string modelData
               required property int index
               objectName: "mainTab-" + index
-              width: (tabs.width - tabs.spacing * 2) / 3
+              width: keyCatcher.tightHeight ? (index === 2 ? Style.space(32) : (tabs.width - Style.space(64) - tabs.spacing * 3) / 2) : (tabs.width - tabs.spacing * 2) / 3
               text: modelData
+              iconName: keyCatcher.tightHeight && index === 2 ? "settings" : ""
               selected: root.currentView === index
               onActivated: root.showView(index)
             }
+          }
+          SkylofiButton {
+            id: compactCloseButton
+            visible: keyCatcher.tightHeight
+            width: Style.space(32); height: visual.controlHeight
+            iconText: "close"; tooltipText: "Close · Esc"
+            horizontalPadding: 0; verticalPadding: 0
+            foreground: visual.muted; fontFamily: root.contentFontFamily
+            animate: root.liveMotion; focusable: true
+            Accessible.name: "Close panel"
+            onClicked: root.close()
           }
         }
       }
@@ -645,7 +683,7 @@ Panel {
         id: pages
         objectName: "pageViewport"
         anchors.top: chrome.bottom
-        anchors.topMargin: visual.groupGap
+        anchors.topMargin: keyCatcher.tightHeight ? Style.space(8) : visual.groupGap
         anchors.left: parent.left; anchors.right: parent.right
         anchors.bottom: playerDock.top
         anchors.bottomMargin: visual.groupGap
@@ -718,6 +756,7 @@ Panel {
               foreground: root.contentForeground
               font.family: root.contentFontFamily; font.pixelSize: visual.body
               maximumLength: 160
+              onActiveFocusChanged: if (activeFocus) root.ensureVisible(listenScroll, this)
               Keys.onEscapePressed: { text = ""; focus = false }
             }
             Column {
@@ -771,16 +810,10 @@ Panel {
           anchors.fill: parent
           anchors.topMargin: soloBanner.visible ? soloBanner.height + Style.space(8) : 0
           contentWidth: width; contentHeight: mixColumn.implicitHeight
-          visible: root.currentView === 1; clip: true
+          visible: root.currentView === 1 && !root.soundSpaceOpen; clip: true
           onContentHeightChanged: Qt.callLater(function() {
-            if (root.spatialScrollRequested && spaceDisclosure.height >= roomEditor.stageItem.height) {
-              root.ensureVisible(mixerScroll,roomEditor.stageItem)
-              root.spatialScrollRequested = false
-            } else if (root.mixerFocusItem && root.mixerFocusItem.visible) {
-              // Loader activation and wrapped text settle during polish. Keep
-              // the requested hit target visible after that final layout.
+            if (visible && root.mixerFocusItem && root.mixerFocusItem.visible)
               root.ensureVisible(mixerScroll,root.mixerFocusItem)
-            }
           })
           boundsBehavior: Flickable.StopAtBounds; interactive: contentHeight > height
           Column {
@@ -800,107 +833,167 @@ Panel {
               onRemoveRequested: function(id) { root.runAction(["scene-remove",id]) }
               onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
             }
-            ControlGroup {
-              objectName: "roomControls"
+            Column {
               width: parent.width
-              visible: root.spatialAvailable
-              Row {
-                width: parent.width; spacing: Style.space(8)
-                SectionTitle {
-                  width: Style.space(46); text: "Room"
-                  anchors.verticalCenter: parent.verticalCenter
-                }
-                FocusDropdown {
-                  id: roomPresetPicker
-                  objectName: "roomPresetPicker"
-                  width: parent.width - Style.space(54)
-                  showLabel: false; label: "Room acoustics"; placeholderText: "Find a room"
-                  options: [{value:"cozy",label:"Warm room"},{value:"cafe",label:"Cafe"},{value:"outside",label:"Outdoors"},{value:"hall",label:"Large hall"}]
-                  value: root.roomState.preset
-                  popupBoundary: keyCatcher; animate: root.liveMotion
-                  foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                  onChanged: function(value) { root.editRoom("preset",value) }
-                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
-                }
+              spacing: Style.space(8)
+              MixerLevel {
+                objectName: "soundtrackLevel"
+                width: parent.width
+                compact: true; labelWidth: Style.space(90)
+                label: "Soundtrack"; value: root.mainVolume
+                bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                animate: root.liveMotion
+                onEdited: function(value) { root.setVolume("main", value) }
+                onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
               }
               SkylofiButton {
-                objectName: "roomDetailsButton"
-                width: parent.width
-                text: root.roomDetailsOpen ? "Hide room acoustics" : "Room acoustics"
-                iconText: root.roomDetailsOpen ? "\uf107" : "\uf105"
-                leftAlign: true; horizontalPadding: 0; verticalPadding: 0
-                foreground: visual.muted; fontFamily: root.contentFontFamily; fontSize: visual.caption
-                animate: root.liveMotion; focusable: true
-                onClicked: root.roomDetailsOpen = !root.roomDetailsOpen
+                id: addVoice
+                objectName: "addVoiceButton"
+                visible: !root.mixOn && !root.voiceControlsOpen && root.voiceAvailable
+                text: "Add voice"; iconText: "plus"
+                foreground: visual.muted; fontFamily: root.contentFontFamily
+                fontSize: visual.label; animate: root.liveMotion; focusable: true
+                horizontalPadding: 0
+                onClicked: {
+                  root.voiceControlsOpen = true
+                  Qt.callLater(function() { voicePicker.focusTrigger(); root.ensureVisible(mixerScroll,voicePicker) })
+                }
                 onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
               }
-              Column {
-                width: parent.width; visible: root.roomDetailsOpen; spacing: Style.space(10)
-                Repeater {
-                  model: [{key:"size",label:"Room size",fallback:35},{key:"softness",label:"Soft furnishings",fallback:55},{key:"reflections",label:"Room reflections",fallback:25}]
-                  SoundControl {
-                    required property var modelData
-                    objectName: "room-" + modelData.key
-                    label: modelData.label; value: root.roomState[modelData.key]
-                    bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                    animate: root.liveMotion
-                    onEdited: function(value) { root.editRoom(modelData.key,value) }
-                    onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
-                  }
+            }
+            Column {
+              objectName: "voiceControls"
+              visible: root.mixOn || root.voiceControlsOpen || root.voiceFailed
+              spacing: Style.space(8)
+              width: parent.width
+              Row {
+                width: parent.width; spacing: Style.space(10)
+                SectionTitle { width: Style.space(90); text: "Voice"; anchors.verticalCenter: parent.verticalCenter }
+                FocusDropdown {
+                  id: voicePicker
+                  objectName: "voicePicker"
+                  popupBoundary: keyCatcher
+                  width: parent.width - Style.space(100)
+                  label: "Background voice"
+                  showLabel: false; options: root.backgroundOptions; controlledValue: true
+                  animate: root.liveMotion
+                  value: root.mixOn ? root.bgStation : "off"
+                  enabled: root.voiceAvailable
+                  opacity: enabled ? 1 : 0.45
+                  foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                  placeholderText: "Search voices and podcasts"
+                  onChanged: function(value) {
+                  if (value === "off") root.voiceControlsOpen = false
+                  root.runAction(["bg", value])
+                }
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
+                }
+              }
+              Caption {
+                objectName: "voiceAvailabilityHint"
+                visible: !root.voiceAvailable
+                text: "Voice is available with radio. Switch to Radio in Listen to use it."
+              }
+              Row {
+                width: parent.width
+                visible: root.voiceMessage.length > 0
+                spacing: visual.controlGap
+                Caption {
+                  objectName: "voiceStatus"
+                  width: parent.width - (voiceRetry.visible ? voiceRetry.width + parent.spacing : 0)
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: root.voiceMessage
+                  color: root.voiceFailed ? Color.urgent : visual.muted
+                }
+                SkylofiButton {
+                  fontFamily: root.contentFontFamily
+                  animate: root.liveMotion
+                  id: voiceRetry
+                  objectName: "voiceRetry"
+                  visible: root.voiceFailed && root.bgStation.length > 0
+                  text: "Retry"; foreground: root.contentForeground; focusable: true
+                  onClicked: root.runAction(["bg", root.bgStation])
+                }
+              }
+              Disclosure {
+                width: parent.width
+                objectName: "voiceLevelDisclosure"
+                expanded: root.mixOn && root.voiceAvailable
+                MixerLevel {
+                  width: parent.width
+                  compact: true; labelWidth: Style.space(90)
+                  label: "Voice level"; value: root.bgVolume
+                  bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                  animate: root.liveMotion
+                  onEdited: function(value) { root.setVolume("bg", value) }
+                  onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
                 }
               }
             }
-            ControlGroup {
+            Column {
+              objectName: "ambienceControls"
+              spacing: Style.space(10)
               width: parent.width
               Row {
                 width: parent.width
                 spacing: visual.controlGap
                 SectionTitle {
-                  width: parent.width - (naturePicker.visible ? naturePicker.width + parent.spacing : 0)
+                  width: Math.max(0, parent.width - (naturePicker.visible ? naturePicker.width + parent.spacing : 0)
+                    - (soundSpaceEntry.visible ? soundSpaceEntry.width + parent.spacing : 0))
                   text: "Ambience"
                   anchors.verticalCenter: parent.verticalCenter
+                }
+                SkylofiButton {
+                  id: soundSpaceEntry
+                  objectName: "soundSpaceDisclosureButton"
+                  readonly property bool compact: parent.width < Style.space(340)
+                  width: Style.space(compact ? 32 : 110); height: naturePicker.height
+                  anchors.verticalCenter: parent.verticalCenter
+                  visible: root.spatialAvailable
+                  text: compact ? "" : "Sound space"; iconText: "space"
+                  tooltipText: "Sound space: arrange sounds and choose a room"
+                  Accessible.name: "Sound space"
+                  horizontalPadding: Style.space(2); verticalPadding: 0
+                  foreground: visual.muted; fontFamily: root.contentFontFamily
+                  fontSize: visual.label; animate: root.liveMotion; focusable: true
+                  onClicked: root.soundSpaceOpen = true
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
                 }
                 FocusDropdown {
                   id: naturePicker
                   objectName: "naturePicker"
                   popupBoundary: keyCatcher
                   width: Math.min(Style.space(136), parent.width * 0.46)
-                  visible: root.availableSounds.length > 0
+                  visible: root.addSoundOptions.length > 0
                   label: "Add ambience sound"
                   showLabel: false; triggerLabel: width < Style.space(120) ? "+ Add" : "+ Add sound"
                   showDescriptions: false; animate: root.liveMotion
                   placeholderText: "Find a sound"
-                  options: root.availableSounds; value: ""
+                  options: root.addSoundOptions; value: ""
                   foreground: root.contentForeground; fontFamily: root.contentFontFamily
                   onChanged: function(value) {
-                    root.selectedNatureId = value
-                    root.runAction(["nature", value, "on"])
+                    if (value === root.importSoundAction) root.openSoundImport()
+                    else {
+                      root.selectedNatureId = value
+                      root.runAction(["nature", value, "on"])
+                    }
                     Qt.callLater(function() { naturePicker.value = "" })
                   }
                   onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
                 }
               }
               Caption { visible: root.enabledNatureCount === 0; text: "Add rain, a room tone or your own audio." }
-              SkylofiButton {
-                objectName: "soundSpaceButton"
-                width: parent.width
-                visible: root.spatialAvailable && root.enabledNatureCount > 0
-                text: root.spatialEditorOpen ? "Back to sound cards" : "Edit overall space"
-                iconText: root.spatialEditorOpen ? "\uf107" : "\uf105"
-                leftAlign: true; horizontalPadding: Style.space(2)
-                foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                animate: root.liveMotion; focusable: true
-                onClicked: {
-                  root.spatialScrollRequested = !root.spatialEditorOpen
-                  root.spatialEditorOpen = !root.spatialEditorOpen
-                }
+              Caption {
+                objectName: "ambienceLimitHint"
+                visible: root.spatialAvailable && root.enabledNatureCount >= 16
+                text: root.enabledNatureCount + " sounds active. Remove one to add another."
               }
               Item {
                 id: natureBody
                 objectName: "section-body-nature"
                 width: parent.width
-                visible: !root.spatialAvailable || !root.spatialEditorOpen
-                height: root.spatialAvailable && root.spatialEditorOpen || root.isCollapsed("nature") ? 0 : natureColumn.implicitHeight
+                visible: true
+                height: root.isCollapsed("nature") ? 0 : natureColumn.implicitHeight
                 clip: true
                 Column {
                   id: natureColumn
@@ -931,7 +1024,7 @@ Panel {
                         onPresetRequested: function(preset) { root.sourcePreset(modelData.value,preset) }
                         onAuditionRequested: {
                           if (root.auditionId !== modelData.value) {
-                            root.selectedNatureId = modelData.value; root.natureCardExpanded = true; root.spatialEditorOpen = false
+                            root.selectedNatureId = modelData.value; root.spatialEditorOpen = false
                           }
                           root.auditionNature(modelData.value)
                         }
@@ -952,92 +1045,124 @@ Panel {
                   }
                 }
               }
-              Disclosure {
-                id: spaceDisclosure
-                width: parent.width
-                expanded: root.spatialAvailable && root.spatialEditorOpen && root.enabledNatureCount > 0
-                RoomEditor {
-                  id: roomEditor
-                  objectName: "roomEditor"
-                  width: parent.width
-                  layers: root.activeNatureLayers; options: root.noiseOptions
-                  selectedId: root.selectedNatureId; room: root.roomState
-                  canAudition: root.isPlaying; auditionId: root.auditionId
-                  popupBoundary: keyCatcher; bar: root.bar
-                  foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                  animate: root.liveMotion
-                  onSelected: function(id) { root.selectedNatureId = id }
-                  onLayerEdited: function(id,key,value) { root.editLayer(id,key,value) }
-                  onVolumeEdited: function(id,value) { root.setVolume(id,value) }
-                  onPresetRequested: function(id,preset) { root.sourcePreset(id,preset) }
-                  onAuditionRequested: function(id) { root.auditionNature(id) }
-                  onPositionEdited: function(id,pan,distance) { root.placeLayer(id,pan,distance) }
-                  onRoomEdited: function(key,value) { root.editRoom(key,value) }
-                  onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
+            }
+          }
+        }
+
+        Flickable {
+          id: soundSpaceScroll
+          objectName: "soundSpaceScroll"
+          anchors.fill: parent
+          anchors.topMargin: soloBanner.visible ? soloBanner.height + Style.space(8) : 0
+          contentWidth: width; contentHeight: spaceColumn.implicitHeight
+          visible: root.currentView === 1 && root.soundSpaceOpen
+          clip: true; boundsBehavior: Flickable.StopAtBounds
+          interactive: contentHeight > height
+          Column {
+            id: spaceColumn
+            width: parent.width - (soundSpaceScroll.contentHeight > soundSpaceScroll.height ? Style.space(10) : 0)
+            spacing: visual.groupGap
+            Row {
+              width: parent.width; spacing: Style.space(10)
+              SkylofiButton {
+                objectName: "soundSpaceBack"
+                iconText: "\uf104"; text: "Mix"
+                tooltipText: "Back to mix"
+                foreground: visual.muted; fontFamily: root.contentFontFamily
+                animate: root.liveMotion; focusable: true; horizontalPadding: 0
+                onClicked: {
+                  root.soundSpaceOpen = false
+                  Qt.callLater(function() { soundSpaceEntry.forceActiveFocus() })
                 }
               }
-              SoundImport {
-                objectName: "soundImport"
-                width: parent.width; visible: root.spatialAvailable
-                foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                animate: root.liveMotion
-                onImportRequested: function(path,title) { root.runAction(["sound-import",path,title]) }
-                onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
+              Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Sound space"; color: root.contentForeground
+                font.family: root.contentFontFamily; font.pixelSize: visual.body; font.weight: Font.DemiBold
               }
-              SkylofiButton {
-                visible: root.spatialAvailable && root.importedSounds.length > 0
-                text: root.managingImports ? "Hide imported library" : "Manage imported sounds"
-                fontSize: visual.caption; foreground: visual.muted; fontFamily: root.contentFontFamily
-                animate: root.liveMotion; focusable: true
-                onClicked: { root.managingImports = !root.managingImports; root.pendingSoundRemoval = "" }
+            }
+            Column {
+              spacing: Style.space(10)
+              objectName: "roomControls"
+              width: parent.width
+              visible: root.spatialAvailable
+              Row {
+                width: parent.width; spacing: Style.space(8)
+                SectionTitle {
+                  width: Style.space(46); text: "Room"
+                  anchors.verticalCenter: parent.verticalCenter
+                }
+                FocusDropdown {
+                  id: roomPresetPicker
+                  objectName: "roomPresetPicker"
+                  width: parent.width - Style.space(94)
+                  showLabel: false; label: "Room acoustics"; placeholderText: "Find a room"
+                  options: [{value:"cozy",label:"Warm room"},{value:"cafe",label:"Cafe"},{value:"outside",label:"Outdoors"},{value:"hall",label:"Large hall"}]
+                  value: root.roomState.preset
+                  popupBoundary: keyCatcher; animate: root.liveMotion
+                  foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                  onChanged: function(value) { root.editRoom("preset",value) }
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
+                }
+                SkylofiButton {
+                  objectName: "roomDetailsButton"
+                  width: Style.space(32); height: Style.space(36)
+                  text: ""; tooltipText: "Room acoustics"; selected: root.roomDetailsOpen
+                  iconText: "sliders"
+                  horizontalPadding: 0; verticalPadding: 0
+                  foreground: visual.muted; fontFamily: root.contentFontFamily; fontSize: visual.caption
+                  animate: root.liveMotion; focusable: true
+                  onClicked: root.roomDetailsOpen = !root.roomDetailsOpen
+                  onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll,this)
+                }
               }
               Column {
-                width: parent.width; spacing: Style.space(6)
-                visible: root.spatialAvailable && root.managingImports && root.importedSounds.length > 0
+                width: parent.width; visible: root.roomDetailsOpen; spacing: Style.space(10)
                 Repeater {
-                  model: root.importedSounds
-                  Row {
+                  model: [{key:"size",label:"Room size",fallback:35},{key:"softness",label:"Soft furnishings",fallback:55},{key:"reflections",label:"Room reflections",fallback:25}]
+                  SoundControl {
                     required property var modelData
-                    width: parent.width; spacing: Style.space(8)
-                    Caption {
-                      width: parent.width - removeImport.width - parent.spacing
-                      anchors.verticalCenter: parent.verticalCenter
-                      text: modelData.name
-                    }
-                    SkylofiButton {
-                      id: removeImport
-                      objectName: "removeImport-" + modelData.id
-                      text: "Remove"; foreground: visual.muted; fontFamily: root.contentFontFamily
-                      fontSize: visual.caption; animate: root.liveMotion; focusable: true
-                      onClicked: root.pendingSoundRemoval = modelData.id
-                    }
-                  }
-                }
-                Caption {
-                  visible: root.pendingSoundRemoval.length > 0
-                  text: {
-                    var sound = root.importedSounds.find(function(sound) { return sound.id === root.pendingSoundRemoval })
-                    return "Remove " + (sound ? sound.name : "this sound") + " from your library?"
-                  }
-                }
-                Row {
-                  width: parent.width; spacing: Style.space(6)
-                  visible: root.pendingSoundRemoval.length > 0
-                  SkylofiButton {
-                    objectName: "soundRemoveConfirm"
-                    text: "Remove"; foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                    animate: root.liveMotion; focusable: true; bordered: true
-                    onClicked: { root.runAction(["sound-remove",root.pendingSoundRemoval]); root.pendingSoundRemoval = "" }
-                  }
-                  SkylofiButton {
-                    text: "Keep"; foreground: visual.muted; fontFamily: root.contentFontFamily
-                    animate: root.liveMotion; focusable: true
-                    onClicked: root.pendingSoundRemoval = ""
+                    objectName: "room-" + modelData.key
+                    label: modelData.label; value: root.roomState[modelData.key]
+                    bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                    animate: root.liveMotion
+                    onEdited: function(value) { root.editRoom(modelData.key,value) }
+                    onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
                   }
                 }
               }
             }
-            ControlGroup {
+            Disclosure {
+              id: spaceDisclosure
+              width: parent.width
+              objectName: "soundSpaceDisclosure"
+              expanded: root.soundSpaceOpen && root.enabledNatureCount > 0
+              RoomEditor {
+                id: roomEditor
+                objectName: "roomEditor"
+                width: parent.width
+                layers: root.activeNatureLayers; options: root.noiseOptions
+                selectedId: root.selectedNatureId; room: root.roomState
+                canAudition: root.isPlaying; auditionId: root.auditionId
+                popupBoundary: keyCatcher; bar: root.bar
+                foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                animate: root.liveMotion
+                onSelected: function(id) { root.selectedNatureId = id }
+                onLayerEdited: function(id,key,value) { root.editLayer(id,key,value) }
+                onVolumeEdited: function(id,value) { root.setVolume(id,value) }
+                onPresetRequested: function(id,preset) { root.sourcePreset(id,preset) }
+                onAuditionRequested: function(id) { root.auditionNature(id) }
+                onPositionEdited: function(id,pan,distance) { root.placeLayer(id,pan,distance) }
+                onRoomEdited: function(key,value) { root.editRoom(key,value) }
+                onFocusRequested: function(item) { root.ensureVisible(mixerScroll,item) }
+              }
+            }
+            Caption {
+              visible: root.enabledNatureCount === 0
+              text: "Add sounds in Mix to arrange them here."
+            }
+            Column {
+              spacing: Style.space(10)
               width: parent.width
               visible: root.spatialAvailable
               Row {
@@ -1091,76 +1216,6 @@ Panel {
                     text: variationSlider.displayValue + "%"; horizontalAlignment: Text.AlignRight
                     color: visual.muted; font.family: root.contentFontFamily; font.pixelSize: visual.caption
                   }
-                }
-              }
-            }
-            MixerLevel {
-              objectName: "soundtrackLevel"
-              width: parent.width
-              compact: true; labelWidth: Style.space(90)
-              label: "Soundtrack"; value: root.mainVolume
-              bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
-              animate: root.liveMotion
-              onEdited: function(value) { root.setVolume("main", value) }
-              onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
-            }
-            ControlGroup {
-              width: parent.width
-              SectionTitle { text: "Voice" }
-              FocusDropdown {
-                id: voicePicker
-                objectName: "voicePicker"
-                popupBoundary: keyCatcher
-                width: parent.width
-                label: "Background voice"
-                showLabel: false; options: root.backgroundOptions
-                animate: root.liveMotion
-                value: root.mixOn ? root.bgStation : "off"
-                enabled: root.voiceAvailable
-                opacity: enabled ? 1 : 0.45
-                foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                placeholderText: "Search voices and podcasts"
-                onChanged: function(value) { root.runAction(["bg", value]) }
-                onActiveFocusChanged: if (activeFocus) root.ensureVisible(mixerScroll, this)
-              }
-              Caption {
-                objectName: "voiceAvailabilityHint"
-                visible: !root.voiceAvailable
-                text: "Voice is available with radio. Switch to Radio in Listen to use it."
-              }
-              Row {
-                width: parent.width
-                visible: root.voiceMessage.length > 0
-                spacing: visual.controlGap
-                Caption {
-                  objectName: "voiceStatus"
-                  width: parent.width - (voiceRetry.visible ? voiceRetry.width + parent.spacing : 0)
-                  anchors.verticalCenter: parent.verticalCenter
-                  text: root.voiceMessage
-                  color: root.voiceFailed ? Color.urgent : visual.muted
-                }
-                SkylofiButton {
-                  fontFamily: root.contentFontFamily
-                  animate: root.liveMotion
-                  id: voiceRetry
-                  objectName: "voiceRetry"
-                  visible: root.voiceFailed && root.bgStation.length > 0
-                  text: "Retry"; foreground: root.contentForeground; focusable: true
-                  onClicked: root.runAction(["bg", root.bgStation])
-                }
-              }
-              Disclosure {
-                width: parent.width
-                objectName: "voiceLevelDisclosure"
-                expanded: root.mixOn && root.voiceAvailable
-                MixerLevel {
-                  width: parent.width
-                  compact: true; labelWidth: Style.space(90)
-                  label: "Voice level"; value: root.bgVolume
-                  bar: root.bar; foreground: root.contentForeground; fontFamily: root.contentFontFamily
-                  animate: root.liveMotion
-                  onEdited: function(value) { root.setVolume("bg", value) }
-                  onFocusRequested: function(item) { root.ensureVisible(mixerScroll, item) }
                 }
               }
             }
@@ -1236,9 +1291,89 @@ Panel {
                 onToggled: root.runAction(["ui", "equalizer", root.equalizerEnabled ? "off" : "on"])
               }
             }
+            Column {
+              width: parent.width; spacing: Style.space(8)
+              visible: root.spatialAvailable
+              SkylofiButton {
+                objectName: "soundLibraryDisclosureButton"
+                text: "Sound library"
+                iconText: root.soundLibraryOpen ? "\uf107" : "\uf105"
+                foreground: visual.muted; fontFamily: root.contentFontFamily
+                animate: root.liveMotion; focusable: true; horizontalPadding: 0
+                onClicked: root.soundLibraryOpen = !root.soundLibraryOpen
+                onActiveFocusChanged: if (activeFocus) root.ensureVisible(settingsScroll,this)
+              }
+              Disclosure {
+                width: parent.width; expanded: root.soundLibraryOpen
+                Column {
+                  width: parent.width; spacing: Style.space(8)
+                  SoundImport {
+                    id: soundImport
+                    objectName: "soundImport"
+                    width: parent.width; visible: root.spatialAvailable
+                    foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                    animate: root.liveMotion
+                    onImportRequested: function(path,title) { root.runAction(["sound-import",path,title]) }
+                    onFocusRequested: function(item) { root.ensureVisible(settingsScroll,item) }
+                  }
+                  SkylofiButton {
+                    visible: root.spatialAvailable && root.importedSounds.length > 0
+                    text: root.managingImports ? "Hide imported library" : "Manage imported sounds"
+                    fontSize: visual.caption; foreground: visual.muted; fontFamily: root.contentFontFamily
+                    animate: root.liveMotion; focusable: true
+                    onClicked: { root.managingImports = !root.managingImports; root.pendingSoundRemoval = "" }
+                  }
+                  Column {
+                    width: parent.width; spacing: Style.space(6)
+                    visible: root.spatialAvailable && root.managingImports && root.importedSounds.length > 0
+                    Repeater {
+                      model: root.importedSounds
+                      Row {
+                        required property var modelData
+                        width: parent.width; spacing: Style.space(8)
+                        Caption {
+                          width: parent.width - removeImport.width - parent.spacing
+                          anchors.verticalCenter: parent.verticalCenter
+                          text: modelData.name
+                        }
+                        SkylofiButton {
+                          id: removeImport
+                          objectName: "removeImport-" + modelData.id
+                          text: "Remove"; foreground: visual.muted; fontFamily: root.contentFontFamily
+                          fontSize: visual.caption; animate: root.liveMotion; focusable: true
+                          onClicked: root.pendingSoundRemoval = modelData.id
+                        }
+                      }
+                    }
+                    Caption {
+                      visible: root.pendingSoundRemoval.length > 0
+                      text: {
+                        var sound = root.importedSounds.find(function(sound) { return sound.id === root.pendingSoundRemoval })
+                        return "Remove " + (sound ? sound.name : "this sound") + " from your library?"
+                      }
+                    }
+                    Row {
+                      width: parent.width; spacing: Style.space(6)
+                      visible: root.pendingSoundRemoval.length > 0
+                      SkylofiButton {
+                        objectName: "soundRemoveConfirm"
+                        text: "Remove"; foreground: root.contentForeground; fontFamily: root.contentFontFamily
+                        animate: root.liveMotion; focusable: true; bordered: true
+                        onClicked: { root.runAction(["sound-remove",root.pendingSoundRemoval]); root.pendingSoundRemoval = "" }
+                      }
+                      SkylofiButton {
+                        text: "Keep"; foreground: visual.muted; fontFamily: root.contentFontFamily
+                        animate: root.liveMotion; focusable: true
+                        onClicked: root.pendingSoundRemoval = ""
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
-        ScrollMark { view: root.currentView === 0 ? listenScroll : root.currentView === 1 ? mixerScroll : settingsScroll }
+        ScrollMark { view: root.currentView === 0 ? listenScroll : root.currentView === 1 ? (root.soundSpaceOpen ? soundSpaceScroll : mixerScroll) : settingsScroll }
       }
 
       Column {
@@ -1290,16 +1425,16 @@ Panel {
             animate: root.liveMotion
             id: playButton
             objectName: "togglePlayback"
-            readonly property string actionLabel: root.sourceEnded ? "Replay" : root.playerPaused ? "Resume" : root.sessionActive ? "Pause" : "Play"
+            readonly property string actionLabel: root.retrySource ? "Retry" : root.sourceEnded ? "Replay" : root.playerPaused ? "Resume" : root.sessionActive ? "Pause" : "Play"
             text: playerDock.compactControls ? "" : actionLabel
             tooltipText: actionLabel
-            iconText: root.sessionActive && !root.playerPaused && !root.sourceEnded ? "\uf04c" : "\uf04b"
+            iconText: root.retrySource ? "return" : root.sessionActive && !root.playerPaused && !root.sourceEnded ? "\uf04c" : "\uf04b"
             selected: true
             width: playerDock.compactControls ? visual.controlHeight : Style.space(98); height: visual.controlHeight
             fontSize: visual.body; iconSize: visual.body
             foreground: root.contentForeground; focusable: true
             Accessible.name: actionLabel + " sounds"
-            onClicked: root.runAction(["toggle"])
+            onClicked: root.runAction(root.retrySource ? ["start",root.playerStationId] : ["toggle"])
           }
           SkylofiButton {
             fontFamily: root.contentFontFamily
@@ -1363,14 +1498,15 @@ Panel {
           width: parent.width
           spacing: visual.controlGap
           Caption {
-            width: parent.width - retryButton.width - parent.spacing
-            text: "Source unavailable. Try again or choose another."
+            width: parent.width - (retryButton.visible ? retryButton.width + parent.spacing : 0)
+            text: "Source unavailable. Retry or choose another."
             anchors.verticalCenter: parent.verticalCenter
           }
           SkylofiButton {
             fontFamily: root.contentFontFamily
             animate: root.liveMotion
             id: retryButton
+            visible: !root.retrySource
             text: "Retry"; foreground: root.contentForeground; focusable: true
             onClicked: root.runAction(["start", root.playerStationId])
           }
@@ -1392,6 +1528,7 @@ Panel {
   component NavTab: Item {
     id: tab
     property string text: ""
+    property string iconName: ""
     property bool selected: false
     signal activated()
     height: visual.controlHeight
@@ -1399,18 +1536,26 @@ Panel {
     Accessible.role: Accessible.PageTab
     Accessible.name: text
     Accessible.selected: selected
+    Accessible.onPressAction: if (enabled && visible) activated()
     Keys.onReturnPressed: activated()
     Keys.onEnterPressed: activated()
     Keys.onSpacePressed: activated()
     Rectangle {
       anchors.fill: parent
-      color: tabMouse.pressed ? visual.pressed : tab.activeFocus || tabMouse.containsMouse ? visual.hover : "transparent"
+      color: tabMouse.pressed ? visual.pressed : tab.selected ? visual.selected : tab.activeFocus || tabMouse.containsMouse ? visual.hover : "transparent"
       radius: Math.min(Style.cornerRadius, Style.space(6))
       border.color: tab.activeFocus ? Color.accent : "transparent"
       border.width: 1
       Behavior on color { enabled: root.liveMotion && tab.visible; ColorAnimation { duration: visual.feedbackDuration } }
     }
+    SkylofiIcon {
+      anchors.centerIn: parent
+      visible: tab.iconName.length > 0
+      name: tab.iconName; size: visual.iconSize
+      color: tab.selected ? Color.accent : visual.muted
+    }
     Text {
+      visible: tab.iconName.length === 0
       anchors.centerIn: parent
       width: parent.width - Style.space(12)
       text: tab.text; textFormat: Text.PlainText
@@ -1419,13 +1564,6 @@ Panel {
       font.family: root.contentFontFamily; font.pixelSize: tab.width < Style.space(125) ? visual.label : visual.body
       font.weight: tab.selected ? Font.DemiBold : Font.Normal
       elide: Text.ElideRight
-    }
-    Rectangle {
-      anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-      anchors.leftMargin: Style.space(12); anchors.rightMargin: Style.space(12)
-      height: Style.space(2)
-      color: tab.selected ? Color.accent : visual.line
-      Behavior on color { enabled: root.liveMotion && tab.visible; ColorAnimation { duration: visual.feedbackDuration } }
     }
     MouseArea {
       id: tabMouse
@@ -1444,6 +1582,7 @@ Panel {
     Accessible.role: Accessible.PageTab
     Accessible.name: text
     Accessible.selected: selected
+    Accessible.onPressAction: if (enabled && visible) activated()
     Keys.onReturnPressed: activated()
     Keys.onEnterPressed: activated()
     Keys.onSpacePressed: activated()

@@ -70,6 +70,8 @@ Column {
   }
   Text {
     width: parent.width; text: stage.sourceName(root.currentLayer.id || "")
+    objectName: "selectedSourceName"
+    textFormat: Text.PlainText
     color: root.foreground; elide: Text.ElideRight
     font.family: root.fontFamily; font.pixelSize: visual.body; font.weight: Font.DemiBold
   }

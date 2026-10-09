@@ -14,24 +14,43 @@ Column {
   property color foreground: Color.foreground
   property string fontFamily: Style.font.family
   property bool saving: false
+  property bool savePending: false
+  property string saveError: ""
   property bool confirmingRemoval: false
   readonly property var currentScene: scenes.find(function(scene) { return scene.id === root.sceneId }) || null
-  readonly property var options: [{value:"",label:"Unsaved mix",description:"Current room and sounds"}].concat(scenes.map(function(scene) {
-    return {value:String(scene.id),label:String(scene.name),description:"Saved room and sound layers"}
+  readonly property var options: [{value:"",label:"Current mix",description:"Your current sounds and room"}].concat(scenes.map(function(scene) {
+    return {value:String(scene.id),label:String(scene.name) + (root.dirty && scene.id === root.sceneId ? " (edited)" : ""),description:"Saved mix"}
   }))
   signal applyRequested(string id)
   signal saveRequested(string name)
   signal removeRequested(string id)
   signal focusRequested(var item)
   spacing: Style.space(6)
-  onSceneIdChanged: { picker.value = sceneId; confirmingRemoval = false }
+  onSceneIdChanged: confirmingRemoval = false
   onVisibleChanged: if (!visible) { picker.close(); saving = false; confirmingRemoval = false }
   function close() { picker.close(); saving = false; confirmingRemoval = false }
   function save() {
+    if (root.savePending) return
     var name = nameField.text.trim()
     if (!name) { nameField.forceActiveFocus(); return }
+    root.savePending = true
+    root.saveError = ""
     root.saveRequested(name)
-    root.saving = false
+  }
+  function finishSave(code, message) {
+    if (!root.savePending) return
+    root.savePending = false
+    if (code === 0) {
+      root.saving = false
+      root.saveError = ""
+      nameField.text = ""
+    } else {
+      root.saving = true
+      root.saveError = message || "Could not save this scene. Try again."
+      Qt.callLater(function() {
+        if (root.visible && root.saving) { nameField.forceActiveFocus(); root.focusRequested(nameField) }
+      })
+    }
   }
   SkylofiStyle { id: visual; foreground: root.foreground }
   Row {
@@ -40,26 +59,29 @@ Column {
     FocusDropdown {
       id: picker
       objectName: "scenePicker"
-      width: parent.width - saveButton.width - removeButton.width - parent.spacing * 2
+      width: parent.width - saveButton.width - (removeButton.visible ? removeButton.width + parent.spacing : 0) - parent.spacing
       showLabel: false; label: "Saved scene"; placeholderText: "Find a scene"
-      options: root.options; value: root.sceneId
+      // The backend confirms selection. A rejected scene must not change the
+      // displayed name or leave the remove action pointing at another scene.
+      options: root.options; value: root.sceneId; controlledValue: true
       popupBoundary: root.popupBoundary
       foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
-      onChanged: function(value) { if (value) root.applyRequested(value); else picker.value = root.sceneId }
+      onChanged: function(value) { if (value) root.applyRequested(value) }
       onActiveFocusChanged: if (activeFocus) root.focusRequested(this)
     }
     SkylofiButton {
       id: saveButton
       objectName: "sceneSaveButton"
-      width: Style.space(32); height: picker.height
+      text: "Save"; height: picker.height
       iconText: "\uf0c7"; tooltipText: "Save current mix as a scene"
-      horizontalPadding: 0; verticalPadding: 0; focusable: true; bordered: true
+      horizontalPadding: Style.space(8); verticalPadding: 0; focusable: true; bordered: true
       foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
       selected: root.saving
+      enabled: !root.savePending
       onClicked: {
         root.saving = !root.saving; root.confirmingRemoval = false
         if (root.saving) {
-          nameField.text = root.currentScene ? root.currentScene.name : ""
+          if (!root.saveError) nameField.text = root.currentScene ? root.currentScene.name : ""
           Qt.callLater(function() { nameField.forceActiveFocus(); root.focusRequested(nameField) })
         }
       }
@@ -69,20 +91,12 @@ Column {
       objectName: "sceneRemoveButton"
       width: Style.space(32); height: picker.height
       iconText: "\uf1f8"; tooltipText: "Remove selected saved scene"
-      enabled: root.currentScene !== null; opacity: enabled ? 1 : 0.45
+      visible: root.currentScene !== null
       horizontalPadding: 0; verticalPadding: 0; focusable: true; bordered: true
       foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
       selected: root.confirmingRemoval
       onClicked: { root.confirmingRemoval = !root.confirmingRemoval; root.saving = false }
     }
-  }
-  Text {
-    width: parent.width
-    // A changing dirty flag must not insert/remove a row above a grabbed
-    // fader. Keep this caption on one line with stable geometry.
-    text: root.dirty ? "Modified · save this mix" : root.currentScene ? "Saved scene" : "Save your room and sounds"
-    textFormat: Text.PlainText; elide: Text.ElideRight
-    color: visual.muted; font.family: root.fontFamily; font.pixelSize: visual.caption
   }
   Row {
     width: parent.width; spacing: Style.space(6)
@@ -93,6 +107,7 @@ Column {
       width: parent.width - confirmSave.width - parent.spacing
       height: Style.space(34)
       maximumLength: 40; placeholderText: "Scene name"
+      enabled: !root.savePending
       foreground: root.foreground
       font.family: root.fontFamily; font.pixelSize: visual.label
       Accessible.name: "Scene name"
@@ -103,12 +118,20 @@ Column {
     SkylofiButton {
       id: confirmSave
       objectName: "sceneSaveConfirm"
-      text: "Save"; height: nameField.height
-      enabled: nameField.text.trim().length > 0
+      text: root.savePending ? "Saving…" : "Save"; height: nameField.height
+      enabled: !root.savePending && nameField.text.trim().length > 0
       foreground: root.foreground; fontFamily: root.fontFamily; animate: root.animate
       focusable: true; bordered: true
       onClicked: root.save()
     }
+  }
+  Text {
+    objectName: "sceneSaveError"
+    width: parent.width
+    visible: root.saving && root.saveError.length > 0
+    text: root.saveError; textFormat: Text.PlainText
+    wrapMode: Text.Wrap; color: visual.muted
+    font.family: root.fontFamily; font.pixelSize: visual.caption
   }
   Row {
     width: parent.width; spacing: Style.space(6)
@@ -116,7 +139,9 @@ Column {
     Text {
       width: parent.width - confirmRemove.width - cancelRemove.width - parent.spacing * 2
       anchors.verticalCenter: parent.verticalCenter
-      text: "Remove saved scene?"; textFormat: Text.PlainText
+      objectName: "sceneRemovePrompt"
+      text: root.currentScene ? "Remove “" + root.currentScene.name + "”?" : "Remove saved scene?"
+      textFormat: Text.PlainText
       wrapMode: Text.Wrap; color: visual.muted
       font.family: root.fontFamily; font.pixelSize: visual.caption
     }

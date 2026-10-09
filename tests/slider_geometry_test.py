@@ -46,6 +46,6 @@ for name, font, width, height in (("normal",12,480,620),("scale125",15,595,770),
         output = result.stdout + result.stderr
         match = re.search(r"SLIDER_GEOMETRY_RESULT (\{[^\n]+\})",output)
         totals = json.loads(match.group(1)) if match else None
-        if result.returncode or totals != {"passed":7,"failed":0}:
+        if result.returncode or totals != {"passed":9,"failed":0}:
             raise SystemExit(f"{name}: {output}")
-        print(f"{name}: 6 rendered focus/neighbor/endpoint checks passed",flush=True)
+        print(f"{name}: 8 rendered focus/neighbor/endpoint checks passed",flush=True)

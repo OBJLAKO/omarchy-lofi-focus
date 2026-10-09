@@ -59,6 +59,7 @@ FocusScope {
   property color accent: Color.accent
   readonly property var popupBorderSpec: Border.localOrSurfaceSpec("popups", "border", popupBorder, Color.popups.border, Style.normalBorderWidth)
   property string fontFamily: Style.font.family
+  property bool controlledValue: false
   property int rowHeight: Style.space(36)
   property int popupRowHeight: Style.space(42)
   property int popupMinHeight: Style.spacing.searchablePopupMinHeight
@@ -82,6 +83,7 @@ FocusScope {
   function open() { popup.open() }
   function close() { popup.close() }
   function toggle() { popup.opened ? popup.close() : popup.open() }
+  function focusTrigger() { trigger.forceActiveFocus(Qt.TabFocusReason) }
 
   signal changed(string value)
   signal hovered(bool isHovered)
@@ -136,6 +138,7 @@ FocusScope {
 
     BorderSurface {
       id: trigger
+      objectName: "focusDropdownTrigger"
       width: parent.width
       height: root.rowHeight
       radius: Style.cornerRadius
@@ -154,6 +157,8 @@ FocusScope {
       activeFocusOnTab: true
       Accessible.role: Accessible.ComboBox
       Accessible.name: root.label || root.triggerLabel || root.currentLabel() || root.placeholderText
+      Accessible.description: root.currentLabel()
+      Accessible.onPressAction: if (root.enabled) root.toggle()
 
       HoverHandler {
         id: triggerHover
@@ -184,7 +189,7 @@ FocusScope {
         elide: Text.ElideRight
       }
 
-      Text {
+      SkylofiIcon {
         id: chevron
         rotation: popup.opened ? 180 : 0
         Behavior on rotation {
@@ -194,10 +199,9 @@ FocusScope {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: trigger.borderRight + Style.spacing.controlGap
-        text: "\uf107"
+        name: "chevron-down"
         color: Qt.alpha(root.foreground, 0.76)
-        font.family: root.fontFamily
-        font.pixelSize: Math.round(13 * Style.fontScale)
+        size: Math.round(14 * Style.fontScale)
       }
 
       MouseArea {
@@ -341,7 +345,7 @@ FocusScope {
               function selectCurrent() {
                 if (currentIndex < 0 || currentIndex >= root.filtered.length) return
                 var v = root.optionValue(root.filtered[currentIndex])
-                root.value = v
+                if (!root.controlledValue) root.value = v
                 root.changed(v)
                 popup.close()
               }

@@ -39,6 +39,14 @@ Item {
   property real minimum: 0
   property real maximum: 1
   property real step: 0.05
+  // Qt's accessible value interface uses these names for custom sliders.
+  readonly property real minimumValue: minimum
+  readonly property real maximumValue: maximum
+  readonly property real stepSize: step
+  Accessible.role: Accessible.Slider
+  Accessible.focusable: enabled
+  Accessible.onIncreaseAction: if (enabled) root.commit(root.liveValue + root.step)
+  Accessible.onDecreaseAction: if (enabled) root.commit(root.liveValue - root.step)
   property bool integer: false
   property color trackColor: bar ? Style.selectedFillFor(bar.foreground, Color.accent) : "#333"
   property color fillColor: bar ? bar.foreground : Color.foreground
@@ -196,6 +204,10 @@ Item {
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     acceptedButtons: Qt.LeftButton | Qt.RightButton
+    // A small vertical excursion must not let the surrounding Flickable
+    // steal an active volume/seek drag. MouseArea keeps its grab until release,
+    // including pointer positions outside the track and the slider bounds.
+    preventStealing: true
 
     function valueFromX(x) {
       var clamped = Math.max(0, Math.min(track.width, x - track.x))

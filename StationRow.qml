@@ -20,7 +20,8 @@ BorderSurface {
   signal activated()
   SkylofiStyle { id: visual; foreground: root.foreground; background: Color.popups.background; accent: root.accent }
   implicitHeight: visual.rowHeight
-  color: mouse.pressed ? visual.pressed : root.hasCursor ? visual.hover : root.current ? visual.selected : "transparent"
+  color: mouse.pressed ? visual.pressed : root.current ? Qt.alpha(root.accent, root.hasCursor ? 0.15 : 0.09)
+    : root.hasCursor ? visual.hover : "transparent"
   radius: visual.radius
   Behavior on color {
     enabled: root.animate && root.visible
@@ -38,14 +39,12 @@ BorderSurface {
   Keys.onEnterPressed: root.activated()
   Keys.onSpacePressed: root.activated()
 
-  Text {
-    x: Style.space(12)
-    width: visual.iconSlot
+  SkylofiIcon {
+    x: Style.space(16)
     anchors.verticalCenter: parent.verticalCenter
-    text: root.glyph
+    glyph: root.glyph
     color: root.current ? root.accent : visual.quiet
-    font.family: root.fontFamily; font.pixelSize: visual.iconSize
-    horizontalAlignment: Text.AlignHCenter
+    size: visual.iconSize
   }
   Column {
     id: copy
@@ -70,13 +69,13 @@ BorderSurface {
       elide: Text.ElideRight
     }
   }
-  Text {
+  SkylofiIcon {
     anchors.right: parent.right; anchors.rightMargin: Style.space(12)
     anchors.verticalCenter: parent.verticalCenter
     visible: root.current
-    text: root.muted ? "\uf04c" : "\uf00c"
+    name: root.muted ? "pause" : "check"
     color: root.accent
-    font.family: root.fontFamily; font.pixelSize: visual.caption
+    size: visual.iconSize
   }
   MouseArea {
     id: mouse
